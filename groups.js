@@ -802,7 +802,7 @@
     if (e.refs.length > 1) tags.append(h("span", { class: "gp-tagchip link" }, ic("link", "icon-sm"), "Also in " + e.refs.filter((x) => x.g !== g.id).map((x) => (groupById(x.g) || {}).name).filter(Boolean).join(", ")));
     const showSubPill = s && (opts.inCard || ui.s === "all") && e.title !== s.label;
     const subText = e.note || e.link || "";
-    const row = h("button", { class: "gp-entry" + (ui.selected === e.id ? " sel" : ""), onclick: () => selectEntry(e.id) },
+    const row = h("button", { class: "gp-entry" + (ui.selected === e.id ? " sel" : ""), "data-entry": e.id, onclick: () => selectEntry(e.id) },
       e.photos.length ? thumb(e.photos[0]) : null,
       s ? tile(s.icon, s.color, true) : tile(g.icon, g.color, true),
       h("span", { class: "gp-entry-main" },
@@ -2261,6 +2261,15 @@
       draw();
     });
   }
+
+  // Resting the mouse on an entry shows the whole note and its first photo.
+  if (window.CPHints) window.CPHints.preview(".gp-entry[data-entry]", (row) => {
+    const e = entries.find((x) => x.id === row.dataset.entry);
+    if (!e) return null;
+    const text = [e.note, e.link, e.ocr && !e.note ? e.ocr : ""].filter(Boolean).join("\n").trim();
+    if (text.length < 60 && !e.photos.length) return null;
+    return { title: e.title || "", text, img: e.photos[0] || null, meta: fmtDay(e.happenedOn) + " " + new Date(e.happenedOn).getFullYear() };
+  });
 
   // ---------- Sheets ----------
   // Sheets stack: one opened with { stack: true } sits on top of the one below

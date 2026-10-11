@@ -39,3 +39,18 @@ test("folded sidebar sections stay folded after a reload", async ({ page }) => {
   await page.locator('.sidebar-section-header[data-section="tags"] .section-title-click').press("Enter");
   await expect(page.locator('.sidebar-section-header[data-section="tags"]')).not.toHaveClass(/collapsed/);
 });
+
+test("resting on a note shows a preview card; icon buttons say their name on keyboard focus", async ({ page }) => {
+  const { newNote } = require("./fixtures");
+  const long = "Packing list for the trip\n" + "Passport, tickets, charger, medicines, snacks and a warm jacket for the hills. ".repeat(3);
+  await newNote(page, long, { title: "Trip packing" });
+  await page.locator("#items").click({ position: { x: 5, y: 5 } });
+  await page.locator(".item-row", { hasText: "Trip packing" }).hover();
+  await expect(page.locator("#cp-peek")).toBeVisible();
+  await expect(page.locator("#cp-peek")).toContainText("warm jacket");
+  await page.mouse.move(700, 600);
+  await expect(page.locator("#cp-peek")).toHaveCount(0);
+  await page.keyboard.press("Shift"); // keyboard use, so focus shows its ring and name
+  await page.locator("#sidebar-collapse-btn").focus();
+  await expect(page.locator("#cp-tip")).toHaveText("Collapse sidebar (Ctrl+\\)");
+});

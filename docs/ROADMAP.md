@@ -94,8 +94,8 @@ to be built in.
 - [x] Sticky date headers; sticky collection header while scrolling.
 
 ### 2.3 Feedback and help
-- [ ] Hover tooltips on every icon button (computers), long-press labels on phones.
-- [ ] Hover previews: a note or entry shows a small preview card on hover.
+- [x] Hover tooltips on every icon button (computers), long-press labels on phones.
+- [x] Hover previews: a note or entry shows a small preview card on hover.
 - [ ] Empty states that say what to do next; first-run welcome (Inbox → Collections → Sync) with an example collection.
 - [ ] Sync dot in the header (green synced, orange waiting).
 - [ ] Undo for every destructive action; consistent toasts.

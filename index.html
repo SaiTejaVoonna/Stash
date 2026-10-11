@@ -1811,6 +1811,7 @@
 <script src="extras.js"></script>
 <script src="brain.js"></script>
 <script src="importer.js"></script>
+<script src="hints.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -2715,6 +2716,17 @@
 
   makeResizable("resize-sidebar", document.getElementById("sidebar"), "copypaster-sidebar-width", 190, 400);
   makeResizable("resize-list", document.getElementById("list-pane"), "copypaster-list-width", 260, 640);
+
+  // Resting the mouse on a note shows more of it. Never for passwords or the Vault.
+  if (window.CPHints) window.CPHints.preview("#items .item-row:not(.locked-row)", (row) => {
+    const item = cache.find((x) => x.id === row.dataset.id);
+    if (!item || item.vaulted || item.type === "password") return null;
+    const img = item.contentType === "image" ? item.content : (item.images && item.images[0]) || null;
+    let text = item.contentType === "image" ? "" : String(item.content || "").trim();
+    if (item.checklist && item.checklist.length) text = [text, checklistAsText(item.checklist)].filter(Boolean).join("\n");
+    if (!text && !img) return null;
+    return { title: item.title || "", text, img, meta: new Date(item.updatedAt || item.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) };
+  });
 
   // ---------- Motion helpers ----------
 

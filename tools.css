@@ -666,3 +666,17 @@ body.cx-previewing #tab-bar { display: none !important; }
 .cx-sort-dest { color: var(--accent); font-size: var(--fs-xs); font-weight: 600; }
 .cx-sort-none { color: var(--text-3); font-size: var(--fs-xs); }
 .sort-hint { text-align: left; padding: 0; font-size: var(--fs-sm); }
+
+/* Hints: names for icon buttons, and a peek at notes on hover */
+.cp-tip { position: fixed; z-index: 400; pointer-events: none; max-width: 260px; padding: 5px 9px; border-radius: var(--r-sm);
+  background: var(--text); color: var(--bg); font-size: var(--fs-xs); font-weight: var(--fw-medium); line-height: 1.3;
+  box-shadow: var(--shadow-md); animation: cp-tip-in .12s ease-out; }
+.cp-peek { position: fixed; z-index: 390; pointer-events: none; width: 300px; max-height: 360px; overflow: hidden; display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 14px; border-radius: var(--r-lg); background: var(--elevated, var(--surface-1)); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); color: var(--text); animation: cp-tip-in .14s ease-out; }
+.cp-peek img { width: 100%; max-height: 150px; object-fit: cover; border-radius: var(--r-md); }
+.cp-peek b { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-peek p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden; }
+.cp-peek small { color: var(--text-3); font-size: var(--fs-xs); }
+@keyframes cp-tip-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cp-tip, .cp-peek { animation: none; } }
