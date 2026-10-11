@@ -88,10 +88,10 @@ to be built in.
 - [x] Calm composer: one thin line of chips instead of four rows; tags only from that collection.
 
 ### 2.2 Layout
-- [ ] Collapsible sidebar on computers: full, icons only, hidden; remembered. Collapsible groups inside it (Collections, Folders, Tags).
-- [ ] Resizable panes on computers (list / detail); keyboard shortcut to toggle the sidebar.
-- [ ] Tablets: sidebar slides over; two-pane in landscape.
-- [ ] Sticky date headers; sticky collection header while scrolling.
+- [x] Collapsible sidebar on computers: full, icons only, hidden; remembered. Collapsible groups inside it (Collections, Folders, Tags).
+- [x] Resizable panes on computers (list / detail); keyboard shortcut to toggle the sidebar.
+- [x] Tablets: sidebar slides over; two-pane in landscape.
+- [x] Sticky date headers; sticky collection header while scrolling.
 
 ### 2.3 Feedback and help
 - [ ] Hover tooltips on every icon button (computers), long-press labels on phones.
