@@ -1097,7 +1097,7 @@
       drawTypes();
       draw();
       setTimeout(() => input.focus(), 30);
-    }, { stack: !!opts.workingCopy });
+    }, { stack: !!(opts.workingCopy || opts.stack) });
   }
 
   // One input for any field type. onChange gets the value ("" to clear).
@@ -1653,26 +1653,7 @@
 
   // From the notes side: a note becomes an entry, then the note is removed.
   function moveNoteToGroup(item) {
-    if (!enabled) return;
-    if (!groups.length) { api.showToast("Make a collection first: Settings → Collections, or + next to Collections"); return; }
-    sheet("Move to collection", (body, close) => {
-      body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that collection, with the same text and photos."));
-      destinations().forEach((d) => body.append(h("button", { class: "gp-choice", onclick: async () => {
-        close();
-        const content = item.content || "";
-        const title = (item.title || "").trim() || content.split("\n")[0].slice(0, 120);
-        const note = item.title ? content : content.split("\n").slice(1).join("\n");
-        const photos = (item.images || []).filter((p) => typeof p === "string" && /^data:image\/(jpeg|png|webp|gif);/.test(p));
-        const e = C.normalizeEntry({ refs: [{ g: d.g, s: d.s, tag: null }], title, note, photos, capture: item.capture, happenedOn: (item.capture && item.capture.at) || item.createdAt || Date.now(), addedOn: Date.now() });
-        try { await saveEntry(e); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
-        entries.push(e);
-        changed();
-        await api.deleteNote(item.id);
-        api.showToast("Moved to " + d.label);
-        await openGroup(d.g, "all");
-        selectEntry(e.id);
-      } }, tile(d.icon, d.color, true), h("span", null, d.label))));
-    });
+    sortSnap(item, { open: true });
   }
 
   // ---------- New group / templates ----------
@@ -2142,17 +2123,22 @@
     await api.deleteNote(n.id);
     return e;
   }
-  // "Sort this snap": everything filled in from what's known; one tap to file it.
-  // n: one snap or message, or a list of them (Forward from the Me chat).
+  // One picker for filing anything: "Sort this snap", Move from the Inbox and
+  // Move to collection from Notes. Search at the top; Collection → Section →
+  // Who / Where → Tags, each row ending in + New.
+  // n: one snap, message or note, or a list of them.
+  // opts: { onDone, open: open the collection afterwards (from Notes) }
   function sortSnap(nOrList, opts = {}) {
     const list = (Array.isArray(nOrList) ? nOrList : [nOrList]).filter(Boolean);
     if (!list.length) return;
+    if (!enabled) setEnabled(true);
     const n = list[0];
     const many = list.length > 1;
     const guess = (list.find((x) => x.suggest) || {}).suggest || null;
     const m = guess && SNAP_MATCH[guess.kind];
     let g = (guess && snapSpaceFor(guess.kind)) || null;
-    let subId = null, tagId = null;
+    let subId = null, tagId = null, tags = [];
+    let q = "", adding = null; // adding: "space" | "sub" | "tag" while its name box is open
     const pickSub = () => { subId = null; if (g && m) for (const re of m.sub) { const s = g.subs.find((x) => re.test(x.name)); if (s) { subId = s.id; break; } } };
     // "@fzv3" written on it picks that page and its space.
     const mention = mentionIn(list.map((x) => (x.title || "") + " " + (x.content || "")).join(" "));
@@ -2161,56 +2147,107 @@
     pickSub();
     const cap = n.capture || {};
     const nice = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
-    sheet(many ? "Move " + list.length + " messages" : n.images && n.images.length ? "Sort this snap" : "Move to a collection", (body, close) => {
+    const heading = many ? "Move " + list.length + " messages" : opts.open ? "Move to collection" : n.images && n.images.length ? "Sort this snap" : "Move to a collection";
+    sheet(heading, (body, close) => {
       const written = ((n.title || "").trim() || (n.content || "").split("\n")[0]).replace(/@[\w.-]+/g, "").replace(/\s+/g, " ").trim();
       const title = h("input", { class: "input gp-input", id: "gp-sort-title", placeholder: "What is it?", value: written || (guess && guess.detail ? nice(guess.detail) : ""), "aria-label": "Title" });
+      // Search stays put while the rows below redraw (so it keeps focus).
+      const search = h("input", { class: "input gp-input", id: "gp-sort-find", type: "search", placeholder: "Find a collection", autocomplete: "off", "aria-label": "Find a collection" });
+      const rows = h("div", { class: "gp-sort-rows" });
+      search.addEventListener("input", () => { q = search.value.trim(); draw(); });
+      // A small name box that replaces a row's + New button.
+      const nameBox = (id, placeholder, value, onAdd) => {
+        const input = h("input", { class: "input gp-input gp-sort-new-input", id, placeholder, value: value || "", autocomplete: "off", "aria-label": placeholder, maxlength: C.MAX.name });
+        const add = async () => { const v = input.value.trim(); if (!v) { input.focus(); return; } adding = null; await onAdd(v); draw(); };
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); adding = null; draw(); } });
+        setTimeout(() => input.focus(), 20);
+        return h("div", { class: "gp-sort-new" }, input, h("button", { class: "btn primary gp-small", id: id + "-add", onclick: add }, "Add"),
+          h("button", { class: "btn ghost gp-small", onclick: () => { adding = null; draw(); } }, "Cancel"));
+      };
+      const plus = (id, label, onclick) => h("button", { class: "gp-mini gp-mini-new", id, onclick }, ic("plus", "icon-sm"), label);
       const draw = () => {
-        body.replaceChildren();
-        const facts = [guess ? (window.CPSee ? window.CPSee.describe(guess) : guess.label) : "", cap.at ? fmtDay(cap.at) + ", " + fmtTime(cap.at) : "",
-          cap.location ? "\u{1F4CD} " + cap.location.lat.toFixed(4) + ", " + cap.location.lng.toFixed(4) : ""].filter(Boolean);
-        const firstPhoto = (list.find((x) => x.images && x.images[0]) || {}).images;
-        body.append(h("div", { class: "gp-sort-top" }, firstPhoto ? h("img", { src: firstPhoto[0], alt: "", class: "gp-sort-img" }) : null,
-          h("div", { class: "gp-sort-facts" }, ...(many ? [list.length + " messages, each becomes an entry"] : facts).map((f) => h("small", null, f)),
-            guess && !many ? h("small", { class: "gp-dim" }, "A guess made on this phone") : null)));
-        if (!many) body.append(h("label", { class: "gp-label", for: "gp-sort-title" }, "Title"), title);
-        body.append(h("span", { class: "gp-label" }, "Collection"));
+        rows.replaceChildren();
+        rows.append(h("span", { class: "gp-label" }, "Collection"));
         const row = h("div", { class: "gp-sort-row", id: "gp-sort-spaces" });
-        const ordered = suggestedId ? [groups.find((x) => x.id === suggestedId), ...groups.filter((x) => x.id !== suggestedId)] : groups.slice();
-        ordered.forEach((x) => row.append(h("button", { class: "gp-mini" + (g && g.id === x.id ? " active" : ""), style: "--c:" + x.color, "data-space": x.id,
-          onclick: () => { g = x; tagId = null; pickSub(); draw(); } }, ic(x.icon), x.name, x.id === suggestedId ? h("span", { class: "gp-dim" }, "· suggested") : null)));
+        const ordered = suggestedId ? [groups.find((x) => x.id === suggestedId), ...groups.filter((x) => x.id !== suggestedId)].filter(Boolean) : groups.slice();
+        const fq = E.fold(q);
+        const shown = ordered.filter((x) => !fq || E.fold(x.name).includes(fq) || (g && g.id === x.id));
+        shown.forEach((x) => row.append(h("button", { class: "gp-mini" + (g && g.id === x.id ? " active" : ""), style: "--c:" + x.color, "data-space": x.id,
+          onclick: () => { g = x; tagId = null; tags = []; adding = null; pickSub(); draw(); } }, ic(x.icon), x.name, x.id === suggestedId ? h("span", { class: "gp-dim" }, "· suggested") : null)));
+        if (fq && !shown.some((x) => E.fold(x.name).includes(fq))) row.append(h("small", { class: "gp-dim" }, "No collection called “" + q + "”"));
         // No matching space yet: offer to make one from the right template.
         const tpl = m && !suggestedId ? C.TEMPLATES.find((t) => t.key === m.tpl) : null;
         if (tpl && !groups.some((x) => x.name === tpl.name)) row.append(h("button", { class: "gp-mini", id: "gp-sort-new-space", onclick: async () => {
           const ng = C.groupFromTemplate(tpl, tpl.name); ng.order = Date.now();
-          await saveGroup(ng); groups.push(ng); g = ng; pickSub(); draw();
+          await saveGroup(ng); groups.push(ng); g = ng; pickSub(); render(); draw();
         } }, ic("plus"), "New " + tpl.name + " collection"));
-        if (!groups.length && !tpl) row.append(h("button", { class: "gp-mini", onclick: () => { close(); openNewGroup(); } }, ic("plus"), "New collection"));
-        body.append(row);
-        if (g && g.subs.length) {
-          body.append(h("span", { class: "gp-label" }, "Section"));
+        if (adding === "space") row.append(nameBox("gp-sort-space-name", "New collection name", q, async (name) => {
+          // A name that matches a template ("Bike", "Health") gets that template's sections.
+          const t = C.TEMPLATES.find((x) => x.key !== "blank" && E.fold(x.name) === E.fold(name)) || C.TEMPLATES.find((x) => x.key === "blank") || C.TEMPLATES[0];
+          const ng = C.groupFromTemplate(t, name.slice(0, C.MAX.name)); ng.order = Date.now();
+          await saveGroup(ng); groups.push(ng); g = ng; subId = null; tagId = null; tags = []; q = ""; search.value = "";
+          render(); api.showToast("Made " + ng.name);
+        }));
+        else row.append(plus("gp-sort-add-space", "New", () => { adding = "space"; draw(); }));
+        rows.append(row);
+        if (g) {
+          rows.append(h("span", { class: "gp-label" }, "Section"));
           const subs = h("div", { class: "gp-sort-row", id: "gp-sort-subs" });
           subs.append(h("button", { class: "gp-mini" + (!subId ? " active" : ""), onclick: () => { subId = null; draw(); } }, "None"));
-          g.subs.forEach((x) => subs.append(h("button", { class: "gp-mini" + (subId === x.id ? " active" : ""), style: "--c:" + x.color, onclick: () => { subId = x.id; draw(); } }, ic(x.icon), x.name)));
-          body.append(subs);
-        }
-        if (g && g.mainTags.length) {
-          body.append(h("span", { class: "gp-label" }, g.mainLabel || "Page"));
-          const pages = h("div", { class: "gp-sort-row" });
+          g.subs.forEach((x) => subs.append(h("button", { class: "gp-mini" + (subId === x.id ? " active" : ""), style: "--c:" + x.color, "data-sub": x.id, onclick: () => { subId = x.id; draw(); } }, ic(x.icon), x.name)));
+          if (adding === "sub") subs.append(nameBox("gp-sort-sub-name", "New section name", "", async (name) => {
+            const s = { id: C.uid(), name: name.slice(0, C.MAX.name), label: name.slice(0, C.MAX.label), icon: "note", color: C.COLORS[g.subs.length % C.COLORS.length] };
+            g.subs.push(s); await saveGroup(g); subId = s.id; render();
+          }));
+          else if (g.subs.length < C.MAX.subs) subs.append(plus("gp-sort-add-sub", "New", () => { adding = "sub"; draw(); }));
+          rows.append(subs);
+
+          rows.append(h("span", { class: "gp-label" }, g.mainLabel || "Who / Where"));
+          const pages = h("div", { class: "gp-sort-row", id: "gp-sort-pages" });
           pages.append(h("button", { class: "gp-mini" + (!tagId ? " active" : ""), onclick: () => { tagId = null; draw(); } }, "None"));
-          g.mainTags.forEach((t) => pages.append(h("button", { class: "gp-mini" + (tagId === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { tagId = t.id; draw(); } }, t.name)));
-          body.append(pages);
+          g.mainTags.forEach((t) => pages.append(h("button", { class: "gp-mini" + (tagId === t.id ? " active" : ""), style: "--c:" + t.color, "data-page": t.id, onclick: () => { tagId = t.id; draw(); } }, t.name)));
+          pages.append(plus("gp-sort-add-page", "New", () => newMainTag(g, (t) => { tagId = t.id; draw(); }, { stack: true })));
+          rows.append(pages);
+
+          // Tags: only the ones already used in this collection, plus + New.
+          const used = new Map();
+          for (const e of C.inGroup(entries, g.id)) for (const k of e.tags) used.set(k, (used.get(k) || 0) + 1);
+          const keys = [...new Set([...[...used.keys()].sort((a, b) => used.get(b) - used.get(a)).slice(0, 12), ...tags])];
+          rows.append(h("span", { class: "gp-label" }, "Tags"));
+          const tagRow = h("div", { class: "gp-sort-row", id: "gp-sort-tags" });
+          keys.forEach((k) => { const on = tags.includes(k); tagRow.append(h("button", { class: "gp-mini" + (on ? " active" : ""), "aria-pressed": String(on), "data-tag": k,
+            onclick: () => { tags = on ? tags.filter((x) => x !== k) : [...tags, k]; draw(); } }, "#" + tagLabel(k))); });
+          if (adding === "tag") tagRow.append(nameBox("gp-sort-tag-name", "New tag", "", async (name) => {
+            const k = api.ensureTag ? await api.ensureTag(name) : C.normalizeTagName(name);
+            if (k && !tags.includes(k)) tags = [...tags, k].slice(0, 20);
+          }));
+          else tagRow.append(plus("gp-sort-add-tag", "New", () => { adding = "tag"; draw(); }));
+          rows.append(tagRow);
         }
-        body.append(h("div", { class: "gp-sheet-actions" },
-          h("button", { class: "btn", onclick: () => close() }, "Leave in Inbox"),
+        const sub = g && subId ? C.subOf(g, subId) : null;
+        rows.append(h("div", { class: "gp-sheet-actions" },
+          h("button", { class: "btn", onclick: () => close() }, opts.open ? "Cancel" : "Leave in Inbox"),
           h("button", { class: "btn primary", id: "gp-sort-save", disabled: !g, onclick: async () => {
             if (!g) return;
-            try { for (const x of list) await moveSnapInto(x, { g: g.id, s: subId, tag: tagId }, many ? null : title.value); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
+            let last = null;
+            try { for (const x of list) last = await moveSnapInto(x, { g: g.id, s: subId, tag: tagId }, many ? null : title.value, { tags }); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
             close();
             if (opts.onDone) opts.onDone();
-            const sub = subId ? C.subOf(g, subId) : null;
-            api.showToast("Saved to " + [g.name, sub && sub.name].filter(Boolean).join(" → "), { action: { label: "Open", onClick: () => openGroup(g.id, subId || "all") } });
-          } }, g ? (many ? "Move to " : "Save to ") + g.name : "Pick a collection")));
+            const where = [g.name, sub && sub.name].filter(Boolean).join(" → ");
+            if (opts.open) { api.showToast("Moved to " + where); await openGroup(g.id, subId || "all"); if (last) selectEntry(last.id); return; }
+            api.showToast("Saved to " + where, { action: { label: "Open", onClick: () => openGroup(g.id, subId || "all") } });
+          } }, g ? (many ? "Move to " : opts.open ? "Move to " : "Save to ") + g.name : "Pick a collection")));
       };
+      const facts = [guess ? (window.CPSee ? window.CPSee.describe(guess) : guess.label) : "", cap.at ? fmtDay(cap.at) + ", " + fmtTime(cap.at) : "",
+        cap.location ? "\u{1F4CD} " + cap.location.lat.toFixed(4) + ", " + cap.location.lng.toFixed(4) : ""].filter(Boolean);
+      const firstPhoto = (list.find((x) => x.images && x.images[0]) || {}).images;
+      if (firstPhoto || facts.length || many) body.append(h("div", { class: "gp-sort-top" }, firstPhoto ? h("img", { src: firstPhoto[0], alt: "", class: "gp-sort-img" }) : null,
+        h("div", { class: "gp-sort-facts" }, ...(many ? [list.length + " messages, each becomes an entry"] : facts).map((f) => h("small", null, f)),
+          guess && !many ? h("small", { class: "gp-dim" }, "A guess made on this phone") : null)));
+      if (opts.open) body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that collection, with the same text and photos."));
+      if (!many) body.append(h("label", { class: "gp-label", for: "gp-sort-title" }, "Title"), title);
+      if (groups.length > 5) body.append(search);
+      body.append(rows);
       draw();
     });
   }

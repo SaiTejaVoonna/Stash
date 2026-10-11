@@ -467,3 +467,10 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
 .gp-pv-sec { grid-row: span 2; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 3px 8px; border-radius: var(--r-full); }
 .gp-pv-entry small { grid-column: 2; color: var(--text-3); font-size: var(--fs-xs); }
 .gp-pv-amt { grid-row: 1 / span 2; grid-column: 3; font-weight: 700; color: var(--success, #16a34a); }
+
+/* One picker: + New at the end of each row opens a small name box */
+.gp-sort-rows { display: flex; flex-direction: column; gap: 6px; }
+.gp-mini.gp-mini-new { border-style: dashed; color: var(--text-2); }
+.gp-sort-new { display: flex; gap: 6px; align-items: center; flex-basis: 100%; }
+.gp-sort-new .gp-sort-new-input { flex: 1; min-width: 0; height: 34px; }
+#gp-sort-find { margin-bottom: 4px; }

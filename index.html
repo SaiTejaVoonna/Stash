@@ -4136,7 +4136,7 @@
       { label: item.archivedAt ? "Unarchive" : "Archive", run: () => toggleArchiveWithUndo(item) },
       { label: item.vaulted ? "Move out of Vault" : "Move to Vault", run: () => (item.vaulted ? moveOutOfVault(item) : moveToVault(item)) },
       ...(item.vaulted ? [] : [{ label: "Move to folder\u2026", run: () => openFolderSheet(item) }]),
-      ...(!item.vaulted && item.type !== "password" && groupsApi && groupsApi.enabled() && groupsApi.hasGroups()
+      ...(!item.vaulted && item.type !== "password" && groupsApi && groupsApi.enabled()
         ? [{ label: "Move to collection\u2026", icon: "layers", run: () => groupsApi.moveNoteToGroup(item) }] : []),
       { label: "Select\u2026", run: () => {
         if (!selectMode) document.getElementById("select-mode-btn").click();

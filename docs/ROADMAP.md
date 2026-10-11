@@ -84,7 +84,7 @@ to be built in.
 ## Phase 2: UI and UX (no support needed)
 
 ### 2.1 One way to do each thing
-- [ ] One picker everywhere (based on "Sort this snap"): search at the top, Collection → Section → Who / Where, **+ New** at the end of every row (collection, section, person, place, tag).
+- [x] One picker everywhere (based on "Sort this snap"): search at the top, Collection → Section → Who / Where, **+ New** at the end of every row (collection, section, person, place, tag).
 - [ ] Calm composer: one thin line of chips instead of four rows; tags only from that collection.
 
 ### 2.2 Layout

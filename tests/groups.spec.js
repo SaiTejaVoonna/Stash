@@ -236,7 +236,8 @@ test("a note moves into a group and back to Notes without losing its text", asyn
   await newNote(page, "Line one\nLine two", { title: "Gift ideas" });
   await page.click(".item-row", { button: "right" });
   await page.locator(".context-menu .popover-list-item", { hasText: "Move to collection" }).click();
-  await page.locator(".gp-choice", { hasText: "Ideas" }).click();
+  await page.locator("#gp-sort-spaces .gp-mini", { hasText: "Ideas" }).click();
+  await page.click("#gp-sort-save");
   await expect(page.locator(".gp-id h1")).toHaveText("Ideas");
   await expect(page.locator(".gp-d-title")).toHaveValue("Gift ideas");
   await expect(page.locator(".gp-d-note")).toHaveValue("Line one\nLine two");
@@ -248,6 +249,34 @@ test("a note moves into a group and back to Notes without losing its text", asyn
   expect(items).toHaveLength(1);
   expect(items[0].title).toBe("Gift ideas");
   expect(items[0].content).toContain("Line one\nLine two");
+});
+
+test("the move picker makes a new collection, section, person and tag on the spot", async ({ page }) => {
+  await turnOnGroups(page);
+  await nav(page, "All notes").click();
+  await newNote(page, "Knee check-up notes", { title: "Check-up" });
+  await page.click(".item-row", { button: "right" });
+  await page.locator(".context-menu .popover-list-item", { hasText: "Move to collection" }).click();
+  await page.click("#gp-sort-add-space");
+  await page.fill("#gp-sort-space-name", "Family Health");
+  await page.press("#gp-sort-space-name", "Enter");
+  await expect(page.locator("#gp-sort-spaces .gp-mini.active")).toContainText("Family Health");
+  await page.click("#gp-sort-add-sub");
+  await page.fill("#gp-sort-sub-name", "Visits");
+  await page.click("#gp-sort-sub-name-add");
+  await expect(page.locator("#gp-sort-subs .gp-mini.active")).toContainText("Visits");
+  await page.click("#gp-sort-add-page");
+  await page.fill("#gp-page-name", "Dr Asha Verma");
+  await page.click("#gp-page-create");
+  await expect(page.locator("#gp-sort-pages .gp-mini.active")).toContainText("Dr Asha Verma");
+  await page.click("#gp-sort-add-tag");
+  await page.fill("#gp-sort-tag-name", "knee");
+  await page.press("#gp-sort-tag-name", "Enter");
+  await expect(page.locator("#gp-sort-tags .gp-mini.active")).toContainText("#knee");
+  await page.click("#gp-sort-save");
+  await expect(page.locator(".gp-id h1")).toHaveText("Family Health / Visits");
+  await expect(page.locator(".gp-d-title")).toHaveValue("Check-up");
+  expect(await storedItems(page)).toHaveLength(0);
 });
 
 test("an entry linked into two groups: remove from one keeps it in the other", async ({ page }) => {
