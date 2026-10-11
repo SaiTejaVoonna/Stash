@@ -1642,6 +1642,7 @@
         <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        <button class="settings-nav-item" data-page="addons"><span class="sn-icon" style="background:#10b981"><svg class="icon"><use href="#icon-grid"></use></svg></span>Add-ons<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="sync"><span class="sn-icon" style="background:#0ea5e9"><svg class="icon"><use href="#icon-cloud"></use></svg></span>Sync<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="shortcuts"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-keyboard"></use></svg></span>Shortcuts<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="about"><span class="sn-icon" style="background:#8e8e93"><svg class="icon"><use href="#icon-info"></use></svg></span>About<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
@@ -1745,6 +1746,12 @@
           <input id="import-file" type="file" accept=".cps,.json" hidden>
         </section>
 
+        <section class="settings-page" data-page="addons" id="addons-settings">
+          <h2 class="settings-page-title">Add-ons</h2>
+          <p class="settings-page-lead">Turn on what you use. What's off is hidden from menus and isn't loaded, so Stash stays light. Nothing you saved is removed.</p>
+          <div class="settings-group" id="addons-list"></div>
+        </section>
+
         <section class="settings-page" data-page="sync" id="sync-settings">
           <h2 class="settings-page-title">Sync</h2>
           <p class="settings-page-lead">Keep your phones and computers in step through your own Google Drive. It also writes a readable file for each collection, so an AI you connect to your Drive can read them.</p>
@@ -1794,6 +1801,7 @@
 <script src="totp-core.js"></script>
 <script src="sketch.js"></script>
 <script src="format.js"></script>
+<script src="documents.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -1861,7 +1869,51 @@
   let db = null;
   let groupsApi = null; // set once Groups (groups.js) has loaded its data
   let syncApi = null; // Google Drive sync (sync.js), set once the data is loaded
+  let docsApi = null; // Documents and the PDF viewer (documents.js)
   const SYNC_STORES = ["items", "tags", "folders", "groups", "entries", "entities"]; // what two-way sync shares
+  // ---------- Add-ons: features you can switch off (hidden, not loaded) ----------
+  const ADDONS = [
+    { key: "media", name: "Audio and video", hint: "Players for audio and video files, with speed (1×, 1.5×, 2×)." },
+    { key: "documents", name: "Documents", hint: "Every PDF and scan in one list, and a PDF viewer inside Stash." },
+    { key: "scanner", name: "Document scanner", hint: "Photograph paper, straighten and clean it up, save as PDF." },
+    { key: "ocr", name: "Text from photos", hint: "Reads printed text in photos and scans on this device so search finds it. The first use downloads the reader (about 10 MB)." },
+    { key: "extras", name: "Small extras", hint: "QR scanner, location pins, contact cards, add to calendar." },
+    { key: "sketch", name: "Sketch", hint: "Drawing pad with pens, shapes and text." },
+    { key: "voice", name: "Voice notes", hint: "Record voice notes in notes." },
+    { key: "commands", name: "Commands", hint: "Terminal commands with {{blanks}} to fill in." },
+    { key: "passwords", name: "Passwords and 2FA", hint: "Logins and 2FA codes, kept in the Vault." }
+  ];
+  const ADDONS_KEY = "copypaster-addons";
+  function addonOn(key) {
+    try { const m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}"); return m[key] !== false; } catch { return true; }
+  }
+  function setAddon(key, on) {
+    let m = {};
+    try { m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}") || {}; } catch {}
+    m[key] = !!on;
+    try { localStorage.setItem(ADDONS_KEY, JSON.stringify(m)); } catch {}
+    renderNav(); renderList();
+    if (chatApi) chatApi.render();
+  }
+  window.CPAddons = { on: addonOn };
+  function renderAddons() {
+    const box = document.getElementById("addons-list");
+    if (!box) return;
+    box.replaceChildren(...ADDONS.map((a) => {
+      const label = document.createElement("label");
+      label.className = "settings-line";
+      const text = document.createElement("span");
+      text.textContent = a.name;
+      const small = document.createElement("small");
+      small.textContent = a.hint;
+      text.appendChild(small);
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = addonOn(a.key); cb.dataset.addon = a.key;
+      cb.addEventListener("change", () => setAddon(a.key, cb.checked));
+      label.append(text, cb);
+      return label;
+    }));
+  }
   let timelineApi = null; // set once the Timeline (timeline.js) is ready
   let toolsApi = null; // password builder, 2FA, voice, sketch (tools.js)
   let currentId = null;
@@ -2307,7 +2359,7 @@
     item.capture = window.CPSnap && item.capture ? window.CPSnap.normalizeCapture(item.capture) : null;
     // An album's other photos: how, when and where each was taken (the first is in capture).
     item.captures = window.CPSnap && Array.isArray(item.captures) ? item.captures.map((c) => window.CPSnap.normalizeCapture(c)).filter(Boolean).slice(0, 20) : [];
-    // v2.6: a message in the Me chat, and files dropped there (PDFs and the like, up to 10 MB each).
+    // v2.6: a message in the Inbox, and files dropped there (PDFs, audio, video and the like, up to 50 MB each).
     item.chat = !!item.chat;
     item.files = (Array.isArray(item.files) ? item.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
       .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data }));
@@ -2538,6 +2590,7 @@
     if (page === "tags") renderTagSettings();
     if (page === "appearance") renderDockSettings();
     if (page === "sync" && syncApi) syncApi.render();
+    if (page === "addons") renderAddons();
     if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
     try { localStorage.setItem(SETTINGS_PAGE_KEY, page); } catch {}
     if (push && settingsIsStacked()) {
@@ -3016,6 +3069,7 @@
     { key: "all", label: "All notes", icon: "note" },
     // Everything (notes and group entries) by date; opens its own pane.
     { key: "timeline", label: "Timeline", icon: "timeline" },
+    { key: "docs", label: "Documents", icon: "file", addon: "documents" },
     // Only listed while something is unread (or while you're looking at it).
     { key: "unread", label: "Unread", icon: "unread", hideWhenEmpty: true },
     { key: "reminders", label: "Reminders", icon: "bell", hideWhenEmpty: true },
@@ -3033,6 +3087,7 @@
     const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
     switch (key) {
       case "chat": return cache.filter((i) => i.chat && !i.deletedAt && !i.archivedAt && !i.vaulted).length;
+      case "docs": return allDocuments().length;
       case "all": return cache.filter(live).length;
       case "timeline": return cache.filter(live).length + (groupsApi ? groupsApi.timelineRows().length : 0);
       case "reminders": return cache.filter((i) => i.remindAt && live(i)).length + (groupsApi ? groupsApi.dueRows().length : 0);
@@ -3057,6 +3112,8 @@
       const chatOpen = !!(chatApi && chatApi.isOpen());
     const isActive = item.key === "timeline" ? tlOpen : item.key === "chat" ? chatOpen : currentView === item.key && !elsewhere && !chatOpen;
       if (item.hideWhenEmpty && !isActive && countForNav(item.key) === 0) continue;
+      if (item.key === "commands" && !addonOn("commands") && !isActive && countForNav("commands") === 0) continue;
+      if (item.addon && !addonOn(item.addon)) continue;
       const el = document.createElement("div");
       el.className = "nav-item" + (isActive ? " active" : "");
       el.title = item.label + " (" + countForNav(item.key) + ")";
@@ -3066,6 +3123,7 @@
       el.addEventListener("click", () => {
         if (item.key === "timeline") { openTimeline(); return; }
         if (item.key === "chat") { openChat(); return; }
+        if (item.key === "docs") { openDocuments(); return; }
         switchView(item.key);
       });
       nav.appendChild(el);
@@ -5101,7 +5159,9 @@
         sketchBtn.innerHTML = icon("pen") + "<span>Sketch</span>";
         sketchBtn.title = "Draw something";
         sketchBtn.addEventListener("click", () => addSketch(item));
-        editToolbar.append(sep, listBtn, voiceBtn, sketchBtn);
+        editToolbar.append(sep, listBtn);
+        if (addonOn("voice")) editToolbar.append(voiceBtn);
+        if (addonOn("sketch")) editToolbar.append(sketchBtn);
         // Formatting: a little Markdown, from buttons or typed; Preview shows it formatted.
         if (window.CPFormat) {
           const F = window.CPFormat;
@@ -6322,6 +6382,7 @@
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
     if (placeholderModal) { placeholderModal.remove(); return true; }
     if (document.getElementById("image-lightbox")) { closeImageLightbox(); return true; }
+    if (docsApi && docsApi.isOpen()) { docsApi.stepBack(); return true; }
     if (!settingsOverlay.classList.contains("hidden")) { settingsStepBack(); return true; }
     if (document.querySelector(".popover, .context-menu")) { closeAnyPopover(); return true; }
     if (groupsApi && groupsApi.stepBack()) return true;
@@ -6668,6 +6729,9 @@
       const here = groupsApi && groupsApi.snapContext();
       entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
     }
+    // Switched-off add-ons aren't offered.
+    const offKeys = { command: "commands", password: "passwords", voice: "voice", sketch: "sketch" };
+    for (let i = entries.length - 1; i >= 0; i--) if (offKeys[entries[i].key] && !addonOn(offKeys[entries[i].key])) entries.splice(i, 1);
     if (!inVault) entries.push({ key: "folder", label: "Folder", hint: "Keep items together", icon: "folder-plus", cls: "cm-folder", letter: "F", run: () => openFolderPopover(document.getElementById("new-btn"), null) });
     if (inVault) { const pw = entries.splice(3, 1)[0]; entries.unshift(pw); }
     return entries;
@@ -9602,7 +9666,7 @@
     renderNav();
     renderTabBar();
   }
-  const CHAT_FILE_MAX = 10 * 1024 * 1024;
+  const CHAT_FILE_MAX = 50 * 1024 * 1024;
   function readFileData(file) {
     return new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(typeof r.result === "string" ? r.result : null); r.onerror = () => resolve(null); r.readAsDataURL(file); });
   }
@@ -9680,6 +9744,38 @@
     });
   }
 
+  // Every file, wherever it lives: Inbox, notes and collections.
+  function allDocuments() {
+    const out = [];
+    for (const i of cache) {
+      if (i.deletedAt || i.vaulted || i._locked || !(i.files || []).length) continue;
+      const area = i.chat ? "Inbox" : "Notes";
+      const where = i.chat ? "Inbox" : (i.folderId && (folderCache.find((f) => f.id === i.folderId) || {}).name) || "Notes";
+      for (const f of i.files) out.push({ file: f, at: i.createdAt, area, where, goTo: () => (i.chat ? openChat() : openDetail(i.id)) });
+    }
+    if (groupsApi) {
+      const g = groupsApi.exportData();
+      for (const e of g.entries) {
+        if (e.deletedAt || !(e.files || []).length) continue;
+        const r = e.refs[0] || {};
+        const grp = g.groups.find((x) => x.id === r.g);
+        if (!grp) continue;
+        const sub = r.s ? grp.subs.find((x) => x.id === r.s) : null;
+        for (const f of e.files) out.push({ file: f, at: e.happenedOn, area: grp.name, where: grp.name + (sub ? " \u203a " + sub.name : ""), goTo: () => groupsApi.openEntry(e.id) });
+      }
+    }
+    return out;
+  }
+  function startDocs() {
+    if (!window.CPDocs) return;
+    docsApi = window.CPDocs.init({ icon, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav() });
+  }
+  function openDocuments() {
+    if (!docsApi) return;
+    closeSidebarOnMobile();
+    docsApi.open();
+  }
+
   function startChat() {
     if (!window.CPChat) return;
     try {
@@ -9714,7 +9810,7 @@
             const item = await chatAdd(fields);
             if (images.length && snapSeeOn()) addSnapGuess(item.id, images[0]);
           }
-          if (skipped) showToast(skipped === 1 ? "One file was skipped (over 10 MB, or a web page)" : skipped + " files were skipped (over 10 MB, or web pages)");
+          if (skipped) showToast(skipped === 1 ? "One file was skipped (over 50 MB, or a web page)" : skipped + " files were skipped (over 50 MB, or web pages)");
           renderNav();
           if (chatApi) chatApi.render();
         },
@@ -9729,6 +9825,8 @@
           if (chatApi) chatApi.render();
         },
         toast: (msg) => showToast(msg),
+        addon: (k) => addonOn(k),
+        pdfThumb: (f) => (docsApi && addonOn("documents") ? docsApi.thumb(f) : null),
         // Archive (or bring back) Inbox messages, with Undo.
         archive: async (list, on, { auto = false } = {}) => {
           if (!list.length) return;
@@ -9779,7 +9877,12 @@
     }
   }
   // Opens a file from the chat in a new tab, or downloads it where that isn't allowed.
+  // PDFs open in Stash's own viewer (Documents add-on); everything else in the phone's app.
   function openChatFile(f) {
+    if (docsApi && addonOn("documents") && docsApi.isPdf(f)) { docsApi.view(f); return; }
+    openFileOutside(f);
+  }
+  function openFileOutside(f) {
     try {
       const bin = atob(f.data.split(",")[1]);
       const bytes = new Uint8Array(bin.length);
@@ -9878,6 +9981,7 @@
       await refresh();
       await startGroups();
       startTimeline();
+      startDocs();
       startChat();
       startSync();
       renderNav();

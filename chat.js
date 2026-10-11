@@ -57,7 +57,7 @@
     plusMenu = h("div", { class: "cx-plus-menu", id: "cx-plus-menu", hidden: true, role: "menu" },
       h("button", { role: "menuitem", id: "cx-camera", onclick: () => { toggleMenu(false); api.camera(); } }, ic("camera"), h("span", null, "Camera", h("small", null, "Take a photo now"))),
       h("button", { role: "menuitem", id: "cx-gallery", onclick: () => { toggleMenu(false); pick("image/*", "library"); } }, ic("image"), h("span", null, "Gallery", h("small", null, "Photos you already have"))),
-      h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, documents, anything up to 10 MB"))));
+      h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, audio, video, anything up to 50 MB"))));
     input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
       oninput: () => grow(),
       onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); } } });
@@ -338,8 +338,14 @@
       b.append(h("div", { class: "cx-album" + (photos.length === 2 ? " two" : photos.length === 3 ? " three" : "") }, photos.slice(0, 4).map((p, i) => h("div", { class: "cx-album-cell" },
         h("img", { src: p, alt: "", loading: "lazy" }), i === 3 && photos.length > 4 ? h("span", { class: "cx-album-more" }, "+" + (photos.length - 4)) : null))));
     }
-    for (const f of n.files || []) b.append(h("div", { class: "cx-file" }, ic("file"), h("span", null, h("b", null, f.name), h("small", null, (f.type.split("/")[1] || "file").toUpperCase() + " · " + sizeOf(f.size))),
-      h("button", { class: "btn gp-small", "aria-label": "Open " + f.name, onclick: (e) => { e.stopPropagation(); api.openFile(f); } }, "Open")));
+    for (const f of n.files || []) {
+      const media = api.addon("media") && /^(audio|video)\//.test(f.type) ? player(f) : null;
+      if (media) { b.append(media); continue; }
+      const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name);
+      b.append(h("div", { class: "cx-file" + (isPdf ? " pdf" : ""), "data-file": f.name }, isPdf && api.pdfThumb ? api.pdfThumb(f) : ic("file"),
+        h("span", null, h("b", null, f.name), h("small", null, (f.type.split("/")[1] || "file").toUpperCase() + " · " + sizeOf(f.size))),
+        h("button", { class: "btn gp-small", "aria-label": "Open " + f.name, onclick: (e) => { e.stopPropagation(); api.openFile(f); } }, "Open")));
+    }
     // A file's name is its title; don't say it twice.
     const text = [n.title, n.content].filter((x) => x && x.trim() && !(n.files || []).some((f) => f.name === x.trim())).join("\n");
     if (text) b.append(h("div", { class: "cx-text" }, text));
@@ -375,6 +381,22 @@
       if (dx > 70) { held = true; api.forward([n], () => render()); }
     });
     return b;
+  }
+  // Audio and video play right in the message, with a speed button.
+  function player(f) {
+    const isVideo = /^video\//.test(f.type);
+    const el = h(isVideo ? "video" : "audio", { class: isVideo ? "cx-video" : "cx-audio", controls: true, preload: "metadata", playsinline: true, src: f.data });
+    const speeds = [1, 1.5, 2];
+    const speed = h("button", { class: "cx-speed", type: "button", "aria-label": "Playback speed", onclick: (e) => {
+      e.stopPropagation();
+      const next = speeds[(speeds.indexOf(el.playbackRate) + 1) % speeds.length] || 1;
+      el.playbackRate = next;
+      speed.textContent = next + "×";
+    } }, "1×");
+    const wrap = h("div", { class: "cx-media", "data-file": f.name, onclick: (e) => e.stopPropagation() }, el,
+      h("div", { class: "cx-media-row" }, h("small", null, f.name + " · " + sizeOf(f.size)), speed));
+    ["pointerdown", "touchstart"].forEach((ev) => wrap.addEventListener(ev, (e) => e.stopPropagation(), { passive: true }));
+    return wrap;
   }
   function toggle(id) {
     if (ui.picked.has(id)) ui.picked.delete(id); else ui.picked.add(id);

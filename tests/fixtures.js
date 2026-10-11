@@ -3,8 +3,30 @@
 const base = require("@playwright/test");
 const { expect } = base;
 
+const path = require("path");
+// Libraries the app loads from a CDN the first time they're needed, served from
+// node_modules instead (tests run offline).
+const CDN = [
+  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])]
+];
+async function routeCdn(page) {
+  await page.route(/^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//, (route) => {
+    const url = route.request().url();
+    for (const [re, file] of CDN) { const m = url.match(re); if (m) return route.fulfill({ path: file(m), contentType: "application/javascript" }); }
+    return route.abort();
+  });
+}
+// A one-page PDF that says "Hello Stash".
+function samplePdf(text = "Hello Stash") {
+  const stream = "BT /F1 18 Tf 20 100 Td (" + text + ") Tj ET";
+  return Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
+    "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n" +
+    "4 0 obj<</Length " + stream.length + ">>stream\n" + stream + "\nendstream endobj\n5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n");
+}
+
 const test = base.test.extend({
   page: async ({ page }, use) => {
+    await routeCdn(page);
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
     const errors = [];
@@ -78,4 +100,4 @@ const rowTexts = async (page) => page.locator(".item-row .item-text").allInnerTe
 const lastToast = (page) => page.locator(".toast-item").last();
 const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name });
 
-module.exports = { test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
+module.exports = { routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
