@@ -150,6 +150,7 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
   await page.fill("#gp-new-name", "Bike");
   await page.tap(".gp-sheet button:has-text('Create collection')");
   await page.tap("#gp-text");
+  await page.tap("#gp-c-page");
   await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
   await page.fill("#gp-page-name", "Fz V3");
   await page.tap("#gp-page-create");
@@ -315,6 +316,7 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   await page.locator(".gp-tpl", { hasText: "Food" }).first().tap();
   await page.tap(".gp-sheet button:has-text('Create collection')");
   await page.tap("#gp-text");
+  await page.tap("#gp-c-page");
   await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
   await page.fill("#gp-page-name", "Nimrah Cafe");
   await page.tap("#gp-page-create");

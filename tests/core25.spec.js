@@ -163,8 +163,9 @@ test("2FA in a Vault login: the code shows, copies, and the key is stored encryp
   await page.click("#otp-save");
   await expect(lastToast(page)).toContainText("2FA added");
   const shown = (await page.textContent("#login-otp .otp-code")).replace(" ", "");
-  const expected = await page.evaluate(async () => (await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" })).code);
-  expect(shown).toBe(expected);
+  // The code may have just rolled over to the next 30-second window.
+  const expected = await page.evaluate(async () => { const now = Date.now(); return [(await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" }, now)).code, (await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" }, now - 30000)).code]; });
+  expect(expected).toContain(shown);
   await page.click("#login-otp .otp");
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/^\d{6}$/);
   await page.waitForTimeout(900);

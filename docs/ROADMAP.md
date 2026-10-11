@@ -85,7 +85,7 @@ to be built in.
 
 ### 2.1 One way to do each thing
 - [x] One picker everywhere (based on "Sort this snap"): search at the top, Collection → Section → Who / Where, **+ New** at the end of every row (collection, section, person, place, tag).
-- [ ] Calm composer: one thin line of chips instead of four rows; tags only from that collection.
+- [x] Calm composer: one thin line of chips instead of four rows; tags only from that collection.
 
 ### 2.2 Layout
 - [ ] Collapsible sidebar on computers: full, icons only, hidden; remembered. Collapsible groups inside it (Collections, Folders, Tags).

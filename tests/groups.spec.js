@@ -21,6 +21,7 @@ async function createGroup(page, template, name) {
 
 async function addMainTag(page, name, info) {
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", name);
   await page.click("#gp-page-create");
@@ -40,7 +41,7 @@ async function addMainTag(page, name, info) {
 async function send(page, text, opts = {}) {
   await page.click("#gp-text");
   if (opts.type) await page.locator(".gp-extras .gp-mini", { hasText: opts.type }).click();
-  if (opts.date) await page.fill("#gp-date", opts.date);
+  if (opts.date) { await page.click("#gp-c-date"); await page.fill("#gp-date", opts.date); }
   if (opts.amount) {
     if (!(await page.locator("#gp-amount").count())) await page.click("#gp-b-amount");
     await page.fill("#gp-amount", String(opts.amount));
@@ -124,6 +125,7 @@ test("entries with no doctor are flagged once, and one tap assigns one", async (
   await createGroup(page, "Health");
   await addMainTag(page, "Dermatology");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('None')");
   await page.fill("#gp-text", "Blood test (CBC)");
   await page.click("#gp-send");

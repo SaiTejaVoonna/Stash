@@ -474,3 +474,15 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
 .gp-sort-new { display: flex; gap: 6px; align-items: center; flex-basis: 100%; }
 .gp-sort-new .gp-sort-new-input { flex: 1; min-width: 0; height: 34px; }
 #gp-sort-find { margin-bottom: 4px; }
+
+/* Calm composer: one line of chips; a chip opens its own row below */
+.gp-xrow.gp-chipline { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.gp-xrow.gp-chipline::-webkit-scrollbar { display: none; }
+.gp-chipline .gp-mini { flex: none; }
+.gp-chipsep { flex: none; width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+.gp-chip .gp-chip-caret { opacity: .55; margin-left: -2px; transition: transform .15s; }
+.gp-chip.open .gp-chip-caret { transform: rotate(180deg); }
+.gp-chip.open { box-shadow: inset 0 0 0 1px var(--accent); }
+.gp-open-row { animation: gp-row-in .14s ease-out; }
+@keyframes gp-row-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .gp-open-row { animation: none; } .gp-chip .gp-chip-caret { transition: none; } }

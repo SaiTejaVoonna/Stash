@@ -22,7 +22,7 @@
   let groups = [];
   let entries = [];
   let enabled = false;
-  const ui = { screen: null, g: null, s: "all", tag: null, spec: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, drafts: {} };
+  const ui = { screen: null, g: null, s: "all", tag: null, spec: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, chip: null, drafts: {} };
   let prefs = { lastSub: {}, lastTag: {}, snapDest: null, collapsed: [], sort: {} };
   const TRASH_DAYS = 30;
   // Each group remembers its own sort; a new group starts at Newest first.
@@ -908,34 +908,43 @@
     }
     if (d.extras || canSend(d)) {
       const ex = h("div", { class: "gp-extras" });
-      if (g.subs.length) {
-        const row = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Type"));
-        g.subs.forEach((s) => row.append(h("button", { class: "gp-mini" + (d.sub === s.id ? " active" : ""), style: "--c:" + s.color, onclick: () => { d.sub = s.id; renderComposerTop(); } }, ic(s.icon, "icon-sm"), s.label)));
-        ex.append(row);
-      }
-      if (g.mainLabel) {
+      // One calm line: the types, then a chip each for Who / Where, when, rating
+      // and tags. A chip opens its own row below; only one is open at a time.
+      const line = h("div", { class: "gp-xrow gp-chipline", id: "gp-chipline" });
+      g.subs.forEach((s) => line.append(h("button", { class: "gp-mini" + (d.sub === s.id ? " active" : ""), style: "--c:" + s.color, onclick: () => { d.sub = s.id; renderComposerTop(); } }, ic(s.icon, "icon-sm"), s.label)));
+      if (g.subs.length) line.append(h("span", { class: "gp-chipsep", "aria-hidden": "true" }));
+      const chip = (id, key, iconName, label, set) => line.append(h("button", { class: "gp-mini gp-chip" + (set ? " active" : "") + (ui.chip === key ? " open" : ""), id, "aria-expanded": String(ui.chip === key),
+        onclick: () => { ui.chip = ui.chip === key ? null : key; renderComposerTop(); } }, ic(iconName, "icon-sm"), label, ic("chevron-down", "icon-sm gp-chip-caret")));
+      const page = d.tag && g.mainTags.find((t) => t.id === d.tag);
+      if (g.mainLabel) chip("gp-c-page", "page", "user", page ? page.name : g.mainLabel, !!page);
+      chip("gp-c-date", "date", "calendar", d.date ? fmtDay(fromLocalInput(d.date) || Date.now()) : "Now", !!d.date);
+      if (g.fields.rating) chip("gp-c-rate", "rate", "star", d.rating ? d.rating + " \u2605" : "Rate", !!d.rating);
+      chip("gp-c-tags", "tags", "hash", d.tags.length ? d.tags.map((k) => "#" + tagLabel(k)).join(" ") : "Tag", d.tags.length);
+      ex.append(line);
+      if (ui.chip === "page" && g.mainLabel) {
         const sub = C.subOf(g, d.sub);
-        const row = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, g.mainLabel));
-        g.mainTags.forEach((t) => row.append(h("button", { class: "gp-mini" + (d.tag === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { d.tag = d.tag === t.id ? null : t.id; renderComposerTop(); } }, h("span", { class: "dot" }), t.name)));
-        row.append(h("button", { class: "gp-mini", onclick: () => newMainTag(g, (t) => { d.tag = t.id; renderComposerTop(); }) }, ic("plus", "icon-sm"), "New"));
+        const row = h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, g.mainLabel));
+        g.mainTags.forEach((t) => row.append(h("button", { class: "gp-mini" + (d.tag === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { d.tag = d.tag === t.id ? null : t.id; ui.chip = null; renderComposerTop(); } }, h("span", { class: "dot" }), t.name)));
+        row.append(h("button", { class: "gp-mini", onclick: () => newMainTag(g, (t) => { d.tag = t.id; ui.chip = null; renderComposerTop(); }) }, ic("plus", "icon-sm"), "New"));
         if (!(sub && sub.noTag) || d.tag) row.append(h("button", { class: "gp-mini" + (!d.tag ? " active" : ""), onclick: () => { d.tag = null; renderComposerTop(); } }, "None"));
         ex.append(row);
       }
-      const dateRow = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Happened"),
-        h("input", { type: "datetime-local", id: "gp-date", class: "gp-mini-input", value: d.date || toLocalInput(Date.now()), onchange: (e) => { d.date = e.target.value; } }),
-        d.date ? h("button", { class: "gp-mini", onclick: () => { d.date = ""; renderComposerTop(); } }, "Now") : null);
-      ex.append(dateRow);
-      if (g.fields.rating) {
+      if (ui.chip === "date") ex.append(h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, "Happened"),
+        h("input", { type: "datetime-local", id: "gp-date", class: "gp-mini-input", value: d.date || toLocalInput(Date.now()), onchange: (e) => { d.date = e.target.value; renderComposerTop(); } }),
+        d.date ? h("button", { class: "gp-mini", onclick: () => { d.date = ""; renderComposerTop(); } }, "Now") : null));
+      if (ui.chip === "rate" && g.fields.rating) {
         const rs = h("span", { class: "gp-rate" });
         for (let i = 1; i <= 5; i++) rs.append(h("button", { "aria-label": i + " stars", onclick: () => { d.rating = d.rating === i ? null : i; renderComposerTop(); } }, ic("star", i <= (d.rating || 0) ? "on" : "off")));
-        ex.append(h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Rating"), rs));
+        ex.append(h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, "Rating"), rs));
       }
-      // Tags: the ones picked, a few recent ones, and "Tag" to find or create any.
-      {
-        const row = h("div", { class: "gp-xrow", id: "gp-tags-row" }, h("span", { class: "gp-lbl" }, "Tags"));
-        const recent = api.tags().filter((t) => !d.tags.includes(t.key)).slice(0, 4);
+      // Tags: the ones picked, then the ones this collection already uses, and "Tag" to find or create any.
+      if (ui.chip === "tags") {
+        const row = h("div", { class: "gp-xrow gp-open-row", id: "gp-tags-row" }, h("span", { class: "gp-lbl" }, "Tags"));
+        const used = new Map();
+        for (const e of C.inGroup(entries, g.id)) for (const k of e.tags) used.set(k, (used.get(k) || 0) + 1);
+        const recent = [...used.keys()].filter((k) => !d.tags.includes(k)).sort((a, b) => used.get(b) - used.get(a)).slice(0, 6);
         d.tags.forEach((k) => row.append(h("button", { class: "gp-mini active", "data-tag": k, "aria-label": "Remove tag " + tagLabel(k), onclick: () => { d.tags = d.tags.filter((x) => x !== k); renderComposerTop(); } }, "#" + tagLabel(k), ic("close", "icon-sm"))));
-        recent.forEach((t) => row.append(h("button", { class: "gp-mini", "data-tag": t.key, onclick: () => { d.tags = [...d.tags, t.key].slice(0, 20); renderComposerTop(); } }, "#" + t.name)));
+        recent.forEach((k) => row.append(h("button", { class: "gp-mini", "data-tag": k, onclick: () => { d.tags = [...d.tags, k].slice(0, 20); renderComposerTop(); } }, "#" + tagLabel(k))));
         row.append(h("button", { class: "gp-mini", id: "gp-tag-more", onclick: () => pickTags(d, () => renderComposerTop(), { draft: true }) }, ic("plus", "icon-sm"), "Tag"));
         ex.append(row);
       }
@@ -1000,6 +1009,7 @@
     changed();
     prefs.lastSub[g.id] = d.sub || null; prefs.lastTag[g.id] = d.tag || null; savePrefs();
     ui.drafts[g.id] = null;
+    ui.chip = null;
     const fresh = draftFor(g); fresh.extras = true;
     if (ui.tag && ui.tag !== (d.tag || "__none")) ui.tag = null;
     if (ui.q) ui.q = "";

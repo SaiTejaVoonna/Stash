@@ -60,17 +60,20 @@ test("group message bar: pick tags and a rating, new names get capitals, a photo
   await createGroup(page, "Food");
   await page.click("#gp-text");
   // New place typed in small letters.
+  await page.click("#gp-c-page");
   await page.locator(".gp-extras .gp-mini", { hasText: "New" }).first().click();
   await page.fill("#gp-page-name", "roadside bbq");
   await page.click("#gp-page-create");
   await expect(page.locator(".gp-extras .gp-mini.active", { hasText: "Roadside Bbq" })).toBeVisible();
   // Tags: create one from the Tag sheet.
+  await page.click("#gp-c-tags");
   await page.click("#gp-tag-more");
   await page.fill("#gp-tag-find", "Street food");
   await page.click("#gp-tag-create");
   await page.locator(".gp-sheet .gp-sheet-head button[aria-label='Close']").last().click();
   await expect(page.locator("#gp-tags-row .gp-mini.active")).toContainText("#Street food");
   // Rating has its own row, all five stars visible.
+  await page.click("#gp-c-rate");
   const stars = page.locator(".gp-extras .gp-rate button");
   await expect(stars).toHaveCount(5);
   await expect(stars.nth(4)).toBeInViewport();
@@ -504,6 +507,7 @@ test("Color: only the picked swatch is ticked, any color works, and Glass can be
 test("a vehicle page works out the last fill-up: km since, cost per km and mileage; services don't count", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
@@ -536,6 +540,7 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).click();
   await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
@@ -554,14 +559,16 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
 test("the collection's + menu closes with a tap outside; an open page is picked for the next entry", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
   // Draft picks None, then the Fz V3 page is opened: Fz V3 is picked again.
+  await page.click("#gp-c-page");
   await page.locator(".gp-extras .gp-xrow", { hasText: "Vehicle" }).locator(".gp-mini", { hasText: "None" }).click();
   await page.locator(".gp-person", { hasText: "Fz V3" }).click();
   await page.click("#gp-text");
-  await expect(page.locator(".gp-extras .gp-xrow", { hasText: "Vehicle" }).locator(".gp-mini.active")).toContainText("Fz V3");
+  await expect(page.locator("#gp-c-page.active")).toContainText("Fz V3");
   await page.click("#gp-b-plus");
   await expect(page.locator(".gp-plus-menu")).toBeVisible();
   await page.mouse.click(5, 300);
@@ -571,6 +578,7 @@ test("the collection's + menu closes with a tap outside; an open page is picked 
 test("@fzv3 on a snap picks that vehicle's page when sorting", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
