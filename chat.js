@@ -41,10 +41,10 @@
   const sizeOf = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
 
   function build() {
-    pane = h("section", { id: "chat-pane", hidden: true, "aria-label": "Me" });
+    pane = h("section", { id: "chat-pane", hidden: true, "aria-label": "Inbox" });
     const head = h("div", { class: "cx-head" },
       h("button", { class: "btn icon ghost cx-menu", "aria-label": "Menu", onclick: () => api.openSidebarDrawer() }, ic("menu", "icon-lg")),
-      h("div", { class: "cx-title" }, h("b", null, "Me"), h("small", null, "Drop anything. Sort it later.")),
+      h("div", { class: "cx-title" }, h("b", null, "Inbox"), h("small", null, "Drop anything. Sort it later.")),
       h("button", { class: "btn gp-small cx-select", id: "cx-select", onclick: () => setSelecting(!ui.selecting) }, "Select"));
     bodyEl = h("div", { class: "cx-body", id: "cx-body" });
     selBar = h("div", { class: "cx-selbar", id: "cx-selbar", hidden: true });
@@ -52,7 +52,7 @@
       h("button", { role: "menuitem", id: "cx-camera", onclick: () => { toggleMenu(false); api.camera(); } }, ic("camera"), h("span", null, "Camera", h("small", null, "Take a photo now"))),
       h("button", { role: "menuitem", id: "cx-gallery", onclick: () => { toggleMenu(false); pick("image/*", "library"); } }, ic("image"), h("span", null, "Gallery", h("small", null, "Photos you already have"))),
       h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, documents, anything up to 10 MB"))));
-    input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Message yourself…", "aria-label": "Message",
+    input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
       oninput: () => grow(),
       onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); } } });
     barEl = h("div", { class: "cx-bar" },
@@ -127,7 +127,7 @@
     ui.captionFor = id;
     const n = id && api.items().find((x) => x.id === id);
     capBar.hidden = !n;
-    input.placeholder = n ? "Add a caption to this photo…" : "Message yourself…";
+    input.placeholder = n ? "Add a caption to this photo…" : "Add to Inbox…";
     if (!n) { capBar.replaceChildren(); return; }
     capBar.replaceChildren(
       n.images && n.images[0] ? h("img", { src: n.images[0], alt: "" }) : ic("camera"),
@@ -273,7 +273,7 @@
       h("span", { class: "cx-count" }, n ? n + " selected" : "Tap messages to pick them"),
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),
-      h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Forward"));
+      h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Move to…"));
   }
   function render() {
     if (!pane) return;
@@ -284,8 +284,8 @@
     bodyEl.replaceChildren();
     if (!items.length) {
       bodyEl.append(h("div", { class: "cx-empty" }, ic("chat"), h("b", null, "Your own chat"),
-        h("p", null, "Drop a thought, a photo, a bill or a PDF here, like messaging yourself. It's saved at once with when and where. Later, select messages and Forward them into a space."),
-        h("p", { class: "cx-tip" }, "Tip: write @name (like @fzv3) and Forward picks that page for you.")));
+        h("p", null, "Drop a thought, a photo, a bill or a PDF here, like messaging yourself. It's saved at once with when and where. Later, select messages and Move them into a collection."),
+        h("p", { class: "cx-tip" }, "Tip: write @name (like @fzv3) and Move picks it for you.")));
       return;
     }
     let lastDay = "";

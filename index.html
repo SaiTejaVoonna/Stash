@@ -1552,8 +1552,8 @@
       <div id="groups-section" hidden>
         <div class="sidebar-divider"></div>
         <div class="sidebar-section-header" data-section="groups">
-          <span class="section-title-click">Spaces<span class="section-chevron"><svg class="icon"><use href="#icon-chevron-down"></use></svg></span></span>
-          <button id="groups-add-btn" class="section-add-btn" title="New space" aria-label="New space"><svg class="icon"><use href="#icon-plus"></use></svg></button>
+          <span class="section-title-click">Collections<span class="section-chevron"><svg class="icon"><use href="#icon-chevron-down"></use></svg></span></span>
+          <button id="groups-add-btn" class="section-add-btn" title="New collection" aria-label="New collection"><svg class="icon"><use href="#icon-plus"></use></svg></button>
         </div>
         <div id="groups-list"></div>
       </div>
@@ -1638,7 +1638,7 @@
         <button class="settings-nav-item" data-page="appearance"><span class="sn-icon" style="background:#5b8cff"><svg class="icon"><use href="#icon-palette"></use></svg></span>Appearance<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="profiles"><span class="sn-icon" style="background:#34c759"><svg class="icon"><use href="#icon-users"></use></svg></span>Profiles<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="vault"><span class="sn-icon" style="background:#14b8a6"><svg class="icon"><use href="#icon-vault"></use></svg></span>Vault<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Spaces<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Collections<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
@@ -1685,7 +1685,7 @@
 
         <section class="settings-page" data-page="profiles" id="profile-settings">
           <h2 class="settings-page-title">Profiles</h2>
-          <p class="settings-page-lead">Each profile has its own notes, spaces, folders, tags and Vault — for example Personal, Work or Family. Theme and paste clean-up are shared on this device.</p>
+          <p class="settings-page-lead">Each profile has its own notes, collections, folders, tags and Vault — for example Personal, Work or Family. Theme and paste clean-up are shared on this device.</p>
           <div class="settings-section">
             <div class="settings-group" id="profile-list"></div>
             <div class="settings-row-actions"><button id="new-profile-btn" type="button">+ New profile</button></div>
@@ -1699,14 +1699,14 @@
         </section>
 
         <section class="settings-page" data-page="groups" id="groups-settings">
-          <h2 class="settings-page-title">Spaces</h2>
+          <h2 class="settings-page-title">Collections</h2>
           <p class="settings-page-lead">Timelines for one topic each, like Health, Food or Trips. Separate from your notes.</p>
           <div id="groups-settings-body"></div>
         </section>
 
         <section class="settings-page" data-page="tags" id="tags-settings">
           <h2 class="settings-page-title">Tags</h2>
-          <p class="settings-page-lead">One set of tags for notes and spaces. Rename, recolor, merge look-alikes and clear out unused ones.</p>
+          <p class="settings-page-lead">One set of tags for notes and collections. Rename, recolor, merge look-alikes and clear out unused ones.</p>
           <div id="tags-settings-body"></div>
         </section>
 
@@ -1735,7 +1735,7 @@
             <div class="settings-line"><span>Restore<small>Add items from a .cps backup. Nothing is overwritten.</small></span><button id="import-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Import</button></div>
             <label class="settings-line"><span>Location on snaps<small>Saves where a snap was taken, on this device only. It's added after the photo is saved and never holds it up.</small></span><input type="checkbox" id="snap-location"></label>
             <label class="settings-line"><span>Guess what a snap shows<small>Works it out on this device: the photo never leaves your phone. The first time, a small model (about 7 MB) is downloaded and kept. The guess is only a suggestion.</small></span><input type="checkbox" id="snap-see"></label>
-            <div class="settings-line"><label for="backup-remind">Remind me to back up<small>A gentle note at the top of your Inbox.</small></label>
+            <div class="settings-line"><label for="backup-remind">Remind me to back up<small>A gentle note at the top of All notes.</small></label>
               <select id="backup-remind" class="settings-inline-select"><option value="7">Every week</option><option value="14">Every 2 weeks</option><option value="30">Every month</option><option value="0">Never</option></select></div>
           </div>
           <div class="settings-section">
@@ -1747,7 +1747,7 @@
 
         <section class="settings-page" data-page="sync" id="sync-settings">
           <h2 class="settings-page-title">Sync</h2>
-          <p class="settings-page-lead">Keep your phones and computers in step through your own Google Drive. It also writes a readable file for each space, so an AI you connect to your Drive can read them.</p>
+          <p class="settings-page-lead">Keep your phones and computers in step through your own Google Drive. It also writes a readable file for each collection, so an AI you connect to your Drive can read them.</p>
           <div id="sync-box"></div>
         </section>
 
@@ -3010,8 +3010,8 @@
   // ---------- Nav ----------
 
   const NAV_ITEMS = [
-    { key: "chat", label: "Me", icon: "chat" },
-    { key: "all", label: "Inbox", icon: "inbox" },
+    { key: "chat", label: "Inbox", icon: "inbox" },
+    { key: "all", label: "All notes", icon: "note" },
     // Everything (notes and group entries) by date; opens its own pane.
     { key: "timeline", label: "Timeline", icon: "timeline" },
     // Only listed while something is unread (or while you're looking at it).
@@ -3098,9 +3098,9 @@
   // The phone dock: three tabs you pick, plus New in the middle and More at the end.
   const DOCK_KEY = "copypaster-dock";
   const DOCK_CHOICES = [
-    { key: "chat", label: "Me", icon: "chat" },
-    { key: "all", label: "Inbox", icon: "inbox" },
-    { key: "groups", label: "Spaces", icon: "layers", needsGroups: true },
+    { key: "chat", label: "Inbox", icon: "inbox" },
+    { key: "all", label: "All notes", icon: "note" },
+    { key: "groups", label: "Collections", icon: "layers", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
     { key: "saved", label: "Favorites", icon: "star" },
@@ -3471,7 +3471,7 @@
   }
 
   async function deleteTag(tagId) {
-    if (!confirm("Delete this tag? It will be removed from all notes and space entries.")) return;
+    if (!confirm("Delete this tag? It will be removed from all notes and collection entries.")) return;
     for (const item of cache) {
       if (item.tags.includes(tagId)) {
         item.tags = item.tags.filter((x) => x !== tagId);
@@ -4029,7 +4029,7 @@
       { label: item.vaulted ? "Move out of Vault" : "Move to Vault", run: () => (item.vaulted ? moveOutOfVault(item) : moveToVault(item)) },
       ...(item.vaulted ? [] : [{ label: "Move to folder\u2026", run: () => openFolderSheet(item) }]),
       ...(!item.vaulted && item.type !== "password" && groupsApi && groupsApi.enabled() && groupsApi.hasGroups()
-        ? [{ label: "Move to space\u2026", icon: "layers", run: () => groupsApi.moveNoteToGroup(item) }] : []),
+        ? [{ label: "Move to collection\u2026", icon: "layers", run: () => groupsApi.moveNoteToGroup(item) }] : []),
       { label: "Select\u2026", run: () => {
         if (!selectMode) document.getElementById("select-mode-btn").click();
         selectedIds.add(item.id);
@@ -4376,7 +4376,7 @@
         b.type = "button";
         b.className = "tl-group-banner";
         b.innerHTML = icon("layers") + "<span></span>" + icon("chevron-right", "icon-sm");
-        b.querySelector("span").textContent = (more === 1 ? "1 space entry" : more + " space entries") + " also tagged #" + tg.name + ". See everything in Timeline";
+        b.querySelector("span").textContent = (more === 1 ? "1 collection entry" : more + " collection entries") + " also tagged #" + tg.name + ". See everything in Timeline";
         b.addEventListener("click", () => openTimeline({ q: "#" + tagKey(tg.name) }));
         itemsEl.appendChild(b);
       }
@@ -6035,7 +6035,7 @@
     box.className = "due-box";
     const h = document.createElement("div");
     h.className = "due-head";
-    h.textContent = "Dates from your spaces";
+    h.textContent = "Dates from your collections";
     box.appendChild(h);
     for (const d of rows) {
       const b = document.createElement("button");
@@ -6133,7 +6133,7 @@
     if (state === "working") text.textContent = "Working out what this is\u2026 The first time, a small model is downloaded (about 7 MB).";
     else if (item.suggest) {
       text.textContent = window.CPSee.describe(item.suggest) + (item.suggest.confirmed ? " \u00b7 set by you" : " \u00b7 a guess made on this phone");
-      if (item.captured && groupsApi) btn("Sort into a space", "see-sort", () => sortSnapById(item.id), true);
+      if (item.captured && groupsApi) btn("Sort into a collection", "see-sort", () => sortSnapById(item.id), true);
       btn(item.suggest.confirmed ? "Change" : "Not right?", "see-fix", () => { picks.hidden = !picks.hidden; });
     } else if (state === "failed") {
       text.textContent = "Couldn't load the photo model. It needs the internet the first time.";
@@ -6585,7 +6585,7 @@
     if (progress) progress.close();
     renderAllViews();
     showToast("Imported " + addedItems + " items" + (addedTags || addedFolders ? " (+tags/folders)" : "") + (addedItems ? " \u2014 new ones are marked unread" : "") +
-      (addedGroups.groups || addedGroups.entries ? " \u00b7 " + addedGroups.groups + " spaces, " + addedGroups.entries + " space entries" : "") +
+      (addedGroups.groups || addedGroups.entries ? " \u00b7 " + addedGroups.groups + " collections, " + addedGroups.entries + " collection entries" : "") +
       (vaultImport.skipped ? " \u00b7 " + vaultImport.skipped + " Vault items skipped" : ""));
   }
 
@@ -6607,7 +6607,7 @@
       { key: "sketch", label: "Sketch", hint: "Draw with your finger or mouse", icon: "pen", cls: "cm-command", letter: "S", run: () => newNoteWith("sketch") }
     ];
     if (!inVault && groupsApi && groupsApi.enabled()) {
-      entries.push({ key: "entry", label: "Space entry", hint: groupsApi.hasGroups() ? "Into a space's timeline" : "Make your first space", icon: "layers", cls: "cm-folder", letter: "G", run: () => { closeTimeline(); groupsApi.openComposer(); } });
+      entries.push({ key: "entry", label: "Collection entry", hint: groupsApi.hasGroups() ? "Into a collection's timeline" : "Make your first collection", icon: "layers", cls: "cm-folder", letter: "G", run: () => { closeTimeline(); groupsApi.openComposer(); } });
     }
     if (!inVault) {
       const here = groupsApi && groupsApi.snapContext();
@@ -7605,7 +7605,7 @@
     if (!open) return [];
     return itemQuickActions(open).filter((a) => a.label !== "Open" && !a.label.startsWith("Select")).map((a) => ({ label: a.label, icon: actionIcon(a.label) || "chevron-right", run: a.run }));
   }
-  const ACTION_ICONS = [["copy", "copy"], ["favorite", "star"], ["pin", "pin"], ["archive", "archive"], ["vault", "vault"], ["folder", "folder"], ["to space", "layers"],
+  const ACTION_ICONS = [["copy", "copy"], ["favorite", "star"], ["pin", "pin"], ["archive", "archive"], ["vault", "vault"], ["folder", "folder"], ["to collection", "layers"],
     ["trash", "trash"], ["delete", "trash"], ["read", "mail"], ["restore", "undo"], ["select", "check-box"], ["open", "chevron-right"]];
   function actionIcon(label) {
     const l = label.toLowerCase();
@@ -7678,7 +7678,7 @@
         }
       };
       group("Items", items);
-      if (q && mode !== "item" && groupsApi) group("In spaces", groupsApi.paletteItems(q));
+      if (q && mode !== "item" && groupsApi) group("In collections", groupsApi.paletteItems(q));
       group(mode === "item" ? "This item" : "Actions", actions);
       if (!rows.length) results.innerHTML = '<div class="palette-empty">No matching items or actions</div>';
       active = 0;
@@ -8009,13 +8009,13 @@
   // ---------- What's new: shown once after an update ----------
   const SEEN_VERSION_KEY = "copypaster-seen-version";
   const WHATS_NEW = [
-    ["cloud", "Sync your devices through your Google Drive", "Settings \u2192 Sync: what you add on your phone shows up on your laptop and back. It goes to your own Drive, with a readable file per space that an AI you connect to your Drive can read."],
+    ["cloud", "Sync your devices through your Google Drive", "Settings \u2192 Sync: what you add on your phone shows up on your laptop and back. It goes to your own Drive, with a readable file per collection that an AI you connect to your Drive can read."],
     ["sparkle", "CopyPaster is now Stash", "Capture today. Find it tomorrow. New name and icon, same app; everything you saved is still here."],
-    ["layers", "Groups are now Spaces", "Same data, new name: Health, Food, Trips… Personal and Work are still your Profiles."],
-    ["chat", "Me: message yourself", "Drop text, photos and files like a chat with yourself. Saved at once with when and where. Select messages and Forward them into a space."],
-    ["camera", "Snap in the middle", "Tap the middle of the dock to snap a photo straight into Me. Hold it for the New menu."],
+    ["layers", "Spaces are now Collections, sub-chats are Sections", "Same data, clearer words: Health › Prescriptions, Food › Cafes. Personal and Work are still your Profiles."],
+    ["chat", "Inbox: drop anything", "Text, photos and files, like messaging yourself, with a caption. Saved at once with when and where. Select messages and Move them into a collection."],
+    ["camera", "Snap in the middle", "Tap the middle of the dock to snap a photo straight into your Inbox. Hold it for the New menu."],
     ["sparkle", "It guesses what you snapped", "\u201cLooks like food\u201d, worked out on your phone. The photo never leaves it. Only a suggestion."],
-    ["users", "People, places and things", "Doctors, cafes and bikes get their own page inside a space, with their visits and totals."],
+    ["users", "People, places and things", "Doctors, cafes and bikes get their own page inside a collection, with their visits and totals."],
     ["eye-off", "Hide with filters", "Tap a filter twice to hide it, like everything except Notes. Pick your own dates."],
     ["menu", "Your dock", "Choose the tabs you want in Settings \u2192 Appearance."]
   ];
@@ -9107,7 +9107,7 @@
       const p = document.createElement("div");
       p.className = "settings-hint";
       p.style.padding = "12px";
-      p.textContent = "No tags yet. Add one from a note's Organise panel, or type #word when sending to a space.";
+      p.textContent = "No tags yet. Add one from a note's Organise panel, or type #word when sending to a collection.";
       g.appendChild(p);
       return;
     }
@@ -9124,7 +9124,7 @@
         g.appendChild(row);
       });
     }
-    const g = section("Your tags", list.length + (list.length === 1 ? " tag" : " tags") + ". Counts include notes and space entries.");
+    const g = section("Your tags", list.length + (list.length === 1 ? " tag" : " tags") + ". Counts include notes and collection entries.");
     const wrap = document.createElement("div");
     wrap.className = "tagm-list";
     list.forEach((t) => {
@@ -9138,7 +9138,7 @@
       name.className = "tagm-name";
       name.innerHTML = "<b></b><small></small>";
       name.firstChild.textContent = t.name;
-      name.lastChild.textContent = !t.count ? "Not used" : [t.notes ? t.notes + (t.notes === 1 ? " note" : " notes") : "", t.entries ? t.entries + (t.entries === 1 ? " space entry" : " space entries") : ""].filter(Boolean).join(" · ");
+      name.lastChild.textContent = !t.count ? "Not used" : [t.notes ? t.notes + (t.notes === 1 ? " note" : " notes") : "", t.entries ? t.entries + (t.entries === 1 ? " collection entry" : " collection entries") : ""].filter(Boolean).join(" · ");
       row.appendChild(name);
       if (t.count) row.appendChild(small("Show", () => { closeSettings(); openTag(t.key); }));
       if (rec) row.appendChild(small("Edit", (e) => openTagPopover(e.currentTarget, rec)));
@@ -9253,7 +9253,7 @@
     bar.className = "storage-bar";
     const legend = document.createElement("div");
     legend.className = "storage-legend";
-    [["photos", "Photos and sketches", "var(--image)"], ["audio", "Voice notes", "var(--command)"], ["groups", "Spaces", "var(--accent)"], ["text", "Text", "var(--note)"], ["vault", "Vault (locked)", "var(--password)"]].forEach(([k, label, color]) => {
+    [["photos", "Photos and sketches", "var(--image)"], ["audio", "Voice notes", "var(--command)"], ["groups", "Collections", "var(--accent)"], ["text", "Text", "var(--note)"], ["vault", "Vault (locked)", "var(--password)"]].forEach(([k, label, color]) => {
       if (!parts[k]) return;
       const seg = document.createElement("i");
       seg.style.width = (100 * parts[k] / total) + "%";
@@ -9268,7 +9268,7 @@
     const tip = document.createElement("div");
     tip.className = "settings-hint";
     tip.style.marginTop = "6px";
-    tip.textContent = quota && usage / quota > 0.8 ? "Getting full. Export a backup, then delete old photos or voice notes." : "Photos are kept as they were added; space photos are shrunk to 1600 px.";
+    tip.textContent = quota && usage / quota > 0.8 ? "Getting full. Export a backup, then delete old photos or voice notes." : "Photos are kept as they were added; collection photos are shrunk to 1600 px.";
     box.append(line, bar, legend, tip);
   }
   renderBackupInfo();
@@ -9324,7 +9324,7 @@
     openDialog({
       title: "New profile",
       iconName: "user",
-      text: "A separate profile with its own notes, spaces, folders, tags and Vault. You can switch any time from the top of the sidebar.",
+      text: "A separate profile with its own notes, collections, folders, tags and Vault. You can switch any time from the top of the sidebar.",
       fields: [{ name: "name", label: "Name", placeholder: "Work, Personal, Alex…" }],
       submitLabel: "Create and switch",
       onSubmit: async ({ name }) => {
@@ -9366,7 +9366,7 @@
     openDialog({
       title: "Delete “" + profile.name + "”?",
       iconName: "user",
-      text: "Everything in this profile is deleted from this device forever: notes, spaces, folders, tags and its Vault. Export a backup first if you might want it. Type the profile's name to confirm.",
+      text: "Everything in this profile is deleted from this device forever: notes, collections, folders, tags and its Vault. Export a backup first if you might want it. Type the profile's name to confirm.",
       fields: [{ name: "confirm", label: "Type " + profile.name }],
       submitLabel: "Delete forever",
       danger: true,

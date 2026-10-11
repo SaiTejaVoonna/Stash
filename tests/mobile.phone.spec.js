@@ -135,8 +135,8 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
   await expect(page.locator("#profile-name")).toHaveText("Work");
 });
 
-test("the dock: Me, Spaces, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Me", "Spaces", "Snap", "Search", "More"]);
+test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "More"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -144,8 +144,8 @@ test("the dock: Me, Spaces, Snap, Search, More; New is the + at the top; no seco
   await expect(page.locator('.tab-btn[data-tab="search"]')).toHaveClass(/active/);
   // Inbox is under More now (Me took its place in the dock).
   await page.tap('.tab-btn[data-tab="more"]');
-  await page.locator("#sidebar .nav-item", { hasText: "Inbox" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Inbox");
+  await page.locator("#sidebar .nav-item", { hasText: "All notes" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("All notes");
   await page.tap('.tab-btn[data-tab="chat"]');
   await expect(page.locator("#chat-pane")).toBeVisible();
   await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);

@@ -77,7 +77,7 @@ async function openSync(page) {
 
 test.beforeEach(async ({ page }) => { await openApp(page); await fakeDrive(page); });
 
-test("connect writes a readable file per space, notes, Me and a backup; unchanged files aren't sent again", async ({ page }) => {
+test("connect writes a readable file per collection, notes, Me and a backup; unchanged files aren't sent again", async ({ page }) => {
   await newNote(page, "Gate code is 4521", { title: "Flat" });
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="sync"]');
@@ -105,12 +105,12 @@ test("connect writes a readable file per space, notes, Me and a backup; unchange
   expect(await uploads(page)).toBe(before);
 });
 
-test("spaces become files; a space or notes left out are moved to Drive's bin", async ({ page }) => {
+test("collections become files; a collection or notes left out are moved to Drive's bin", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("copypaster-sync", JSON.stringify({ clientId: "123-test.apps.googleusercontent.com", on: true, token: "tok", exp: Date.now() + 3600e3 })));
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).first().click();
   await page.fill("#gp-new-name", "My bike");
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText("My bike");
   await openSync(page);
   await page.click("#sync-now");
@@ -131,7 +131,7 @@ test("spaces become files; a space or notes left out are moved to Drive's bin", 
   await expect.poll(() => driveFiles(page)).not.toContain("Notes.md");
 });
 
-test("Markdown for a space: pages with their details, sub-chats, amounts and fuel maths", async ({ page }) => {
+test("Markdown for a space: pages with their details, sections, amounts and fuel maths", async ({ page }) => {
   const md = await page.evaluate(() => {
     const C = window.CPGroupsCore;
     const g = C.groupFromTemplate(C.TEMPLATES.find((t) => t.key === "bike"), "Bike");
@@ -218,7 +218,7 @@ test("merge: who changed what decides; deletes travel as tombstones; a missing r
   expect(r).toEqual({ theirs: true, mine: true, newer: true, tomb: true, del: true, kept: true, resend: true, held: true });
 });
 
-test("two devices: a note and a space made on one show up on the other, and edits flow back", async ({ page, browser }) => {
+test("two devices: a note and a collection made on one show up on the other, and edits flow back", async ({ page, browser }) => {
   // Device A.
   await page.evaluate(ON);
   await newNote(page, "milk and eggs", { title: "From A" });
@@ -246,7 +246,7 @@ test("two devices: a note and a space made on one show up on the other, and edit
   await b.click("#groups-add-btn");
   await b.locator(".gp-tpl", { hasText: "Vehicles" }).first().click();
   await b.fill("#gp-new-name", "Scooter");
-  await b.click(".gp-sheet button:has-text('Create space')");
+  await b.click(".gp-sheet button:has-text('Create collection')");
   await expect(b.locator(".gp-id h1")).toContainText("Scooter");
   await b.evaluate(() => document.getElementById("settings-btn").click());
   await b.click('.settings-nav-item[data-page="sync"]');

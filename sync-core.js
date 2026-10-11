@@ -131,7 +131,7 @@
 
   const README = () => ["# Stash", "",
     "A readable copy of your Stash, written by the Stash app. It's updated each time Stash syncs.", "",
-    "- One file per space, plus Notes and Me (your chat with yourself).",
+    "- One file per collection, plus Notes and Inbox.",
     "- Photos and files are only counted here; the backup file has everything.",
     "- Vault items are never written here.",
     "- Changes made to these files don't go back into Stash: the app overwrites them on the next sync.", ""].join("\n");

@@ -406,7 +406,7 @@
     list.replaceChildren();
     if (!enabled) return;
     if (!groups.length) {
-      list.append(h("div", { class: "nav-item gp-nav-new", onclick: () => openNewGroup() }, h("span", { class: "nav-label" }, h("span", { class: "nav-icon" }, ic("plus")), h("span", { class: "nav-text" }, "New space"))));
+      list.append(h("div", { class: "nav-item gp-nav-new", onclick: () => openNewGroup() }, h("span", { class: "nav-label" }, h("span", { class: "nav-icon" }, ic("plus")), h("span", { class: "nav-text" }, "New collection"))));
       return;
     }
     for (const g of groups) {
@@ -414,7 +414,7 @@
       const activeAll = ui.screen === "group" && ui.g === g.id && ui.s === "all";
       const row = h("div", { class: "nav-item gp-nav-group" + (activeAll ? " active" : ""), title: g.name, onclick: () => { if (collapsed) toggleCollapsed(g.id); openGroup(g.id, "all"); } },
         h("span", { class: "nav-label" },
-          g.subs.length ? h("span", { class: "gp-twisty" + (collapsed ? " collapsed" : ""), role: "button", "aria-label": collapsed ? "Show sub-chats" : "Hide sub-chats", onclick: (e) => { e.stopPropagation(); toggleCollapsed(g.id); } }, ic("chevron-down")) : h("span", { class: "gp-twisty blank" }),
+          g.subs.length ? h("span", { class: "gp-twisty" + (collapsed ? " collapsed" : ""), role: "button", "aria-label": collapsed ? "Show sections" : "Hide sections", onclick: (e) => { e.stopPropagation(); toggleCollapsed(g.id); } }, ic("chevron-down")) : h("span", { class: "gp-twisty blank" }),
           groupTile(g, "sm"), h("span", { class: "nav-text" }, g.name)),
         h("span", { class: "count" }, C.inGroup(entries, g.id).length));
       list.append(row);
@@ -448,14 +448,14 @@
   }
 
   function renderHome() {
-    headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Spaces"),
-      h("button", { class: "btn icon ghost", "aria-label": "New space", title: "New space", onclick: () => openNewGroup() }, ic("plus"))));
+    headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
+      h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
     const wrap = h("div", { class: "gp-home" });
     if (!groups.length) {
       wrap.append(h("div", { class: "gp-empty" }, h("span", { class: "gp-tile big", style: "--c:var(--accent)" }, ic("layers")),
         h("h3", null, "A timeline for each part of your life"),
         h("p", null, "Doctor visits, food you loved, trips, your bike, shows you watch. Drop things in, and they sort themselves by date."),
-        h("button", { class: "btn primary", onclick: () => openNewGroup() }, ic("plus"), "New space")));
+        h("button", { class: "btn primary", onclick: () => openNewGroup() }, ic("plus"), "New collection")));
     }
     for (const g of groups) {
       const cnt = C.counts(entries, g, "all");
@@ -472,19 +472,19 @@
       }
       wrap.append(card);
     }
-    if (groups.length) wrap.append(h("button", { class: "btn gp-wide", onclick: () => openNewGroup() }, ic("plus"), "New space"));
+    if (groups.length) wrap.append(h("button", { class: "btn gp-wide", onclick: () => openNewGroup() }, ic("plus"), "New collection"));
     timelineEl.append(wrap);
   }
 
   function renderHead(g, list) {
     const sub = ui.s !== "all" ? C.subOf(g, ui.s) : null;
     headEl.append(h("div", { class: "gp-id" },
-      h("button", { class: "btn icon ghost gp-back", "aria-label": "Back to spaces", onclick: () => { ui.screen = "home"; ui.selected = null; render(); } }, ic("chevron-left", "icon-lg")),
+      h("button", { class: "btn icon ghost gp-back", "aria-label": "Back to collections", onclick: () => { ui.screen = "home"; ui.selected = null; render(); } }, ic("chevron-left", "icon-lg")),
       h("button", { class: "btn icon ghost gp-menu-btn", "aria-label": "Menu", onclick: () => api.openSidebarDrawer() }, ic("menu", "icon-lg")),
       groupTile(g, "xl"),
       h("div", { class: "gp-id-text" }, h("h1", null, g.name, sub ? h("span", { class: "gp-dim" }, " / " + sub.name) : null), g.desc ? h("p", null, g.desc) : null),
       h("button", { class: "btn icon ghost gp-tools-btn" + (ui.tools ? " on" : ""), "aria-label": "Search and sort", "aria-expanded": String(ui.tools), onclick: () => { ui.tools = !ui.tools; render(); if (ui.tools) focusLater("gp-search"); } }, ic("search")),
-      h("button", { class: "btn icon ghost", "aria-label": "Edit space", title: "Edit space", onclick: () => openEditGroup(g) }, ic("edit"))));
+      h("button", { class: "btn icon ghost", "aria-label": "Edit collection", title: "Edit collection", onclick: () => openEditGroup(g) }, ic("edit"))));
     const page = ui.tag && ui.tag !== "__none" ? C.tagOf(g, ui.tag) : null;
     if (page) { headEl.append(renderPageHead(g, page)); return; }
     const statsEl = h("div", { class: "gp-stats" });
@@ -782,7 +782,7 @@
       opt("image", "Photos", "From your gallery", async () => { const ps = await pickPhotos(); if (ps.length) { d.photos.push(...ps); d.extras = true; } renderComposerTop(); });
       opt("link", "Link", "Saved as text, nothing is fetched", () => { d.showLink = true; d.extras = true; renderComposerTop(); focusLater("gp-link"); });
       if (g.fields.amount.on) opt("wallet", "Amount", "Adds to the totals", () => { d.showAmount = true; d.extras = true; renderComposerTop(); focusLater("gp-amount"); });
-      opt("list-ul", "Existing entry", "Link one from another space", () => openLinkExisting(g));
+      opt("list-ul", "Existing entry", "Link one from another collection", () => openLinkExisting(g));
       top.append(menu);
     }
     if (d.extras || canSend(d)) {
@@ -945,7 +945,7 @@
           const here = target.mainTags.some((t) => t.entity === ent.id);
           list.append(h("button", { class: "tl-pick gp-match", "data-entity": ent.id, onclick: () => use(ent) },
             h("span", { class: "gp-ava sm", style: "--c:var(--accent)" }, initials(ent.name)),
-            h("span", { class: "gp-match-main" }, h("b", null, ent.name), h("small", null, [entSummary(ent), here ? "Already in this space" : where.length ? "In " + where.join(", ") : ""].filter(Boolean).join(" · ")))));
+            h("span", { class: "gp-match-main" }, h("b", null, ent.name), h("small", null, [entSummary(ent), here ? "Already in this collection" : where.length ? "In " + where.join(", ") : ""].filter(Boolean).join(" · ")))));
         });
         if (raw) list.append(h("button", { class: "tl-pick", id: "gp-page-create", onclick: async () => {
           const ent = E.normalizeEntity({ name: E.tidy(raw), type: typeKey }, types);
@@ -1093,7 +1093,7 @@
       if (!ranked.length) list.append(h("p", { class: "gp-hint" }, "Nothing of the same kind to merge with."));
       ranked.forEach((to) => list.append(h("button", { class: "tl-pick", "data-entity": to.id, onclick: async () => { close(); closeEditor(); await mergeEntities(from, to); } },
         h("span", { class: "gp-ava sm", style: "--c:var(--accent)" }, initials(to.name)), h("span", { class: "gp-match-main" }, h("b", null, to.name), h("small", null, entSummary(to))))));
-      body.append(list, h("p", { class: "gp-hint" }, "Entries, spaces and details move over; details already set on the one you keep win."));
+      body.append(list, h("p", { class: "gp-hint" }, "Entries, collections and details move over; details already set on the one you keep win."));
     }, { stack: true });
   }
   async function mergeEntities(from, to) {
@@ -1125,7 +1125,7 @@
     const where = pagesOf(ent);
     sheet("Delete " + ent.name + "?", (body, close) => {
       const n = where.reduce((t, p) => t + p.n, 0);
-      body.append(h("p", null, where.length ? "It's removed from " + where.map((p) => p.g.name).join(", ") + ". " + (n ? n + (n === 1 ? " entry stays" : " entries stay") + " in those spaces, just without it." : "") : "It isn't used in any space."),
+      body.append(h("p", null, where.length ? "It's removed from " + where.map((p) => p.g.name).join(", ") + ". " + (n ? n + (n === 1 ? " entry stays" : " entries stay") + " in those collections, just without it." : "") : "It isn't used in any collection."),
         h("div", { class: "gp-sheet-actions" }, h("button", { class: "btn", onclick: close }, "Cancel"),
           h("button", { class: "btn danger", id: "gp-ent-delete", onclick: async () => {
             for (const p of where) {
@@ -1157,7 +1157,7 @@
           const done = async () => { review = review.filter((x) => x !== r); await saveReview(); draw(); };
           const card = h("div", { class: "gp-review", "data-entity": ent.id },
             h("div", null, h("b", null, ent.name), r.was.info ? h("span", { class: "gp-dim" }, " · " + r.was.info) : null),
-            h("small", { class: "gp-dim" }, r.reason === "same-name" ? "The same name appears twice in this space." : "This looks like a department, with the " + (g.mainLabel || "name").toLowerCase() + " in the details."));
+            h("small", { class: "gp-dim" }, r.reason === "same-name" ? "The same name appears twice in this collection." : "This looks like a department, with the " + (g.mainLabel || "name").toLowerCase() + " in the details."));
           const acts = h("div", { class: "gp-review-acts" });
           if (r.suggest) acts.append(h("button", { class: "btn primary gp-small gp-review-use", onclick: async () => {
             ent.name = r.suggest.name; Object.assign(ent.fields, r.suggest.fields); if (r.suggest.note !== undefined) ent.note = r.suggest.note;
@@ -1379,9 +1379,9 @@
       also.append(h("button", { class: "gp-also-row", onclick: () => { if (x.g !== g.id) openGroup(x.g, "all").then(() => selectEntry(e.id)); } },
         groupTile(gg, "sm"), h("span", { class: "gp-grow" }, gg.name + (ss ? " / " + ss.name : "")), x.g === g.id ? h("span", { class: "gp-dim" }, "here") : ic("chevron-right", "icon-sm")));
     });
-    also.append(h("small", null, ic("link", "icon-sm"), e.refs.length > 1 ? "Linked, not copied. Edit once and it updates in every space." : "Only in this space. Search finds it too."));
-    if (groups.length > e.refs.length) also.append(h("button", { class: "btn ghost gp-small", onclick: () => addToAnotherGroup(e) }, ic("plus", "icon-sm"), "Also add to another space"));
-    sc.append(h("div", { class: "gp-sec" }, h("h4", null, e.refs.length > 1 ? "In " + e.refs.length + " spaces" : "In"), also));
+    also.append(h("small", null, ic("link", "icon-sm"), e.refs.length > 1 ? "Linked, not copied. Edit once and it updates in every collection." : "Only in this collection. Search finds it too."));
+    if (groups.length > e.refs.length) also.append(h("button", { class: "btn ghost gp-small", onclick: () => addToAnotherGroup(e) }, ic("plus", "icon-sm"), "Also add to another collection"));
+    sc.append(h("div", { class: "gp-sec" }, h("h4", null, e.refs.length > 1 ? "In " + e.refs.length + " collections" : "In"), also));
 
     // Same visit / outing / title
     const card = g.cards !== "none" ? C.buildCards(C.inGroup(entries, g.id), g, "all").find((c) => c.items.includes(e)) : null;
@@ -1436,7 +1436,7 @@
     sheet("Entry", (body, close) => {
       const act = (iconName, label, fn, danger) => body.append(h("button", { class: "gp-choice" + (danger ? " danger" : ""), onclick: () => { close(); fn(); } }, ic(iconName), h("span", null, label)));
       act("copy", "Copy text", () => api.copy([e.title, e.note, e.link].filter(Boolean).join("\n")));
-      act("plus", "Also add to another space", () => addToAnotherGroup(e));
+      act("plus", "Also add to another collection", () => addToAnotherGroup(e));
       act("note", "Move to Notes", () => moveEntryToNotes(e));
       act(e.refs.length > 1 ? "unlink" : "trash", e.refs.length > 1 ? "Remove…" : "Delete…", () => askRemove(e, g), true);
     });
@@ -1453,7 +1453,7 @@
       body.append(h("button", { class: "gp-choice danger", onclick: async () => {
         close(); ui.selected = null;
         await trashEntry(e); render();
-      } }, ic("trash"), h("span", null, others.length ? "Delete everywhere" : "Delete", h("small", null, (others.length ? "Also removes it from " + others.join(", ") + ". " : "") + "Kept in Trash for " + TRASH_DAYS + " days (Settings \u2192 Spaces)."))));
+      } }, ic("trash"), h("span", null, others.length ? "Delete everywhere" : "Delete", h("small", null, (others.length ? "Also removes it from " + others.join(", ") + ". " : "") + "Kept in Trash for " + TRASH_DAYS + " days (Settings \u2192 Collections)."))));
       body.append(h("button", { class: "gp-choice", onclick: () => { close(); moveEntryToNotes(e); } }, ic("note"), h("span", null, "Move to Notes instead", h("small", null, "Keeps the text and photos as a normal note."))));
     });
   }
@@ -1493,7 +1493,7 @@
   }
   function addToAnotherGroup(e) {
     const dests = destinations().filter((d) => !e.refs.some((r) => r.g === d.g));
-    if (!dests.length) { api.showToast("It's already in every space"); return; }
+    if (!dests.length) { api.showToast("It's already in every collection"); return; }
     sheet("Also add to", (body, close) => {
       body.append(h("p", { class: "gp-hint" }, "It's linked, not copied: edit it once and it changes in both places."));
       dests.forEach((d) => body.append(h("button", { class: "gp-choice", onclick: async () => {
@@ -1504,8 +1504,8 @@
   function openLinkExisting(g) {
     const pool = live().filter((e) => !C.refIn(e, g.id)).sort((a, b) => b.happenedOn - a.happenedOn);
     sheet("Link an entry into " + g.name, (body, close) => {
-      if (!pool.length) { body.append(h("p", { class: "gp-hint" }, "Nothing in other spaces yet. To bring in a note, open it in Notes and choose Move to space.")); return; }
-      body.append(h("p", { class: "gp-hint" }, "It stays where it is and also shows here. Notes can be brought in from a note's ⋯ menu: Move to space."));
+      if (!pool.length) { body.append(h("p", { class: "gp-hint" }, "Nothing in other collections yet. To bring in a note, open it in Notes and choose Move to collection.")); return; }
+      body.append(h("p", { class: "gp-hint" }, "It stays where it is and also shows here. Notes can be brought in from a note's ⋯ menu: Move to collection."));
       pool.slice(0, 80).forEach((e) => {
         const home = groupById(e.refs[0].g);
         body.append(h("button", { class: "gp-choice", onclick: async () => {
@@ -1518,9 +1518,9 @@
   // From the notes side: a note becomes an entry, then the note is removed.
   function moveNoteToGroup(item) {
     if (!enabled) return;
-    if (!groups.length) { api.showToast("Make a space first: Settings → Spaces, or + next to Spaces"); return; }
-    sheet("Move to space", (body, close) => {
-      body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that space, with the same text and photos."));
+    if (!groups.length) { api.showToast("Make a collection first: Settings → Collections, or + next to Collections"); return; }
+    sheet("Move to collection", (body, close) => {
+      body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that collection, with the same text and photos."));
       destinations().forEach((d) => body.append(h("button", { class: "gp-choice", onclick: async () => {
         close();
         const content = item.content || "";
@@ -1543,8 +1543,8 @@
   function openNewGroup(prefill) {
     if (!enabled) { setEnabled(true); }
     let pick = prefill || C.TEMPLATES[0];
-    sheet("New space", (body, close) => {
-      const name = h("input", { class: "input gp-input", id: "gp-new-name", value: pick.key === "blank" ? "" : pick.name, placeholder: "Bike, Trips, Pets…", "aria-label": "Space name" });
+    sheet("New collection", (body, close) => {
+      const name = h("input", { class: "input gp-input", id: "gp-new-name", value: pick.key === "blank" ? "" : pick.name, placeholder: "Bike, Trips, Pets…", "aria-label": "Collection name" });
       const search = h("input", { class: "input gp-input", id: "gp-tpl-search", type: "search", placeholder: "Search templates: gym, rent, EMI\u2026", "aria-label": "Search templates", autocomplete: "off" });
       const draw = () => {
         body.replaceChildren();
@@ -1555,7 +1555,7 @@
         const card = (t) => h("button", { class: "gp-tpl" + (pick === t ? " active" : ""), onclick: () => {
           const wasDefault = !name.value.trim() || list.some((x) => x.name === name.value.trim());
           pick = t; if (wasDefault) name.value = t.key === "blank" ? "" : t.name; draw();
-        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ")) : h("small", { class: "gp-dim" }, "No sub-chats yet"));
+        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ")) : h("small", { class: "gp-dim" }, "No sections yet"));
         // Sections (Health, Money, Home & family…); typing filters across all of them.
         const drawList = () => {
           box.replaceChildren();
@@ -1575,12 +1575,12 @@
             shown += items.length;
             box.append(h("div", { class: "gp-tpl-sec" }, sec.name), h("div", { class: "gp-tpl-grid" }, ...items.map(card)));
           }
-          if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sub-chats."));
+          if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sections."));
         };
         search.oninput = drawList;
         drawList();
         body.append(box);
-        body.append(h("p", { class: "gp-hint" }, "Everything can be changed later with Edit space: sub-chats, fields, currency, icon or photo."));
+        body.append(h("p", { class: "gp-hint" }, "Everything can be changed later with Edit collection: sections, fields, currency, icon or photo."));
         body.append(h("div", { class: "gp-sheet-actions" },
           h("button", { class: "btn", onclick: () => importTemplateFile(close) }, ic("upload"), "Import template"),
           h("button", { class: "btn primary", onclick: async () => {
@@ -1591,7 +1591,7 @@
             close();
             api.showToast("Created " + g.name);
             openGroup(g.id);
-          } }, "Create space")));
+          } }, "Create collection")));
       };
       draw();
       if (!isPhone()) setTimeout(() => name.focus(), 50);
@@ -1630,7 +1630,7 @@
           const g = C.groupFromTemplate({ ...t, key: "import" }, t.name);
           await saveGroup(g); groups.push(g); close();
           api.showToast("Added " + g.name); openGroup(g.id);
-        } }, "Add space")));
+        } }, "Add collection")));
     });
   }
   function templateSummary(t) {
@@ -1638,7 +1638,7 @@
     box.append(h("div", { class: "gp-tpl-id" }, tile(t.icon, t.color), h("b", null, t.name)));
     if (t.desc) box.append(h("p", null, t.desc));
     const row = (k, v) => box.append(h("div", { class: "gp-sum-row" }, h("span", { class: "gp-dim" }, k), h("span", null, v)));
-    row("Sub-chats", t.subs.length ? t.subs.map((s) => s.name).join(", ") : "None");
+    row("Sections", t.subs.length ? t.subs.map((s) => s.name).join(", ") : "None");
     row("Main tag", t.mainLabel || "Off");
     const f = [];
     if (t.fields.amount.on) f.push("Amount (" + t.fields.amount.currency + ")");
@@ -1675,7 +1675,7 @@
   function openEditGroup(g) {
     const w = JSON.parse(JSON.stringify(g)); // working copy; saved only on Save
     const counts = C.counts(entries, g, "all");
-    sheet("Edit space", (body, close) => {
+    sheet("Edit collection", (body, close) => {
       const draw = () => {
         const st = body.scrollTop;
         body.replaceChildren();
@@ -1699,13 +1699,13 @@
         body.append(look);
 
         // Sub-chats
-        body.append(h("span", { class: "gp-label" }, "Sub-chats"), h("p", { class: "gp-hint" }, "Kinds of things in this space, like Service, Petrol, Spare parts. The singular name is what one entry is called."));
+        body.append(h("span", { class: "gp-label" }, "Sections"), h("p", { class: "gp-hint" }, "Kinds of things in this collection, like Service, Petrol, Spare parts. The singular name is what one entry is called."));
         const subsBox = h("div", { class: "gp-edit-list" });
         w.subs.forEach((s, i) => {
           const n = counts.bySub[s.id] || 0;
           const iconBtn = h("button", { class: "gp-icon-btn", "aria-label": "Icon for " + s.name, style: "--c:" + s.color, onclick: () => { s._pick = !s._pick; draw(); } }, ic(s.icon));
           subsBox.append(h("div", { class: "gp-edit-row" }, iconBtn,
-            h("input", { class: "input", value: s.name, "aria-label": "Sub-chat name", placeholder: "Name (plural)", maxlength: C.MAX.name, oninput: (e) => { const old = s.name; s.name = e.target.value; if (!s.label || s.label === old || s.label === singular(old)) s.label = singular(e.target.value); } }),
+            h("input", { class: "input", value: s.name, "aria-label": "Section name", placeholder: "Name (plural)", maxlength: C.MAX.name, oninput: (e) => { const old = s.name; s.name = e.target.value; if (!s.label || s.label === old || s.label === singular(old)) s.label = singular(e.target.value); } }),
             h("input", { class: "input gp-narrow", value: s.label, "aria-label": "One entry is called", placeholder: "One is a…", maxlength: C.MAX.name, oninput: (e) => { s.label = e.target.value; } }),
             h("button", { class: "btn icon ghost", "aria-label": "Move up", disabled: i === 0 || null, onclick: () => { w.subs.splice(i - 1, 0, w.subs.splice(i, 1)[0]); draw(); } }, ic("arrow-up")),
             h("button", { class: "btn icon ghost", "aria-label": "Remove " + s.name, title: n ? n + " entries move to All" : "Remove", onclick: () => { w.subs.splice(i, 1); draw(); } }, ic("trash"))));
@@ -1718,12 +1718,12 @@
           }
         });
         const removed = g.subs.filter((s) => !w.subs.some((x) => x.id === s.id)).reduce((t, s) => t + (counts.bySub[s.id] || 0), 0);
-        if (removed) subsBox.append(h("p", { class: "gp-warn" }, removed + (removed === 1 ? " entry" : " entries") + " in removed sub-chats will stay in the space, under All."));
-        if (w.subs.length < C.MAX.subs) subsBox.append(h("button", { class: "btn ghost gp-small", onclick: () => { w.subs.push({ id: C.uid(), name: "", label: "", icon: "note", color: C.COLORS[w.subs.length % C.COLORS.length], _new: true }); draw(); focusLastSub(body); } }, ic("plus", "icon-sm"), "Add sub-chat"));
+        if (removed) subsBox.append(h("p", { class: "gp-warn" }, removed + (removed === 1 ? " entry" : " entries") + " in removed sections will stay in the collection, under All."));
+        if (w.subs.length < C.MAX.subs) subsBox.append(h("button", { class: "btn ghost gp-small", onclick: () => { w.subs.push({ id: C.uid(), name: "", label: "", icon: "note", color: C.COLORS[w.subs.length % C.COLORS.length], _new: true }); draw(); focusLastSub(body); } }, ic("plus", "icon-sm"), "Add section"));
         body.append(subsBox);
 
         // Who or what the group is about: its pages (people, places, things).
-        body.append(h("span", { class: "gp-label" }, "About"), h("p", { class: "gp-hint" }, "Who or what this space revolves around: doctors, places, a bike, shows. Each one gets a page here. Leave \u201cCalled\u201d empty to turn it off."));
+        body.append(h("span", { class: "gp-label" }, "About"), h("p", { class: "gp-hint" }, "Who or what this collection revolves around: doctors, places, a bike, shows. Each one gets a page here. Leave \u201cCalled\u201d empty to turn it off."));
         const mt = h("div", { class: "gp-edit-list" });
         mt.append(h("div", { class: "gp-edit-row" }, h("span", { class: "gp-dim gp-row-label" }, "Called"),
           h("input", { class: "input", id: "gp-edit-main-label", value: w.mainLabel, placeholder: "Doctor, Place, Title, Bike…", maxlength: C.MAX.label, "aria-label": "What they're called", oninput: (e) => { const had = !!w.mainLabel; w.mainLabel = e.target.value; if (had !== !!w.mainLabel.trim()) draw(); } })));
@@ -1738,7 +1738,7 @@
               h("button", { class: "gp-color sm", "aria-label": "Colour of " + t.name, style: "--c:" + t.color, onclick: () => { t.color = C.COLORS[(C.COLORS.indexOf(t.color) + 1) % C.COLORS.length]; draw(); } }),
               h("span", { class: "gp-edit-page-name" }, h("b", null, t.name), t.info ? h("small", { class: "gp-dim" }, t.info) : null),
               ent ? h("button", { class: "btn ghost gp-small", "aria-label": "Edit " + t.name, onclick: () => openEntity(ent, { onSaved: () => { hydrate(w); draw(); } }) }, ic("edit", "icon-sm"), "Edit") : null,
-              h("button", { class: "btn icon ghost", "aria-label": "Remove " + t.name + " from this space", title: "Remove from this space (stays in your other spaces)", onclick: () => { w.mainTags.splice(i, 1); draw(); } }, ic("trash"))));
+              h("button", { class: "btn icon ghost", "aria-label": "Remove " + t.name + " from this collection", title: "Remove from this collection (stays in your other collections)", onclick: () => { w.mainTags.splice(i, 1); draw(); } }, ic("trash"))));
           });
           mt.append(h("button", { class: "btn ghost gp-small", id: "gp-edit-add-page", onclick: () => { if (!w.mainType) w.mainType = groupType(w).key; newMainTag(w, () => draw(), { workingCopy: true }); } }, ic("plus", "icon-sm"), "Add " + (w.mainLabel.trim() || "tag").toLowerCase()));
         }
@@ -1786,7 +1786,7 @@
 
         body.append(h("div", { class: "gp-sheet-actions sticky" },
           h("button", { class: "btn", onclick: () => shareTemplate(C.normalizeGroup(w)) }, ic("share"), "Share as template"),
-          h("button", { class: "btn danger ghost", onclick: () => askDeleteGroup(g, close) }, ic("trash"), "Delete space"),
+          h("button", { class: "btn danger ghost", onclick: () => askDeleteGroup(g, close) }, ic("trash"), "Delete collection"),
           h("span", { class: "gp-grow" }),
           h("button", { class: "btn", onclick: close }, "Cancel"),
           h("button", { class: "btn primary", onclick: async () => {
@@ -1818,7 +1818,7 @@
       draw();
     }, { wide: true });
   }
-  function focusLastSub(body) { setTimeout(() => { const rows = body.querySelectorAll(".gp-edit-row input[aria-label='Sub-chat name']"); if (rows.length) rows[rows.length - 1].focus(); }, 0); }
+  function focusLastSub(body) { setTimeout(() => { const rows = body.querySelectorAll(".gp-edit-row input[aria-label='Section name']"); if (rows.length) rows[rows.length - 1].focus(); }, 0); }
   const singular = (w) => { const s = String(w || "").trim(); if (/ies$/i.test(s)) return s.slice(0, -3) + "y"; if (/(ss|us)$/i.test(s)) return s; if (/s$/i.test(s)) return s.slice(0, -1); return s; };
   function squareCover(dataUrl) {
     return new Promise((resolve) => {
@@ -1852,8 +1852,8 @@
         else render();
         if (mode === "notes") api.renderAllViews();
       };
-      if (onlyHere.length) body.append(h("button", { class: "gp-choice", onclick: () => finish("notes") }, ic("note"), h("span", null, "Delete space, keep entries as notes", h("small", null, onlyHere.length + " entries move to Notes with their text and photos."))));
-      body.append(h("button", { class: "gp-choice danger", onclick: () => finish("delete") }, ic("trash"), h("span", null, onlyHere.length ? "Delete space and its " + onlyHere.length + " entries" : "Delete space", h("small", null, "Entries linked into other spaces stay there. This can't be undone."))));
+      if (onlyHere.length) body.append(h("button", { class: "gp-choice", onclick: () => finish("notes") }, ic("note"), h("span", null, "Delete collection, keep entries as notes", h("small", null, onlyHere.length + " entries move to Notes with their text and photos."))));
+      body.append(h("button", { class: "gp-choice danger", onclick: () => finish("delete") }, ic("trash"), h("span", null, onlyHere.length ? "Delete collection and its " + onlyHere.length + " entries" : "Delete collection", h("small", null, "Entries linked into other collections stay there. This can't be undone."))));
     });
   }
 
@@ -1984,7 +1984,7 @@
     pickSub();
     const cap = n.capture || {};
     const nice = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
-    sheet(many ? "Forward " + list.length + " messages" : n.images && n.images.length ? "Sort this snap" : "Forward to a space", (body, close) => {
+    sheet(many ? "Move " + list.length + " messages" : n.images && n.images.length ? "Sort this snap" : "Move to a collection", (body, close) => {
       const written = ((n.title || "").trim() || (n.content || "").split("\n")[0]).replace(/@[\w.-]+/g, "").replace(/\s+/g, " ").trim();
       const title = h("input", { class: "input gp-input", id: "gp-sort-title", placeholder: "What is it?", value: written || (guess && guess.detail ? nice(guess.detail) : ""), "aria-label": "Title" });
       const draw = () => {
@@ -1996,7 +1996,7 @@
           h("div", { class: "gp-sort-facts" }, ...(many ? [list.length + " messages, each becomes an entry"] : facts).map((f) => h("small", null, f)),
             guess && !many ? h("small", { class: "gp-dim" }, "A guess made on this phone") : null)));
         if (!many) body.append(h("label", { class: "gp-label", for: "gp-sort-title" }, "Title"), title);
-        body.append(h("span", { class: "gp-label" }, "Space"));
+        body.append(h("span", { class: "gp-label" }, "Collection"));
         const row = h("div", { class: "gp-sort-row", id: "gp-sort-spaces" });
         const ordered = suggestedId ? [groups.find((x) => x.id === suggestedId), ...groups.filter((x) => x.id !== suggestedId)] : groups.slice();
         ordered.forEach((x) => row.append(h("button", { class: "gp-mini" + (g && g.id === x.id ? " active" : ""), style: "--c:" + x.color, "data-space": x.id,
@@ -2006,11 +2006,11 @@
         if (tpl && !groups.some((x) => x.name === tpl.name)) row.append(h("button", { class: "gp-mini", id: "gp-sort-new-space", onclick: async () => {
           const ng = C.groupFromTemplate(tpl, tpl.name); ng.order = Date.now();
           await saveGroup(ng); groups.push(ng); g = ng; pickSub(); draw();
-        } }, ic("plus"), "New " + tpl.name + " space"));
-        if (!groups.length && !tpl) row.append(h("button", { class: "gp-mini", onclick: () => { close(); openNewGroup(); } }, ic("plus"), "New space"));
+        } }, ic("plus"), "New " + tpl.name + " collection"));
+        if (!groups.length && !tpl) row.append(h("button", { class: "gp-mini", onclick: () => { close(); openNewGroup(); } }, ic("plus"), "New collection"));
         body.append(row);
         if (g && g.subs.length) {
-          body.append(h("span", { class: "gp-label" }, "Sub-chat"));
+          body.append(h("span", { class: "gp-label" }, "Section"));
           const subs = h("div", { class: "gp-sort-row", id: "gp-sort-subs" });
           subs.append(h("button", { class: "gp-mini" + (!subId ? " active" : ""), onclick: () => { subId = null; draw(); } }, "None"));
           g.subs.forEach((x) => subs.append(h("button", { class: "gp-mini" + (subId === x.id ? " active" : ""), style: "--c:" + x.color, onclick: () => { subId = x.id; draw(); } }, ic(x.icon), x.name)));
@@ -2032,7 +2032,7 @@
             if (opts.onDone) opts.onDone();
             const sub = subId ? C.subOf(g, subId) : null;
             api.showToast("Saved to " + [g.name, sub && sub.name].filter(Boolean).join(" → "), { action: { label: "Open", onClick: () => openGroup(g.id, subId || "all") } });
-          } }, g ? (many ? "Forward to " : "Save to ") + g.name : "Pick a space")));
+          } }, g ? (many ? "Move to " : "Save to ") + g.name : "Pick a collection")));
       };
       draw();
     });
@@ -2078,19 +2078,19 @@
     const box = document.getElementById("groups-settings-body");
     if (!box) return;
     box.replaceChildren();
-    const toggle = h("label", { class: "settings-check" }, h("input", { type: "checkbox", id: "groups-enabled", checked: enabled, onchange: (e) => setEnabled(e.target.checked) }), " Show Spaces");
+    const toggle = h("label", { class: "settings-check" }, h("input", { type: "checkbox", id: "groups-enabled", checked: enabled, onchange: (e) => setEnabled(e.target.checked) }), " Show Collections");
     box.append(h("div", { class: "settings-group" }, toggle,
-      h("div", { class: "settings-hint" }, "Spaces are timelines for topics like Health, Food or Trips. They're separate from your notes. Turning this off only hides them; nothing is deleted.")));
-    const stats = groups.length ? groups.length + (groups.length === 1 ? " space, " : " spaces, ") + live().length + (live().length === 1 ? " entry" : " entries") + ". Included in Back up." : "No spaces yet.";
+      h("div", { class: "settings-hint" }, "Collections are timelines for topics like Health, Food or Trips. They're separate from your notes. Turning this off only hides them; nothing is deleted.")));
+    const stats = groups.length ? groups.length + (groups.length === 1 ? " collection, " : " collections, ") + live().length + (live().length === 1 ? " entry" : " entries") + ". Included in Back up." : "No collections yet.";
     const trashed = entries.filter((e) => e.deletedAt);
     box.append(h("div", { class: "settings-group padded" }, h("div", { class: "settings-hint" }, stats),
       h("div", { class: "settings-row-actions" },
-        h("button", { onclick: () => { api.closeSettings(); openNewGroup(); } }, "+ New space"),
+        h("button", { onclick: () => { api.closeSettings(); openNewGroup(); } }, "+ New collection"),
         h("button", { onclick: () => importTemplateFile() }, "Import template\u2026"),
         trashed.length ? h("button", { onclick: openTrash }, "Trash (" + trashed.length + ")") : null)));
   }
   function openTrash() {
-    sheet("Spaces Trash", (body) => {
+    sheet("Collections Trash", (body) => {
       const draw = () => {
         body.replaceChildren();
         const list = entries.filter((e) => e.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt);

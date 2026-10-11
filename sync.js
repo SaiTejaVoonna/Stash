@@ -410,8 +410,8 @@
     kids.push(h("div", { class: "settings-section" }, h("div", { class: "settings-section-title" }, "What goes to Drive"),
       h("div", { class: "settings-group", id: "sync-what" },
         h("label", { class: "settings-line" }, h("span", null, "Notes"), h("input", { type: "checkbox", id: "sync-notes", checked: p.notes, onchange: (e) => { patch({ notes: e.target.checked }); touch(); } })),
-        h("label", { class: "settings-line" }, h("span", null, "Me chat"), h("input", { type: "checkbox", id: "sync-chat", checked: p.chat, onchange: (e) => { patch({ chat: e.target.checked }); touch(); } })),
-        h("label", { class: "settings-line" }, h("span", null, "Every space", h("small", null, "New spaces are added too.")),
+        h("label", { class: "settings-line" }, h("span", null, "Inbox"), h("input", { type: "checkbox", id: "sync-chat", checked: p.chat, onchange: (e) => { patch({ chat: e.target.checked }); touch(); } })),
+        h("label", { class: "settings-line" }, h("span", null, "Every collection", h("small", null, "New collections are added too.")),
           h("input", { type: "checkbox", id: "sync-all", checked: all, onchange: (e) => setSpaces(e.target.checked ? "all" : spaces.map((s) => s.id)) })),
         all ? null : spaces.map((s) => h("label", { class: "settings-line sync-space" }, h("span", null, s.name),
           h("input", { type: "checkbox", "data-space": s.id, checked: picked.has(s.id), onchange: (e) => {

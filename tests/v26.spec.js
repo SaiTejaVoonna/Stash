@@ -8,7 +8,7 @@ async function createGroup(page, template, name) {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: template }).click();
   if (name) await page.fill("#gp-new-name", name);
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText(name || template);
 }
 
@@ -161,7 +161,7 @@ test("2.5 doctors move to shared records; a doctor in two groups is one person; 
 test("adding someone you already have suggests them instead of making a copy; merge folds duplicates", async ({ page }) => {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Food" }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-page-new");
   await page.fill("#gp-page-name", "nimrah cafe");
   await page.click("#gp-page-create");
@@ -171,7 +171,7 @@ test("adding someone you already have suggests them instead of making a copy; me
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Food" }).click();
   await page.fill("#gp-new-name", "Hyderabad trip");
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-page-new");
   await page.fill("#gp-page-name", "Nimrah");
   await expect(page.locator(".gp-match")).toContainText("In Food");
@@ -198,8 +198,8 @@ test("a detail added for all of a type shows on every one; an expiry date shows 
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Blank" }).click();
   await page.fill("#gp-new-name", "Vehicles");
-  await page.click(".gp-sheet button:has-text('Create space')");
-  await page.click("button[aria-label='Edit space']");
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await page.click("button[aria-label='Edit collection']");
   await page.fill("#gp-edit-main-label", "Vehicle");
   await page.selectOption("#gp-edit-main-type", "vehicle");
   await page.click(".gp-sheet button:text-is('Save')");
@@ -242,7 +242,7 @@ async function pickFile(page, click, name = "IMG_0042.png") {
   await (await chooser).setFiles({ name, mimeType: "image/png", buffer: PNG });
 }
 
-test("Snap saves into the Me chat at once, keeps the original and when and where it was taken", async ({ page, context }) => {
+test("Snap saves into the Inbox at once, keeps the original and when and where it was taken", async ({ page, context }) => {
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 17.385, longitude: 78.4867, accuracy: 12 });
   await page.click("#new-btn");
@@ -282,7 +282,7 @@ test("Snap says when the location was added, and says why when it wasn't", async
   await expect(page.locator(".toast-item", { hasText: "Location added to the snap" })).toBeVisible();
 });
 
-test("Snap inside a group saves straight to that page and sub-chat; From Inbox moves an earlier snap in", async ({ page }) => {
+test("Snap inside a group saves straight to that page and section; From Inbox moves an earlier snap in", async ({ page }) => {
   await page.click("#new-btn");
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'), "earlier.png");
   await expect(lastToast(page)).toContainText("Saved");
@@ -320,13 +320,13 @@ test("Snap inside a group saves straight to that page and sub-chat; From Inbox m
   await expect(page.locator("#gp-capture")).toContainText("Camera");
 });
 
-test("search: space:name picks a space, group:name is not a search word, and chips write space:", async ({ page }) => {
+test("search: space:name picks a collection, group:name is not a search word, and chips write in:", async ({ page }) => {
   const r = await page.evaluate(() => {
     const ctx = { groups: [{ id: "g1", name: "Food trips" }, { id: "g2", name: "Health" }] };
     const a = window.CPSearch.parse("space:hea", ctx), b = window.CPSearch.parse("group:hea", ctx), c = window.CPSearch.parse("-space:food", ctx);
     return { a: a.groups, b: b.groups, bText: b.text, c: c.not.groups, tok: window.CPSearch.tokenFor("group", "Food trips") };
   });
-  expect(r).toEqual({ a: ["g2"], b: [], bText: "group:hea", c: ["g1"], tok: 'space:"Food trips"' });
+  expect(r).toEqual({ a: ["g2"], b: [], bText: "group:hea", c: ["g1"], tok: 'in:"Food trips"' });
 });
 
 test("a snap gets a guess made on the device; it's only a suggestion and can be turned off", async ({ page }) => {
@@ -382,7 +382,7 @@ async function openOrganise(page) {
   if ((await head.getAttribute("aria-expanded")) !== "true") await head.click();
 }
 
-test("Sort this snap: the guess picks the space and sub-chat, the title is filled in, one tap files it", async ({ page }) => {
+test("Sort this snap: the guess picks the collection and section, the title is filled in, one tap files it", async ({ page }) => {
   await createGroup(page, "Food");
   await page.locator('#main-nav [data-nav="all"]').click();
   await page.evaluate(() => { window.CPSee.engine = async () => ({ classify: () => ({ classifications: [{ categories: [{ categoryName: "trifle", index: 927, score: 0.5 }] }] }) }); });
@@ -403,7 +403,7 @@ test("Sort this snap: the guess picks the space and sub-chat, the title is fille
   expect(e.capture && e.capture.fileName).toBe("IMG_0042.png");
 });
 
-test("Sort this snap with no matching space offers to make one from the right template", async ({ page }) => {
+test("Sort this snap with no matching collection offers to make one from the right template", async ({ page }) => {
   await page.evaluate(() => { window.CPSee.engine = async () => ({ classify: () => ({ classifications: [{ categories: [{ categoryName: "pill bottle", index: 720, score: 0.6 }] }] }) }); });
   await page.click("#new-btn");
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'));
@@ -532,7 +532,7 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
   await expect(page.locator(".gp-tpl", { hasText: /^Car/ })).toHaveCount(0);
   await expect(page.locator(".gp-tpl", { hasText: "Vehicles" })).toContainText("Fuel · Service");
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-text");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
@@ -549,7 +549,7 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
   await expect(page.locator(".gp-page .gp-ava img")).toBeVisible();
 });
 
-test("the space's + menu closes with a tap outside; an open page is picked for the next entry", async ({ page }) => {
+test("the collection's + menu closes with a tap outside; an open page is picked for the next entry", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
   await page.click(".gp-extras .gp-mini:has-text('New')");

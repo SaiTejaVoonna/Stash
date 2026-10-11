@@ -15,7 +15,7 @@ async function createGroup(page, template, name) {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: template }).click();
   if (name) await page.fill("#gp-new-name", name);
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText(name || template);
 }
 
@@ -55,7 +55,7 @@ const stat = (page, label) => page.locator(".gp-stat").filter({ has: page.locato
 
 test("Groups show by default, can be hidden, and notes look exactly the same", async ({ page }) => {
   await expect(page.locator("#groups-section")).toBeVisible();
-  await expect(page.locator("#groups-list")).toContainText("New space");
+  await expect(page.locator("#groups-list")).toContainText("New collection");
   await newNote(page, "plain note");
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="groups"]');
@@ -65,7 +65,7 @@ test("Groups show by default, can be hidden, and notes look exactly the same", a
   await page.reload();
   await expect(page.locator("#groups-section")).toBeHidden();
   await turnOnGroups(page);
-  await expect(nav(page, "Inbox")).toContainText("1");
+  await expect(nav(page, "All notes")).toContainText("1");
 });
 
 test("same day + same doctor becomes one visit; totals and counts add up", async ({ page }) => {
@@ -133,13 +133,13 @@ test("entries with no doctor are flagged once, and one tap assigns one", async (
   await expect(page.locator(".gp-banner")).toHaveCount(0);
 });
 
-test("Edit group: rename, add a sub-chat and a number field; it all stays after a reload", async ({ page }) => {
+test("Edit group: rename, add a section and a number field; it all stays after a reload", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Blank", "Bike");
-  await page.click("button[aria-label='Edit space']");
+  await page.click("button[aria-label='Edit collection']");
   await page.fill("#gp-ed-name", "My bike");
-  await page.click(".gp-sheet button:has-text('Add sub-chat')");
-  await page.locator(".gp-edit-row input[aria-label='Sub-chat name']").last().fill("Petrol");
+  await page.click(".gp-sheet button:has-text('Add section')");
+  await page.locator(".gp-edit-row input[aria-label='Section name']").last().fill("Petrol");
   await page.click(".gp-sheet button:has-text('Add field')");
   await page.locator("input[aria-label='Field name']").last().fill("Litres");
   await page.locator("input[aria-label='Unit']").last().fill("L");
@@ -166,7 +166,7 @@ test("a shared template carries the setup only, never entries or doctor names", 
   await createGroup(page, "Health");
   await addMainTag(page, "Dermatology", "Dr. Private Name");
   await send(page, "Secret prescription", { type: "Prescription" });
-  await page.click("button[aria-label='Edit space']");
+  await page.click("button[aria-label='Edit collection']");
   await page.click(".gp-sheet button:has-text('Share as template')");
   const link = await page.inputValue("input[aria-label='Template link']");
   const payload = Buffer.from(link.split("#template=")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString();
@@ -178,7 +178,7 @@ test("a shared template carries the setup only, never entries or doctor names", 
   await friend.goto(link.replace(/^https?:\/\/[^/]+\//, "./"));
   await expect(friend.locator(".gp-sheet")).toContainText("Add template?");
   await expect(friend.locator(".gp-tpl-summary")).toContainText("Prescriptions, Lab Reports, Medicines, Bills");
-  await friend.click(".gp-sheet button:has-text('Add space')");
+  await friend.click(".gp-sheet button:has-text('Add collection')");
   await expect(friend.locator(".gp-id h1")).toHaveText("Health");
   await expect(friend.locator(".gp-stat", { hasText: "Visits" }).locator("b")).toHaveText("0");
   await friend.close();
@@ -215,7 +215,7 @@ test("backups carry groups; old backups without groups still import", async ({ p
   await fresh.click("#settings-btn");
   await fresh.click('.settings-nav-item[data-page="data"]');
   await fresh.setInputFiles("#import-file", file);
-  await expect(fresh.locator(".toast-item").last()).toContainText("1 spaces, 1 space entries");
+  await expect(fresh.locator(".toast-item").last()).toContainText("1 collections, 1 collection entries");
   await fresh.click("#settings-close-btn");
   await fresh.locator(".gp-nav-group", { hasText: "Food" }).click();
   await expect(fresh.locator(".gp-card", { hasText: "Irani Chai" })).toHaveCount(1);
@@ -232,10 +232,10 @@ test("backups carry groups; old backups without groups still import", async ({ p
 test("a note moves into a group and back to Notes without losing its text", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Blank", "Ideas");
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await newNote(page, "Line one\nLine two", { title: "Gift ideas" });
   await page.click(".item-row", { button: "right" });
-  await page.locator(".context-menu .popover-list-item", { hasText: "Move to space" }).click();
+  await page.locator(".context-menu .popover-list-item", { hasText: "Move to collection" }).click();
   await page.locator(".gp-choice", { hasText: "Ideas" }).click();
   await expect(page.locator(".gp-id h1")).toHaveText("Ideas");
   await expect(page.locator(".gp-d-title")).toHaveValue("Gift ideas");
@@ -256,7 +256,7 @@ test("an entry linked into two groups: remove from one keeps it in the other", a
   await createGroup(page, "Food");
   await send(page, "Irani Chai", { type: "Dish" });
   await page.locator(".gp-entry", { hasText: "Irani Chai" }).click();
-  await page.click(".gp-also button:has-text('Also add to another space')");
+  await page.click(".gp-also button:has-text('Also add to another collection')");
   await page.locator(".gp-choice", { hasText: "Visited Places" }).click();
   await expect(page.locator(".gp-entry", { hasText: "Irani Chai" })).toContainText("Also in Visited Places");
   await page.locator(".gp-entry", { hasText: "Irani Chai" }).click();
@@ -271,7 +271,7 @@ test("search (Ctrl K) finds group entries and opens them", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Food");
   await send(page, "Osmania biscuit", { type: "Dish" });
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await page.keyboard.press("Control+k");
   await page.fill("#palette-input", "osmania");
   await page.locator(".palette-row", { hasText: "Osmania biscuit" }).click();

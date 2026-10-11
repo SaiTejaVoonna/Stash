@@ -57,10 +57,10 @@ test("dock: pick tabs in Settings; Timeline gets its own tab without the keyboar
   await expect(page.locator("#tab-bar [data-tab='timeline']")).toHaveClass(/active/);
 });
 
-test("the phone Filter sheet and dock settings say Space, never group", async ({ page }) => {
+test("the phone Filter sheet and dock settings say Collection, never group", async ({ page }) => {
   await page.tap("#tab-bar [data-tab='search']");
   await page.tap(".tl-filter-btn");
-  await expect(page.locator("#cp-sheet-overlay")).toContainText("Space");
+  await expect(page.locator("#cp-sheet-overlay")).toContainText("Collection");
   await expect(page.locator("#cp-sheet-overlay")).not.toContainText(/group/i);
   await page.keyboard.press("Escape");
   await page.goto("./");
@@ -68,7 +68,7 @@ test("the phone Filter sheet and dock settings say Space, never group", async ({
   await page.tap("#settings-btn");
   await page.tap('.settings-nav-item[data-page="appearance"]');
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
-  expect(options).toContain("Spaces");
+  expect(options).toContain("Collections");
   expect(options.join(" ")).not.toMatch(/group/i);
 });
 
@@ -121,7 +121,7 @@ test("What's new shows once after an update, never on a brand-new install", asyn
   await page.evaluate(() => localStorage.removeItem("copypaster-seen-version"));
   await page.reload();
   await expect(page.locator("#whats-new")).toBeVisible();
-  await expect(page.locator("#whats-new")).toContainText("Groups are now Spaces");
+  await expect(page.locator("#whats-new")).toContainText("Spaces are now Collections");
   await page.tap("#whats-new-ok");
   await expect(page.locator("#whats-new")).toHaveCount(0);
   await page.reload();
@@ -142,13 +142,13 @@ test("words typed just before the app closes are kept", async ({ page }) => {
 
 // ---------- Me chat ----------
 const PNG1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-test("Me chat: message yourself with text, photos and a PDF; select and forward into a space, sub-chat and page", async ({ page }) => {
+test("Me chat: message yourself with text, photos and a PDF; select and forward into a collection, section and page", async ({ page }) => {
   // A space with a page to forward into.
   await page.tap("#tab-bar [data-tab='groups']");
-  await page.locator(".gp-empty button", { hasText: "New space" }).tap();
+  await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).tap();
   await page.fill("#gp-new-name", "Bike");
-  await page.tap(".gp-sheet button:has-text('Create space')");
+  await page.tap(".gp-sheet button:has-text('Create collection')");
   await page.tap("#gp-text");
   await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
   await page.fill("#gp-page-name", "Fz V3");
@@ -182,7 +182,7 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
   for (const i of [0, 1, 2]) await page.locator("#chat-pane .cx-msg").nth(i).tap();
   await expect(page.locator(".cx-count")).toHaveText("3 selected");
   await page.tap("#cx-forward");
-  await expect(page.locator(".gp-sheet")).toContainText("Forward 3 messages");
+  await expect(page.locator(".gp-sheet")).toContainText("Move 3 messages");
   await expect(page.locator("#gp-sort-spaces .gp-mini.active")).toContainText("Bike");
   await expect(page.locator(".gp-sort-row .gp-mini.active", { hasText: "Fz V3" })).toHaveCount(1);
   await page.locator("#gp-sort-subs .gp-mini", { hasText: "Insurance & papers" }).tap();

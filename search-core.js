@@ -4,7 +4,7 @@
 //
 // Words it understands (all optional, any order):
 //   #tag  #"two words"         a tag (same tag in notes and groups)
-//   space:name  in:name        a space (start of its name is enough); in:notes for notes only
+//   in:name  space:name  collection:name   a collection (start of its name is enough); in:notes for notes only
 //   date:today | yesterday | week | month | year | 2026 | 2026-03 | 2026-03-14 | 7d | 30d | 3m
 //   after:2026-01-01  before:2026-02-01
 //   type:note | command | link | photo | password | entry | checklist | voice | sketch
@@ -16,7 +16,7 @@
 
   const DAY = 86400000;
   const TYPES = { note: "Notes", notes: "Notes", command: "Commands", commands: "Commands", link: "Links", links: "Links", photo: "Photos", photos: "Photos",
-    password: "Passwords", passwords: "Passwords", entry: "Space entries", entries: "Space entries", checklist: "Checklists", checklists: "Checklists",
+    password: "Passwords", passwords: "Passwords", entry: "Collection entries", entries: "Collection entries", checklist: "Checklists", checklists: "Checklists",
     voice: "Voice notes", sketch: "Sketches", sketches: "Sketches" };
   const TYPE_KEYS = { notes: "note", commands: "command", links: "link", photos: "photo", passwords: "password", entries: "entry", checklists: "checklist", sketches: "sketch" };
   const IS = { fav: "Favorites", favorite: "Favorites", favourite: "Favorites", starred: "Favorites", pinned: "Pinned", unread: "Unread",
@@ -84,12 +84,12 @@
     const kv = raw.match(/^([a-z]+):(.+)$/i);
     if (!kv) return null;
     const k = kv[1].toLowerCase(), v = unquote(kv[2]).trim();
-    if ((k === "space" || k === "in") && v) {
+    if ((k === "space" || k === "collection" || k === "in") && v) {
       if (k === "in" && /^notes?$/i.test(v)) return { kind: "notes", value: true, label: "Notes only" };
       const vl = v.toLowerCase();
       const hit = groups.find((g) => g.name.toLowerCase() === vl) || groups.find((g) => g.name.toLowerCase().startsWith(vl)) || groups.find((g) => g.name.toLowerCase().includes(vl));
       if (hit) return { kind: "group", value: hit.id, label: hit.name };
-      return { kind: "unknown", value: v, label: "No space “" + v + "”" };
+      return { kind: "unknown", value: v, label: "No collection “" + v + "”" };
     }
     if (k === "date" || k === "on" || k === "when") {
       const r = dateRange(v);
@@ -188,7 +188,7 @@
   // Quotes a value when it has spaces: space:"Food trips".
   const tokenFor = (kind, value) => {
     const v = /\s/.test(value) ? '"' + value + '"' : value;
-    return kind === "tag" ? "#" + v : (kind === "group" ? "space" : kind) + ":" + v;
+    return kind === "tag" ? "#" + v : (kind === "group" ? "in" : kind) + ":" + v;
   };
 
   // Plain-text match: every word must appear somewhere.

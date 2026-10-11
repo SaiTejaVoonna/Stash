@@ -44,7 +44,7 @@
   const T = (key, name, desc, icon, color, subs, o) => ({ key, name, desc, icon, color, subs, mainLabel: o.mainLabel || "", mainType: o.mainType || "",
     fields: { amount: { on: o.amount !== false, currency: "INR" }, rating: !!o.rating, custom: o.custom || [] }, cards: "none", cardWord: "" });
   const TEMPLATES = [
-    { key: "blank", name: "Blank", desc: "Just a timeline. Add sub-chats and fields whenever you want.", icon: "layers", color: "#64748b",
+    { key: "blank", name: "Blank", desc: "Just a timeline. Add sections and fields whenever you want.", icon: "layers", color: "#64748b",
       subs: [], mainLabel: "", fields: { amount: { on: true, currency: "INR" }, rating: false, custom: [] }, cards: "none", cardWord: "" },
     { key: "hospital", name: "Health", desc: "Doctors, prescriptions, lab reports, medicines and bills", icon: "cross", color: "#ef4444",
       subs: [sub("Prescriptions", "Prescription", "clipboard", "#22c55e"), sub("Lab Reports", "Lab Report", "flask", "#8b5cf6", { late: true }),
@@ -244,7 +244,7 @@
     const out = {
       id: g.id || uid(),
       schema: GROUP_SCHEMA,
-      name: clampStr(g.name, MAX.name) || "Untitled space",
+      name: clampStr(g.name, MAX.name) || "Untitled collection",
       desc: clampStr(g.desc, MAX.desc),
       icon: ICONS.includes(g.icon) ? g.icon : "layers",
       color: isColor(g.color) ? g.color : COLORS[9],
