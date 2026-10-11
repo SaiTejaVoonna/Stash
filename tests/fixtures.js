@@ -7,7 +7,8 @@ const path = require("path");
 // Libraries the app loads from a CDN the first time they're needed, served from
 // node_modules instead (tests run offline).
 const CDN = [
-  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])]
+  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])],
+  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jszip\/3\.10\.1\/jszip\.min\.js$/, () => path.join(__dirname, "..", "node_modules", "jszip", "dist", "jszip.min.js")]
 ];
 async function routeCdn(page) {
   await page.route(/^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//, (route) => {

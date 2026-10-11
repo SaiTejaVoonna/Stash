@@ -1734,6 +1734,7 @@
           <div class="settings-group">
             <div class="settings-line"><span>Back up<small id="last-backup">Download a .cps file with everything, Vault items still encrypted.</small></span><button id="export-btn" class="btn"><svg class="icon"><use href="#icon-download"></use></svg>Export</button></div>
             <div class="settings-line"><span>Restore<small>Add items from a .cps backup. Nothing is overwritten.</small></span><button id="import-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Import</button></div>
+            <div class="settings-line"><span>Bring in from other apps<small>Google Keep (Takeout), a WhatsApp chat export, text or Markdown files, or a batch of photos and PDFs. Read on this device.</small></span><button id="import-apps-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Choose files</button></div>
             <label class="settings-line"><span>Location on snaps<small>Saves where a snap was taken, on this device only. It's added after the photo is saved and never holds it up.</small></span><input type="checkbox" id="snap-location"></label>
             <label class="settings-line"><span>Guess what a snap shows<small>Works it out on this device: the photo never leaves your phone. The first time, a small model (about 7 MB) is downloaded and kept. The guess is only a suggestion.</small></span><input type="checkbox" id="snap-see"></label>
             <div class="settings-line"><label for="backup-remind">Remind me to back up<small>A gentle note at the top of All notes.</small></label>
@@ -1806,6 +1807,7 @@
 <script src="ocr.js"></script>
 <script src="extras.js"></script>
 <script src="brain.js"></script>
+<script src="importer.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -6673,6 +6675,86 @@
       showToast("Import failed \u2014 not a valid .cps file");
     }
   });
+  // ---------- Bring in from other apps (importer.js) ----------
+  document.getElementById("import-apps-btn").addEventListener("click", () => {
+    if (!window.CPImport || !toolsApi) return;
+    const input = document.createElement("input");
+    input.type = "file"; input.multiple = true; input.hidden = true; input.id = "import-apps-file";
+    input.accept = ".zip,.json,.txt,.md,.html,.htm,image/*,application/pdf,audio/*,video/*,.doc,.docx,.xls,.xlsx";
+    input.addEventListener("change", async () => {
+      const files = Array.from(input.files || []); input.remove();
+      if (!files.length) return;
+      const t = showToast("Reading " + (files.length === 1 ? files[0].name : files.length + " files") + "\u2026", { sticky: true });
+      let found;
+      try { found = await window.CPImport.scan(files, (i, n) => t && t.update && t.update("Reading " + i + " of " + n + "\u2026")); }
+      catch (err) { if (t) t.close(); showToast(err.message || "Couldn't read those files"); return; }
+      if (t) t.close();
+      reviewImport(found);
+    });
+    document.body.appendChild(input);
+    input.click();
+  });
+  function reviewImport(found) {
+    const h = toolsApi.h;
+    const lines = [];
+    if (found.sources.keep) lines.push(found.sources.keep + " notes from Google Keep");
+    if (found.messages.length) lines.push(found.messages.length + " WhatsApp messages (into your Inbox)");
+    if (found.sources.text) lines.push(found.sources.text + " text notes");
+    if (found.files.length) lines.push(found.files.length + " photos and files (into your Inbox)");
+    toolsApi.sheet("Bring in", (body, finish) => {
+      if (!lines.length) { body.append(h("p", { class: "gp-hint" }, "Nothing Stash can read in those files. Try a Google Keep Takeout zip, a WhatsApp chat export, or text files.")); return; }
+      body.append(h("p", { class: "gp-hint" }, "Found:"), h("ul", { class: "import-found", id: "import-found" }, lines.map((l) => h("li", null, l))),
+        h("p", { class: "gp-hint" }, "New things are marked unread. Nothing you already have is changed."),
+        h("div", { class: "gp-sheet-actions" }, h("button", { class: "btn", onclick: finish }, "Cancel"),
+          h("button", { class: "btn primary", id: "import-apps-go", onclick: async () => { finish(); await saveImport(found); } }, "Bring them in")));
+    });
+  }
+  async function saveImport(found) {
+    const progress = showToast("Bringing in\u2026", { sticky: true });
+    let notes = 0, msgs = 0;
+    const batch = [];
+    for (const n of found.notes) {
+      const tagIds = [];
+      for (const name of n.tags || []) { const key = await ensureTag(name); const tg = tagCache.find((x) => tagKey(x.name) === key); if (tg && !tagIds.includes(tg.id)) tagIds.push(tg.id); }
+      const item = normalize({ id: uuid(), type: "note", title: n.title || "", content: n.content || "", checklist: n.checklist || null, tags: tagIds, pinned: !!n.pinned,
+        archivedAt: n.archived ? Date.now() : null, color: n.color || null, images: n.images || [], createdAt: n.createdAt || Date.now(), updatedAt: n.updatedAt || Date.now(), unread: true });
+      batch.push(item); notes++;
+      if (batch.length >= 50) await saveItems(batch.splice(0));
+    }
+    for (const m of found.messages) {
+      batch.push(normalize({ id: uuid(), type: "note", title: "", content: m.text || "", images: m.images || [], files: m.files || [], chat: true, createdAt: m.at || Date.now(), updatedAt: m.at || Date.now() }));
+      msgs++;
+      if (batch.length >= 50) await saveItems(batch.splice(0));
+    }
+    await saveItems(batch);
+    if (found.files.length && chatApi) {
+      const real = [];
+      for (const f of found.files) {
+        const data = await f.dataUrl();
+        if (!data) continue;
+        const bin = atob(data.split(",")[1] || "");
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        real.push(new File([bytes], f.name, { type: f.type }));
+      }
+      for (const f of real) await inboxFile(f);
+    }
+    if (progress) progress.close();
+    renderAllViews(); renderTagsList();
+    if (chatApi) chatApi.render();
+    showToast("Brought in " + [notes ? notes + " notes" : "", msgs ? msgs + " messages" : "", found.files.length ? found.files.length + " files" : ""].filter(Boolean).join(", "));
+  }
+  // A photo or file from an import: one Inbox message each.
+  async function inboxFile(f) {
+    if (/^image\//.test(f.type) && f.type !== "image/svg+xml" && window.CPSnap) {
+      const shot = await window.CPSnap.fromFile(f, "file");
+      if (shot) { await chatAdd({ images: [shot.display], captured: true, capture: shot.capture, createdAt: f.lastModified || Date.now() }); return; }
+    }
+    if (f.size > CHAT_FILE_MAX) return;
+    const data = await readFileData(f);
+    if (data) await chatAdd({ title: f.name.slice(0, 200), files: [{ name: f.name, type: f.type || "application/octet-stream", size: f.size, data }] });
+  }
+
   // Adds what a backup has that this device doesn't. Nothing is overwritten.
   async function importBackup(data) {
     if (!data || typeof data.cpsVersion !== "number") throw new Error("Not a recognized .cps file");
