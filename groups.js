@@ -576,9 +576,11 @@
       h("button", { class: "btn primary gp-small", id: "gp-trial-keep", onclick: async () => { g.trialUntil = null; await saveGroup(g); render(); api.showToast("Kept " + g.name); } }, "Keep"),
       h("button", { class: "btn ghost gp-small", id: "gp-trial-remove", onclick: async () => {
         if (n) { askDeleteGroup(g, () => {}); return; }
+        const kept = JSON.parse(JSON.stringify(g));
         groups = groups.filter((x) => x !== g);
         await api.remove(GROUPS_STORE, g.id);
-        changed(); if (groups.length) openGroup(groups[0].id); else exit(); api.showToast("Removed " + g.name);
+        changed(); if (groups.length) openGroup(groups[0].id); else exit();
+        api.showToast("Removed " + g.name, { action: { label: "Undo", onClick: () => restoreGroup(kept, []) } });
       } }, "Remove"));
   }
   function renderHead(g, list) {
@@ -1593,8 +1595,9 @@
     const others = e.refs.filter((x) => x.g !== g.id).map((x) => (groupById(x.g) || {}).name).filter(Boolean);
     sheet("Remove “" + (e.title || "entry") + "”?", (body, close) => {
       if (others.length) body.append(h("button", { class: "gp-choice", onclick: async () => {
+        const before = e.refs.slice();
         e.refs = e.refs.filter((x) => x.g !== g.id); await saveEntry(e); close(); ui.selected = null;
-        api.showToast("Removed from " + g.name + ". Still in " + others.join(", ") + "."); render();
+        api.showToast("Removed from " + g.name + ". Still in " + others.join(", ") + ".", { action: { label: "Undo", onClick: async () => { e.refs = before; await saveEntry(e); changed(); render(); } } }); render();
       } }, ic("unlink"), h("span", null, "Remove from " + g.name, h("small", null, "Stays in " + others.join(", ") + "."))));
       body.append(h("button", { class: "gp-choice danger", onclick: async () => {
         close(); ui.selected = null;
@@ -1622,10 +1625,14 @@
     return lines.concat(lines.length ? [""] : [], [...new Set(extra)]).join("\n");
   }
   async function moveEntryToNotes(e) {
-    await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
+    const note = await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
     await deleteEntry(e);
     ui.selected = null;
-    api.showToast("Moved to Notes");
+    api.showToast("Moved to Notes", { action: { label: "Undo", onClick: async () => {
+      await saveEntry(e); if (!entries.includes(e)) entries.push(e); changed();
+      if (note && note.id) await api.deleteNote(note.id);
+      render();
+    } } });
     render();
   }
 
@@ -1740,6 +1747,35 @@
       draw();
       if (!isPhone()) setTimeout(() => name.focus(), 50);
     });
+  }
+
+  // First run: an example collection to look around in. It's a trial, so the
+  // banner offers Keep or Remove (which takes the examples with it).
+  async function tryExample() {
+    if (!enabled) setEnabled(true);
+    const have = groups.find((x) => x.trialUntil && /^Example/.test(x.name));
+    if (have) { openGroup(have.id); return; }
+    const t = C.TEMPLATES.find((x) => x.key === "trips") || C.TEMPLATES[0];
+    const g = C.groupFromTemplate(t, "Example trip");
+    g.order = Date.now(); g.trialUntil = Date.now() + 7 * C.DAY;
+    await saveGroup(g);
+    groups.push(g);
+    const day = (n) => Date.now() - n * C.DAY;
+    const subId = (i) => (g.subs[i] || {}).id || null;
+    const samples = [
+      { s: 0, title: "Train to Mysore", note: "Coach B2, seat 41. Leaves 6:15 am.", amount: 75000, at: day(3) },
+      { s: 1, title: "Homestay, 2 nights", note: "Near the palace. Check-in after 12.", amount: 240000, at: day(3) },
+      { s: 2, title: "Masala dosa breakfast", note: "", amount: 12000, at: day(2) },
+      { s: 3, title: "Palace entry tickets", note: "Two adults.", amount: 20000, at: day(2) }
+    ];
+    for (const x of samples) {
+      const e = C.normalizeEntry({ refs: [{ g: g.id, s: subId(x.s), tag: null }], title: x.title, note: x.note, amount: x.amount, currency: "INR", happenedOn: x.at, addedOn: Date.now() });
+      await saveEntry(e);
+      entries.push(e);
+    }
+    changed();
+    await openGroup(g.id);
+    api.showToast("This is an example. Keep it, change it, or remove it");
   }
 
   // What a template gives you, filled with examples, before you add it.
@@ -1998,11 +2034,27 @@
     });
   }
 
+  // Undo for deleting a collection: it and its entries come back as they were.
+  async function restoreGroup(g0, list) {
+    const g = C.normalizeGroup(g0);
+    await saveGroup(g);
+    groups = groups.filter((x) => x.id !== g.id).concat(g);
+    for (const raw of list) {
+      const e = C.normalizeEntry(raw);
+      await saveEntry(e);
+      entries = entries.filter((x) => x.id !== e.id).concat(e);
+    }
+    changed();
+    await openGroup(g.id);
+    api.showToast("Brought back " + g.name);
+  }
   function askDeleteGroup(g, closeEdit) {
     const own = C.inGroup(entries, g.id);
     const onlyHere = own.filter((e) => e.refs.length === 1);
     sheet("Delete " + g.name + "?", (body, close) => {
       const finish = async (mode) => {
+        // Undo puts the collection and its entries back (not after "keep as notes").
+        const keptG = JSON.parse(JSON.stringify(g)), keptE = own.map((e) => JSON.parse(JSON.stringify(e)));
         for (const e of own) {
           if (e.refs.length > 1) { e.refs = e.refs.filter((r) => r.g !== g.id); await saveEntry(e); continue; }
           if (mode === "notes") await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
@@ -2011,7 +2063,8 @@
         groups = groups.filter((x) => x !== g);
         await api.remove(GROUPS_STORE, g.id);
         close(); if (closeEdit) closeEdit();
-        api.showToast("Deleted " + g.name + (mode === "notes" && onlyHere.length ? ". " + onlyHere.length + " entries are in Notes now." : ""));
+        api.showToast("Deleted " + g.name + (mode === "notes" && onlyHere.length ? ". " + onlyHere.length + " entries are in Notes now." : ""),
+          mode === "notes" ? {} : { action: { label: "Undo", onClick: () => restoreGroup(keptG, keptE) } });
         if (ui.g === g.id) { if (isPhone()) { ui.screen = "home"; render(); } else if (groups.length) openGroup(groups[0].id); else exit(); }
         else render();
         if (mode === "notes") api.renderAllViews();
@@ -2518,7 +2571,7 @@
     onHome: () => ui.screen === "home",
     stepBack, exit, showHome, snapContext, snapHere, openNewGroup, paletteItems, exportData, importData, moveNoteToGroup, focusComposer,
     timelineRows, openEntry, tagCounts, renameTag, removeTag, openComposer, groupList, setEnabled,
-    dueRows, takeDue, sortSnap, reload, brainComplete, brainUnderstand, fileInto, unfile,
+    dueRows, takeDue, sortSnap, reload, tryExample, brainComplete, brainUnderstand, fileInto, unfile,
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.

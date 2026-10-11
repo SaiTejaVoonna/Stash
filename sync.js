@@ -354,7 +354,13 @@
     render();
   }
 
+  // For the dot in the header: connected? syncing, waiting, failed or done.
+  function status() {
+    const p = prefs();
+    return { on: !!p.on, busy: !!state.busy, pending: !!state.pending, error: p.error || "", last: p.last || 0 };
+  }
   function render() {
+    if (api && api.onStatus) try { api.onStatus(status()); } catch {}
     const box = document.getElementById("sync-box");
     if (!box || !box.isConnected) return;
     const p = prefs();
@@ -443,7 +449,8 @@
       if (p.on && p.auto && p.twoWay && hasToken(p) && document.visibilityState === "visible" && !state.busy) run();
     }, 120000);
     { const p = prefs(); if (p.on && p.auto && p.twoWay && hasToken(p)) later(3000); }
-    return { render, touch, run, restore, disconnect, _test: t, prefs: () => prefs() };
+    if (api.onStatus) api.onStatus(status());
+    return { render, touch, run, restore, disconnect, status, _test: t, prefs: () => prefs() };
   }
   window.CPSync = { init, _test: t };
 })();

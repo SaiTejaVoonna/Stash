@@ -88,6 +88,9 @@ test("connect writes a readable file per collection, notes, Me and a backup; unc
   await page.fill("#sync-client-id", CLIENT_ID);
   await page.click("#sync-connect");
   await expect(page.locator("#sync-status")).toContainText("Last synced");
+  // The dot beside the list title says it's synced.
+  await expect(page.locator("#sync-dot")).toHaveAttribute("data-state", "ok");
+  await expect(page.locator("#sync-dot")).toHaveAttribute("title", /^Synced/);
   expect(await driveFiles(page)).toEqual(["Me.md", "Notes.md", "README.md"]);
   const notes = await driveText(page, "Notes.md");
   expect(notes).toContain("**Flat**");

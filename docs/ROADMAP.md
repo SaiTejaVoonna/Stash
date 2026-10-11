@@ -96,9 +96,9 @@ to be built in.
 ### 2.3 Feedback and help
 - [x] Hover tooltips on every icon button (computers), long-press labels on phones.
 - [x] Hover previews: a note or entry shows a small preview card on hover.
-- [ ] Empty states that say what to do next; first-run welcome (Inbox → Collections → Sync) with an example collection.
-- [ ] Sync dot in the header (green synced, orange waiting).
-- [ ] Undo for every destructive action; consistent toasts.
+- [x] Empty states that say what to do next; first-run welcome (Inbox → Collections → Sync) with an example collection.
+- [x] Sync dot in the header (green synced, orange waiting).
+- [x] Undo for every destructive action; consistent toasts.
 
 ### 2.4 Comfort and access
 - [ ] App lock (PIN; Face ID / fingerprint where the browser allows).

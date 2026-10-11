@@ -528,6 +528,23 @@
   #empty-state .empty-title { color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: 4px; }
   #empty-state .empty-hint { max-width: 280px; margin: 0 auto; }
   #empty-state button { margin-top: var(--s-4); }
+  #sync-dot { width: var(--h-sm); height: var(--h-sm); display: inline-grid; place-items: center; background: none; border: none; border-radius: var(--r-md); cursor: pointer; flex-shrink: 0; padding: 0; }
+  #sync-dot:hover { background: var(--surface-2); }
+  #sync-dot.hidden { display: none; }
+  .sync-dot-light { width: 9px; height: 9px; border-radius: 50%; background: var(--text-3); }
+  #sync-dot[data-state="ok"] .sync-dot-light { background: #30d158; }
+  #sync-dot[data-state="wait"] .sync-dot-light, #sync-dot[data-state="busy"] .sync-dot-light { background: #ff9f0a; }
+  #sync-dot[data-state="err"] .sync-dot-light { background: #ff453a; }
+  @media (prefers-reduced-motion: no-preference) { #sync-dot[data-state="busy"] .sync-dot-light { animation: sync-pulse 1s ease-in-out infinite alternate; } }
+  @keyframes sync-pulse { from { opacity: 1; } to { opacity: .35; } }
+  #empty-state .empty-steps { list-style: none; counter-reset: step; max-width: 300px; margin: var(--s-3) auto var(--s-3); padding: 0; text-align: left; display: grid; gap: 8px; }
+  #empty-state .empty-steps li { counter-increment: step; position: relative; padding-left: 32px; font-size: var(--fs-sm); line-height: 1.4; }
+  #empty-state .empty-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent); color: var(--accent-text); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+  #empty-state .empty-steps b { color: var(--text); display: block; }
+  #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
+  #empty-state .empty-second:hover { background: var(--surface-2); }
+  #empty-state .empty-second .icon { width: 16px; height: 16px; }
 
   /* =====================================================================
      Detail pane
@@ -1584,6 +1601,7 @@
       <div id="list-title-row">
         <button id="menu-btn" aria-label="Menu" title="Menu"><svg class="icon icon-lg"><use href="#icon-menu"></use></svg></button>
         <div id="list-title">All Items</div>
+        <button id="sync-dot" class="hidden" type="button" aria-label="Sync"><span class="sync-dot-light"></span></button>
         <button id="vault-lock-btn" class="hidden" type="button"></button>
         <button id="mark-read-btn" class="hidden" title="Mark all read"><svg class="icon"><use href="#icon-check-all"></use></svg></button>
         <button id="select-mode-btn" title="Select multiple"><svg class="icon"><use href="#icon-check-box"></use></svg></button>
@@ -3946,7 +3964,12 @@
       return { icon: "vault", title: "Vault is empty", hint: "Tap + New for a password or a note, or paste here: anything made in the Vault is encrypted from the start. You can also move any item in from its menu." + (isVaultUnlocked() ? "" : " (Unlock first.)"), action: "New" };
     }
     if (cache.filter((i) => !i.vaulted && !i.deletedAt).length === 0 && currentView !== "trash") {
-      return { icon: "paste", title: "Your clipboard is empty", hint: "Paste anywhere (Ctrl/Cmd+V) to save something, or start a note.", action: "New note" };
+      // First run (and any time everything is empty): what Stash is, in three steps.
+      const hasGroups = groupsApi && groupsApi.hasGroups && groupsApi.hasGroups();
+      return { icon: "logo", title: "Welcome to Stash", id: "welcome",
+        steps: [["Inbox", "Snap, paste or type anything. Sort it later."], ["Collections", "Health, Bike, Trips\u2026 each with its own sections and totals."], ["Sync", "Optional, to your own Google Drive. Nothing goes to us."]],
+        hint: "Everything stays on this device. Paste anywhere (Ctrl/Cmd+V) to save something.",
+        action: "New note", action2: groupsApi && !hasGroups ? "Try an example collection" : null, onAction2: () => groupsApi.tryExample() };
     }
     if (typeof currentView === "object" && currentView.folder) return { icon: "folder", title: "This folder is empty", hint: "Drag items onto the folder in the sidebar, or pick it from an item's Folder menu." };
     if (typeof currentView === "object" && currentView.tag) return { icon: "tag", title: "Nothing tagged yet", hint: "Open an item and add this tag with \u201c+ Tag\u201d." };
@@ -3970,6 +3993,13 @@
     add("empty-icon", "");
     el.lastChild.innerHTML = icon(c.icon);
     add("empty-title", c.title);
+    if (c.id) el.dataset.kind = c.id;
+    if (c.steps) {
+      const ol = document.createElement("ol");
+      ol.className = "empty-steps";
+      c.steps.forEach(([title, text]) => { const li = document.createElement("li"); const b = document.createElement("b"); b.textContent = title; li.append(b, " " + text); ol.appendChild(li); });
+      el.appendChild(ol);
+    }
     add("empty-hint", c.hint);
     if (c.action) {
       const btn = document.createElement("button");
@@ -3977,6 +4007,15 @@
       btn.lastChild.textContent = c.action;
       btn.addEventListener("click", () => (c.onAction ? c.onAction() : document.getElementById("new-btn").click()));
       el.appendChild(btn);
+    }
+    if (c.action2) {
+      const b2 = document.createElement("button");
+      b2.className = "empty-second";
+      b2.id = "empty-example-btn";
+      b2.innerHTML = icon("sparkle") + "<span></span>";
+      b2.lastChild.textContent = c.action2;
+      b2.addEventListener("click", c.onAction2);
+      el.appendChild(b2);
     }
     return el;
   }
@@ -9844,10 +9883,26 @@
   }
   // Sync to your own Google Drive (sync.js).
   if (window.CPBrain) window.CPBrain.setStore(profileKey("copypaster-brain"));
+  // The dot beside the list title: green synced, orange waiting or syncing,
+  // red when the last sync failed. Hidden until Drive is connected.
+  function showSyncDot(st) {
+    const dot = document.getElementById("sync-dot");
+    if (!dot) return;
+    dot.classList.toggle("hidden", !st.on);
+    if (!st.on) return;
+    const kind = st.error ? "err" : st.busy ? "busy" : st.pending ? "wait" : st.last ? "ok" : "wait";
+    dot.dataset.state = kind;
+    const mins = st.last ? Math.round((Date.now() - st.last) / 60000) : 0;
+    const when = !st.last ? "" : mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : new Date(st.last).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    const text = kind === "err" ? "Sync failed: " + st.error : kind === "busy" ? "Syncing\u2026" : kind === "wait" ? "Changes waiting to sync" : "Synced " + when;
+    dot.title = text;
+    dot.setAttribute("aria-label", text + ". Open Sync settings");
+  }
+  document.getElementById("sync-dot").addEventListener("click", () => openSettings("sync"));
   function startSync() {
     if (!window.CPSync || !window.CPSyncCore) return;
     syncApi = window.CPSync.init({
-      profileKey, showToast, backup: buildBackup, importBackup,
+      profileKey, showToast, backup: buildBackup, importBackup, onStatus: showSyncDot,
       folderName: () => (currentProfile.id === "default" ? "Stash" : "Stash - " + currentProfile.name),
       spaces: () => (groupsApi ? groupsApi.groupList() : []),
       // Two-way sync: every record as stored, keyed "store:id". Vault items stay
@@ -10299,6 +10354,8 @@
       });
       renderTabBar();
       await registerEntryTags();
+      // The welcome screen offers an example collection once collections are ready.
+      if (document.querySelector('#empty-state[data-kind="welcome"]')) renderList();
     } catch (err) {
       console.error("[Stash] Groups failed to start:", err);
     }
