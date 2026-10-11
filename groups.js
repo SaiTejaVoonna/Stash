@@ -91,7 +91,7 @@
   function readEnabled() { try { return localStorage.getItem(api.profileKey(ENABLED_KEY)) !== "0"; } catch { return true; } }
 
   // Tells the app something changed (Timeline, tag counts).
-  const changed = () => { if (api.changed) api.changed(); };
+  const changed = () => { brainIx = null; if (api.changed) api.changed(); };
   async function saveGroup(g) { g.updatedAt = Date.now(); await api.put(GROUPS_STORE, g); changed(); }
   async function saveEntry(e) { e.updatedAt = Date.now(); await api.put(ENTRIES_STORE, e); changed(); }
   // ---------- Entities: people, places and things (see entities-core.js) ----------
@@ -2074,11 +2074,15 @@
     return null;
   }
   // Moves a snap from Inbox into a space as an entry: same photo, original and capture details.
-  async function moveSnapInto(n, where, title) {
+  // extra (from the brain): { also: [more refs], amount (minor units), currency, happenedOn, tags: [keys] }
+  async function moveSnapInto(n, where, title, extra = {}) {
     const photos = (n.images || []).filter((p) => typeof p === "string" && /^data:image\/(jpeg|png|webp|gif);/.test(p));
-    const e = C.normalizeEntry({ refs: [where], title: (title || "").trim() || (n.title || "").trim() || (n.content || "").split("\n")[0].slice(0, 120) || "Photo",
+    const refs = [where, ...(extra.also || []).filter((r) => r && r.g && r.g !== where.g)];
+    const e = C.normalizeEntry({ refs, title: (title || "").trim() || (n.title || "").trim() || (n.content || "").split("\n")[0].slice(0, 120) || (photos.length ? "Photo" : (n.files || [])[0] ? n.files[0].name : "Note"),
       note: n.title ? n.content || "" : (n.content || "").split("\n").slice(1).join("\n"),
-      photos, files: n.files || [], capture: n.capture, ocr: n.ocr || null, happenedOn: (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now() });
+      photos, files: n.files || [], capture: n.capture, ocr: n.ocr || null, happenedOn: extra.happenedOn || (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now(),
+      amount: Number.isInteger(extra.amount) ? extra.amount : null, currency: Number.isInteger(extra.amount) ? (extra.currency || "INR") : null, tags: extra.tags || [] });
+    if (window.CPBrain) window.CPBrain.learn((n.title || "") + " " + (n.content || "") + " " + (n.files || []).map((f) => f.name).join(" "), where, e.tags);
     await saveEntry(e);
     entries.push(e);
     changed();
@@ -2354,11 +2358,48 @@
   }
   // Another device changed things (two-way sync): read everything again.
   async function reload() {
+    brainIx = null;
     groups = (await api.getAll(GROUPS_STORE)).map(C.normalizeGroup).sort((a, b) => a.order - b.order);
     entries = (await api.getAll(ENTRIES_STORE)).map(C.normalizeEntry);
     await loadEntities();
     if (ui.selected && !entries.some((e) => e.id === ui.selected)) ui.selected = null;
     render();
+  }
+  // ---------- The brain (brain.js): suggestions from your own names and habits ----------
+  let brainIx = null;
+  function brainIndex() {
+    if (!window.CPBrain) return null;
+    if (!brainIx) brainIx = window.CPBrain.build({ groups, entries, entities, tags: [...new Set(entries.flatMap((e) => e.tags))].concat(api.tags ? api.tags().map((t) => t.key || t.name) : []) });
+    return brainIx;
+  }
+  const brainComplete = (kind, prefix) => { const ix = brainIndex(); return ix ? window.CPBrain.complete(ix, kind, prefix) : []; };
+  // n: an Inbox message; picks: [{ g, s, tag }] chosen with @; tags: [keys] chosen with #.
+  function brainUnderstand(n, picks = [], tags = []) {
+    const ix = brainIndex();
+    if (!ix) return { dests: [], spots: [] };
+    const text = [n.title, n.content, ...(n.files || []).map((f) => f.name), n.ocr || ""].filter(Boolean).join(" ");
+    const dests = window.CPBrain.understand(ix, { text, picks, tags, files: n.files || [], guess: n.suggest, location: n.capture && n.capture.location }, SNAP_MATCH);
+    return { dests: dests.map((d) => ({ ...d, label: window.CPBrain.label(ix, d) })), spots: window.CPBrain.spot(text) };
+  }
+  // Files a message where the brain (or you) said, with the amount, date and tags it spotted.
+  async function fileInto(n, d, opts = {}) {
+    const g = groupById(d.g);
+    if (!g) return null;
+    if (!enabled) setEnabled(true);
+    const spots = window.CPBrain ? window.CPBrain.spot([n.title, n.content].join(" ")) : [];
+    const amount = g.fields.amount.on ? (spots.find((x) => x.kind === "amount") || {}).value : undefined;
+    const when = spots.find((x) => x.kind === "when");
+    const e = await moveSnapInto(n, { g: g.id, s: d.s || null, tag: d.tag || null }, "", { also: opts.also || [], amount, happenedOn: when ? when.value : undefined, tags: opts.tags || [] });
+    render();
+    return e;
+  }
+  // Undo for fileInto: the entry goes, the message comes back (the app restores it).
+  async function unfile(entryId) {
+    const e = entries.find((x) => x.id === entryId);
+    if (!e) return;
+    entries = entries.filter((x) => x !== e);
+    await api.remove(ENTRIES_STORE, e.id);
+    changed(); render();
   }
   const groupList = () => groups.map((g) => ({ id: g.id, name: g.name, icon: g.icon, color: g.color }));
 
@@ -2368,7 +2409,7 @@
     onHome: () => ui.screen === "home",
     stepBack, exit, showHome, snapContext, snapHere, openNewGroup, paletteItems, exportData, importData, moveNoteToGroup, focusComposer,
     timelineRows, openEntry, tagCounts, renameTag, removeTag, openComposer, groupList, setEnabled,
-    dueRows, takeDue, sortSnap, reload,
+    dueRows, takeDue, sortSnap, reload, brainComplete, brainUnderstand, fileInto, unfile,
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.

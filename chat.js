@@ -9,8 +9,8 @@
   "use strict";
 
   let api = null;
-  let pane, bodyEl, barEl, selBar, input, plusMenu, previewEl, capBar, filterEl, searchEl, sheetEl;
-  const ui = { open: false, selecting: false, picked: new Set(), menu: false, preview: null, captionFor: null, filter: "all", q: "", searching: false };
+  let pane, bodyEl, barEl, selBar, input, plusMenu, previewEl, capBar, filterEl, searchEl, sheetEl, sugEl, spotsEl;
+  const ui = { open: false, selecting: false, picked: new Set(), menu: false, preview: null, captionFor: null, filter: "all", q: "", searching: false, picks: [], sug: null };
 
   function h(tag, attrs, ...kids) {
     const el = document.createElement(tag);
@@ -63,8 +63,19 @@
       h("button", { role: "menuitem", id: "cx-contact", "data-extra": "1", onclick: () => { toggleMenu(false); api.contact(); } }, ic("user"), h("span", null, "Contact", h("small", null, "A name and number, call in one tap"))),
       h("button", { role: "menuitem", id: "cx-qr", "data-extra": "1", onclick: () => { toggleMenu(false); api.qr(); } }, ic("grid"), h("span", null, "Scan QR code", h("small", null, "Links, Wi-Fi passwords, anything"))));
     input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
-      oninput: () => grow(),
-      onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); } } });
+      oninput: () => { grow(); suggest(); spots(); },
+      onclick: () => suggest(),
+      onkeydown: (e) => {
+        // The @ / # list: arrows move, Enter or Tab picks.
+        if (ui.sug && ui.sug.items.length) {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); ui.sug.at = (ui.sug.at + (e.key === "ArrowDown" ? 1 : -1) + ui.sug.items.length) % ui.sug.items.length; drawSug(); return; }
+          if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pickSug(ui.sug.items[ui.sug.at]); return; }
+          if (e.key === "Escape") { e.preventDefault(); closeSug(); return; }
+        }
+        if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); }
+      } });
+    sugEl = h("div", { class: "cx-sug", id: "cx-sug", hidden: true, role: "listbox" });
+    spotsEl = h("div", { class: "cx-spots", id: "cx-spots", hidden: true });
     barEl = h("div", { class: "cx-bar" },
       h("button", { class: "gp-round plus", id: "cx-plus", "aria-label": "Add photo or file", onclick: () => toggleMenu(!ui.menu) }, ic("plus")),
       h("div", { class: "cx-box" }, input,
@@ -72,7 +83,7 @@
       h("button", { class: "gp-round send", id: "cx-send", "aria-label": "Send", onclick: sendText }, ic("send")));
     previewEl = h("div", { class: "cx-preview", id: "cx-preview", hidden: true, role: "dialog", "aria-label": "Add a caption" });
     capBar = h("div", { class: "cx-capbar", id: "cx-capbar", hidden: true });
-    pane.append(head, searchEl, filterEl, bodyEl, plusMenu, selBar, capBar, barEl, previewEl, sheetEl);
+    pane.append(head, searchEl, filterEl, bodyEl, plusMenu, sugEl, selBar, capBar, spotsEl, barEl, previewEl, sheetEl);
     document.getElementById("list-pane").after(pane);
     // Drop files anywhere on the chat (computers).
     pane.addEventListener("dragover", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
@@ -116,9 +127,91 @@
     grow();
     // Right after a snap, what you type is its caption.
     if (ui.captionFor) { const id = ui.captionFor; captionMode(null); await api.setCaption(id, text); render(); input.focus(); return; }
-    await api.addText(text);
+    // What you picked from the @ / # list and kept in the text.
+    const kept = ui.picks.filter((p) => text.includes(p.insert));
+    const pick = { dest: kept.filter((p) => p.ref).map((p) => p.ref), tags: kept.filter((p) => p.tag).map((p) => p.tag) };
+    ui.picks = [];
+    closeSug(); spots();
+    await api.addText(text, pick);
     render();
     input.focus();
+  }
+
+  // ---------- @ and # while typing (brain.js) ----------
+  // Shown only once you type @ or #. A typed #word stays plain text until you
+  // pick it from the list; picked ones are kept with the message.
+  function tokenAtCaret() {
+    const v = input.value, pos = input.selectionStart;
+    const m = v.slice(0, pos).match(/(^|\s)([@#])([^\s@#]{0,40})$/);
+    return m ? { kind: m[2], prefix: m[3], start: pos - m[3].length - 1, end: pos } : null;
+  }
+  function suggest() {
+    const tk = api.complete ? tokenAtCaret() : null;
+    if (!tk) { closeSug(); return; }
+    const items = api.complete(tk.kind, tk.prefix);
+    if (!items.length) { closeSug(); return; }
+    ui.sug = { tk, items, at: 0 };
+    drawSug();
+  }
+  function drawSug() {
+    sugEl.hidden = false;
+    sugEl.replaceChildren(...ui.sug.items.map((it, i) => h("button", { class: "cx-sug-item" + (i === ui.sug.at ? " on" : ""), role: "option", type: "button", "data-insert": it.insert,
+      onpointerdown: (e) => e.preventDefault(), onclick: () => pickSug(it) },
+      ic(it.kind === "tag" ? "hash" : it.kind === "page" ? "user" : it.kind === "section" ? "chevron-right" : "layers"),
+      h("span", null, h("b", null, it.label), it.sub ? h("small", null, it.sub) : null))));
+  }
+  function closeSug() { ui.sug = null; if (sugEl) { sugEl.hidden = true; sugEl.replaceChildren(); } }
+  function pickSug(it) {
+    const tk = ui.sug && ui.sug.tk;
+    if (!tk) return;
+    const v = input.value;
+    const ins = it.insert + " ";
+    input.value = v.slice(0, tk.start) + ins + v.slice(tk.end);
+    const at = tk.start + ins.length;
+    input.setSelectionRange(at, at);
+    ui.picks.push(it);
+    closeSug();
+    grow(); spots();
+    input.focus();
+  }
+  // Dates, amounts and numbers it spotted, shown as small chips while typing.
+  let spotTimer = null;
+  function spots() {
+    clearTimeout(spotTimer);
+    spotTimer = setTimeout(() => {
+      const list = api.spot && input.value.trim() ? api.spot(input.value) : [];
+      spotsEl.hidden = !list.length;
+      const icon = { amount: "₹", km: "🛣", litres: "⛽", phone: "📞", when: "📅", "when-future": "⏰" };
+      spotsEl.replaceChildren(...list.map((x) => h("span", { class: "cx-spot", "data-spot": x.kind }, (icon[x.kind] && x.kind !== "amount" ? icon[x.kind] + " " : "") + x.label)));
+    }, 120);
+  }
+
+  // ---------- Sort many at once ----------
+  function openSort(list) {
+    const rows = list.map((n) => ({ n, u: api.understand(n), on: true }));
+    rows.forEach((r) => { r.d = r.u.dests[0] || null; r.on = !!r.d; });
+    const draw = () => {
+      const n = rows.filter((r) => r.on && r.d).length;
+      sheetEl.replaceChildren(h("div", { class: "cx-sheet", role: "dialog", "aria-label": "Sort" },
+        h("div", { class: "cx-sheet-head" }, h("b", null, "Sort " + (list.length === 1 ? "1 message" : list.length + " messages")), h("button", { class: "btn icon ghost", "aria-label": "Close", onclick: closeSheet }, ic("close"))),
+        h("div", { class: "cx-sheet-body" }, h("p", { class: "cx-clean-none sort-hint" }, "Where each one goes, worked out from your own collections and what you did before. Untick any, or change it."),
+          rows.map((r, i) => h("div", { class: "cx-sort-row", "data-row": i },
+            h("input", { type: "checkbox", checked: r.on && !!r.d, disabled: !r.d, "aria-label": "Move this one", onchange: (e) => { r.on = e.target.checked; draw(); } }),
+            (r.n.images || [])[0] ? h("img", { src: r.n.images[0], alt: "" }) : h("span", { class: "cx-clean-ic" }, ic((r.n.files || []).length ? "file" : "note")),
+            h("span", { class: "cx-sort-main" }, h("span", { class: "cx-clean-text" }, (r.n.content || r.n.title || (r.n.files || []).map((f) => f.name).join(", ") || "Photo").slice(0, 80)),
+              r.d ? h("small", { class: "cx-sort-dest" }, "→ " + r.d.label + (r.d.why.length ? " · " + r.d.why[0] : "")) : h("small", { class: "cx-sort-none" }, "Not sure: stays in the Inbox"),
+              r.u.dests[1] ? h("button", { class: "gp-mini cx-sort-alt", onclick: () => { [r.u.dests[0], r.u.dests[1]] = [r.u.dests[1], r.u.dests[0]]; r.d = r.u.dests[0]; r.on = true; draw(); } }, "or " + r.u.dests[1].label) : null),
+            h("button", { class: "btn ghost gp-small", onclick: () => { closeSheet(); api.forward([r.n], () => render()); } }, "Change")))),
+        h("div", { class: "cx-sheet-foot" },
+          h("button", { class: "btn primary", id: "cx-sort-move", disabled: !n, onclick: async () => {
+            const go = rows.filter((r) => r.on && r.d);
+            closeSheet(); setSelecting(false);
+            await api.fileInto(go.map((r) => r.n), go.map((r) => r.d));
+          } }, n ? "Move " + n : "Move"))));
+    };
+    sheetEl.hidden = false;
+    document.body.classList.add("cx-previewing");
+    draw();
   }
 
   // ---------- Caption: look before you send, like WhatsApp ----------
@@ -370,6 +463,11 @@
     if (n.capture && n.capture.location && !n.pin) meta.push("\u{1F4CD} " + n.capture.location.lat.toFixed(3) + ", " + n.capture.location.lng.toFixed(3));
     meta.push(timeOf((n.capture && n.capture.at) || n.createdAt));
     b.append(h("div", { class: "cx-meta" }, meta.join(" · ")));
+    // Where it probably goes: one tap files it (Smart sorting: Suggest).
+    if (!ui.selecting && !n.archivedAt && api.understand && api.smart && api.smart() !== "off") {
+      const d = guessFor(n);
+      if (d) b.append(h("button", { class: "cx-guess", "data-guess": d.label, title: d.why.join(" · "), onclick: (e) => { e.stopPropagation(); api.fileInto([n], [d]); } }, ic("layers"), "→ " + d.label));
+    }
     if (ui.selecting) b.prepend(h("span", { class: "cx-check" + (picked ? " on" : "") }, picked ? ic("check") : null));
     // Tap: open it (or pick it while selecting). Hold: start selecting.
     let timer = null, held = false;
@@ -414,6 +512,12 @@
     ["pointerdown", "touchstart"].forEach((ev) => wrap.addEventListener(ev, (e) => e.stopPropagation(), { passive: true }));
     return wrap;
   }
+  const guessCache = new Map();
+  function guessFor(n) {
+    const k = n.id + ":" + n.updatedAt;
+    if (!guessCache.has(k)) { const d = api.understand(n).dests[0]; guessCache.set(k, d && (d.score >= 25 || (n.pick && n.pick.dest.length)) ? d : null); }
+    return guessCache.get(k);
+  }
   function toggle(id) {
     if (ui.picked.has(id)) ui.picked.delete(id); else ui.picked.add(id);
     render();
@@ -436,6 +540,7 @@
       h("button", { class: "btn ghost gp-small", id: "cx-archive", disabled: !n, onclick: async () => { const l = list(); const on = ui.filter !== "archived"; await api.archive(l, on); setSelecting(false); } }, ic("archive"), ui.filter === "archived" ? "Unarchive" : "Archive"),
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),
+      api.understand ? h("button", { class: "btn gp-small", id: "cx-sort", disabled: !n, onclick: () => openSort(list()) }, ic("sparkle"), "Sort") : null,
       h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Move to…"));
   }
   function render() {
@@ -469,7 +574,7 @@
 
   // ---------- Open / close ----------
   async function open() {
-    if (!ui.open) { await api.onEnter(); await autoArchive(); }
+    if (!ui.open) { await api.onEnter(); await autoArchive(); guessCache.clear(); }
     ui.open = true;
     pane.hidden = false;
     document.body.classList.add("chat-mode");
@@ -493,6 +598,7 @@
     if (ui.preview) { closePreview(); return true; }
     if (!sheetEl.hidden) { closeSheet(); return true; }
     if (ui.searching) { toggleSearch(false); return true; }
+    if (ui.sug) { closeSug(); return true; }
     if (ui.captionFor) { captionMode(null); return true; }
     if (ui.menu) { toggleMenu(false); return true; }
     if (ui.selecting) { setSelecting(false); return true; }

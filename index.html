@@ -1805,6 +1805,7 @@
 <script src="scanner.js"></script>
 <script src="ocr.js"></script>
 <script src="extras.js"></script>
+<script src="brain.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -1902,7 +1903,16 @@
   function renderAddons() {
     const box = document.getElementById("addons-list");
     if (!box) return;
-    box.replaceChildren(...ADDONS.map((a) => {
+    const smart = document.createElement("label");
+    smart.className = "settings-line";
+    smart.innerHTML = "<span>Smart sorting<small>Reads what you send and suggests where it goes, from your own collections, names and habits. Nothing leaves this device.</small></span>";
+    const sel = document.createElement("select");
+    sel.id = "smart-mode"; sel.className = "settings-inline-select";
+    [["suggest", "Suggest"], ["auto", "Auto when sure"], ["off", "Off"]].forEach(([v, l]) => { const o = document.createElement("option"); o.value = v; o.textContent = l; sel.appendChild(o); });
+    sel.value = smartMode();
+    sel.addEventListener("change", () => { try { localStorage.setItem(SMART_KEY, sel.value); } catch {} if (chatApi) chatApi.render(); });
+    smart.appendChild(sel);
+    box.replaceChildren(smart, ...ADDONS.map((a) => {
       const label = document.createElement("label");
       label.className = "settings-line";
       const text = document.createElement("span");
@@ -2370,6 +2380,9 @@
     // A contact card and a location pin sent to the Inbox (extras).
     item.contact = item.contact && typeof item.contact === "object" ? { name: String(item.contact.name || "").slice(0, 120), phone: String(item.contact.phone || "").slice(0, 40) } : null;
     item.pin = !!item.pin;
+    // What you chose while typing: @ destinations and # tags (the brain uses them).
+    item.pick = item.pick && typeof item.pick === "object" ? { dest: (Array.isArray(item.pick.dest) ? item.pick.dest : []).filter((d) => d && d.g).slice(0, 5).map((d) => ({ g: String(d.g), s: d.s || null, tag: d.tag || null })),
+      tags: (Array.isArray(item.pick.tags) ? item.pick.tags : []).map(String).slice(0, 20) } : null;
     // Words read from the photos on this device (OCR), so search finds them.
     item.ocr = typeof item.ocr === "string" && item.ocr ? item.ocr.slice(0, 50000) : null;
     // A guess at what a snap shows (worked out on this device). Only a suggestion.
@@ -9694,6 +9707,7 @@
     return item;
   }
   // Sync to your own Google Drive (sync.js).
+  if (window.CPBrain) window.CPBrain.setStore(profileKey("copypaster-brain"));
   function startSync() {
     if (!window.CPSync || !window.CPSyncCore) return;
     syncApi = window.CPSync.init({
@@ -9759,6 +9773,41 @@
         return { ...g, items: cache, tagName: (id) => (tagById(id) || {}).name || "", folderName: (id) => (folderCache.find((f) => f.id === id) || {}).name || "" };
       }
     });
+  }
+
+  // ---------- Smart sorting (brain.js) ----------
+  const SMART_KEY = "copypaster-smart";
+  const smartMode = () => { try { return localStorage.getItem(SMART_KEY) || "suggest"; } catch { return "suggest"; } };
+  // Files Inbox messages into collections (dests[i] for list[i]), with one Undo for all.
+  async function fileMessages(list, dests) {
+    if (!groupsApi || !list.length) return;
+    if (editor && list.some((i) => i.id === currentId)) editor.flush();
+    if (currentId && list.some((i) => i.id === currentId)) await closeDetail();
+    const done = [];
+    for (let k = 0; k < list.length; k++) {
+      const n = list[k], d = dests[k];
+      if (!n || !d) continue;
+      const snapshot = JSON.parse(JSON.stringify(n));
+      const also = (n.pick ? n.pick.dest : []).filter((x) => x.g !== d.g);
+      const e = await groupsApi.fileInto(n, d, { also, tags: n.pick ? n.pick.tags : [] });
+      if (e) done.push({ e, snapshot, label: d.label });
+    }
+    renderNav();
+    if (chatApi) chatApi.render();
+    if (!done.length) return;
+    showToast(done.length === 1 ? "Filed to " + done[0].label : "Filed " + done.length + " messages", { action: { label: "Undo", onClick: async () => {
+      for (const x of done) { await groupsApi.unfile(x.e.id); await saveItem(normalize(x.snapshot)); }
+      renderNav();
+      if (chatApi) chatApi.render();
+    } } });
+  }
+  // "Auto when sure": a message you just sent is filed straight away when you
+  // used @ or the brain is sure; otherwise it waits in the Inbox.
+  async function autoFile(item) {
+    if (!groupsApi || smartMode() !== "auto" || !item) return;
+    const u = groupsApi.brainUnderstand(item, item.pick ? item.pick.dest : [], item.pick ? item.pick.tags : []);
+    const d = u.dests[0];
+    if (d && (d.sure || (item.pick && item.pick.dest.length))) await fileMessages([item], [d]);
   }
 
   // Every file, wherever it lives: Inbox, notes and collections.
@@ -9889,7 +9938,11 @@
       chatApi = window.CPChat.init({
         icon,
         items: () => cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted && !i._locked).sort((a, b) => a.createdAt - b.createdAt),
-        addText: async (text) => { await chatAdd({ content: text }); renderNav(); },
+        addText: async (text, pick) => {
+          const item = await chatAdd({ content: text, pick: pick && (pick.dest.length || pick.tags.length) ? pick : null });
+          renderNav();
+          await autoFile(item);
+        },
         // Everything sent together is one message: photos become an album (each
         // keeps how and when it was taken; HD keeps the originals too), other files
         // ride along, and the caption is the message's text.
@@ -9933,6 +9986,12 @@
         },
         toast: (msg) => showToast(msg),
         addon: (k) => addonOn(k),
+        // The brain: @ / # suggestions, where a message belongs, filing it.
+        complete: (kind, prefix) => (groupsApi && smartMode() !== "off" ? groupsApi.brainComplete(kind, prefix) : []),
+        understand: (n) => (groupsApi && smartMode() !== "off" ? groupsApi.brainUnderstand(n, n.pick ? n.pick.dest : [], n.pick ? n.pick.tags : []) : { dests: [], spots: [] }),
+        spot: (text) => (window.CPBrain && smartMode() !== "off" ? window.CPBrain.spot(text) : []),
+        smart: () => smartMode(),
+        fileInto: (list, dests) => fileMessages(list, dests),
         scan: () => openScanner(),
         location: async () => {
           if (!window.CPSnap) return;

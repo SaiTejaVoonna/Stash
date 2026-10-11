@@ -307,3 +307,53 @@ test("Inbox tools: filters, search, select all, archive with Undo, clean up empt
   await page.locator(".toast-item", { hasText: "Archived 3 messages" }).getByRole("button", { name: "Undo" }).tap();
   await expect(msgs).toHaveCount(3);
 });
+
+test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap suggestion, Sort many; typed #words stay text", async ({ page }) => {
+  // A Food collection with a page "Nimrah Cafe".
+  await page.tap("#tab-bar [data-tab='groups']");
+  await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
+  await page.locator(".gp-tpl", { hasText: "Food" }).first().tap();
+  await page.tap(".gp-sheet button:has-text('Create collection')");
+  await page.tap("#gp-text");
+  await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
+  await page.fill("#gp-page-name", "Nimrah Cafe");
+  await page.tap("#gp-page-create");
+  await openApp(page);
+  await page.tap("#tab-bar [data-tab='chat']");
+  // @ list: pick the page.
+  await page.locator("#cx-input").pressSequentially("Matcha boba ₹250 @nim");
+  await expect(page.locator("#cx-sug")).toBeVisible();
+  await expect(page.locator(".cx-sug-item").first()).toContainText("Nimrah Cafe");
+  await page.locator(".cx-sug-item").first().tap();
+  await expect(page.locator("#cx-input")).toHaveValue("Matcha boba ₹250 @NimrahCafe ");
+  await expect(page.locator("#cx-spots")).toContainText("₹250");
+  // # list offers a new tag; a typed #word that isn't picked stays text.
+  await page.locator("#cx-input").pressSequentially("#bobatea");
+  await expect(page.locator(".cx-sug-item").first()).toContainText("#bobatea");
+  await page.locator(".cx-sug-item").first().tap();
+  await page.tap("#cx-send");
+  const msg = page.locator("#chat-pane .cx-msg").last();
+  await expect(msg.locator(".cx-guess")).toContainText("Food");
+  await expect(msg.locator(".cx-guess")).toContainText("Nimrah Cafe");
+  // One tap files it, with the amount and the tag.
+  await msg.locator(".cx-guess").tap();
+  await expect(page.locator(".toast-item").last()).toContainText("Filed to Food");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(0);
+  const e = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entries").objectStore("entries").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((x) => ({ amount: x.amount, tags: x.tags, page: !!x.refs[0].tag }));
+  });
+  expect(e).toEqual([{ amount: 25000, tags: ["bobatea"], page: true }]);
+  // Sort many: two messages, one sure, one not.
+  for (const t of ["Biryani at Nimrah Cafe", "random thought"]) { await page.fill("#cx-input", t); await page.tap("#cx-send"); }
+  await page.tap("#cx-select");
+  await page.tap("#cx-all");
+  await page.tap("#cx-sort");
+  await expect(page.locator(".cx-sort-row")).toHaveCount(2);
+  await expect(page.locator(".cx-sort-row").first()).toContainText("→ Food");
+  await expect(page.locator(".cx-sort-row").last()).toContainText("stays in the Inbox");
+  await page.tap("#cx-sort-move");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  await expect(page.locator("#chat-pane .cx-msg")).toContainText("random thought");
+});
