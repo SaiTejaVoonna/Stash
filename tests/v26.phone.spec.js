@@ -267,3 +267,43 @@ test("Inbox captions: photos and a file show first, get a caption, and go as one
   await expect(page.locator("#chat-pane")).toBeVisible();
   await expect(msg).toHaveCount(1);
 });
+
+test("Inbox tools: filters, search, select all, archive with Undo, clean up empty and repeated messages", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  for (const t of ["Buy milk", "https://example.com/recipe", "Buy milk"]) { await page.fill("#cx-input", t); await page.tap("#cx-send"); }
+  await page.tap("#cx-plus");
+  const ch = page.waitForEvent("filechooser");
+  await page.tap("#cx-gallery");
+  await (await ch).setFiles({ name: "a.png", mimeType: "image/png", buffer: PNG1 });
+  await page.tap("#cx-preview-send");
+  const msgs = page.locator("#chat-pane .cx-msg");
+  await expect(msgs).toHaveCount(4);
+  // Filters.
+  await page.locator(".cx-filter[data-filter='links']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='photos']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='all']").tap();
+  // Search.
+  await page.tap("#cx-search-btn");
+  await page.fill("#cx-q", "milk");
+  await expect(msgs).toHaveCount(2);
+  await page.goBack();
+  await expect(msgs).toHaveCount(4);
+  // Clean up: the second "Buy milk" is a repeat, picked already.
+  await page.tap("#cx-cleanup");
+  await expect(page.locator(".cx-clean-sec[data-group='dupes']")).toContainText("The same thing twice (1)");
+  await page.tap("#cx-clean-archive");
+  await expect(msgs).toHaveCount(3);
+  await page.locator(".cx-filter[data-filter='archived']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='all']").tap();
+  // Select all → Archive → Undo.
+  await page.tap("#cx-select");
+  await page.tap("#cx-all");
+  await expect(page.locator(".cx-count")).toHaveText("3 selected");
+  await page.tap("#cx-archive");
+  await expect(msgs).toHaveCount(0);
+  await page.locator(".toast-item", { hasText: "Archived 3 messages" }).getByRole("button", { name: "Undo" }).tap();
+  await expect(msgs).toHaveCount(3);
+});

@@ -3030,7 +3030,7 @@
     // Vault items only count in the Vault (and in Trash once deleted).
     const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
     switch (key) {
-      case "chat": return cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted).length;
+      case "chat": return cache.filter((i) => i.chat && !i.deletedAt && !i.archivedAt && !i.vaulted).length;
       case "all": return cache.filter(live).length;
       case "timeline": return cache.filter(live).length + (groupsApi ? groupsApi.timelineRows().length : 0);
       case "reminders": return cache.filter((i) => i.remindAt && live(i)).length + (groupsApi ? groupsApi.dueRows().length : 0);
@@ -9674,6 +9674,23 @@
           if (chatApi) chatApi.render();
         },
         toast: (msg) => showToast(msg),
+        // Archive (or bring back) Inbox messages, with Undo.
+        archive: async (list, on, { auto = false } = {}) => {
+          if (!list.length) return;
+          const now = Date.now();
+          const was = list.map((i) => [i, i.archivedAt]);
+          list.forEach((i) => { i.archivedAt = on ? now : null; i.updatedAt = now; });
+          await saveItems(list);
+          renderNav();
+          if (chatApi) chatApi.render();
+          const what = list.length === 1 ? "1 message" : list.length + " messages";
+          showToast((on ? (auto ? "Archived " + what + " older than you chose" : "Archived " + what) : "Back in the Inbox: " + what), { action: { label: "Undo", onClick: async () => {
+            was.forEach(([i, a]) => { i.archivedAt = a; i.updatedAt = Date.now(); });
+            await saveItems(list);
+            renderNav();
+            if (chatApi) chatApi.render();
+          } } });
+        },
         camera: () => snapNow(),
         open: async (id) => { if (currentId && currentId !== id) await saveOpenDraft(); openDetail(id); },
         openFile: (f) => openChatFile(f),
