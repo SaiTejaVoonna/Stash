@@ -22,6 +22,7 @@
     try { pref = localStorage.getItem("copypaster-theme") || "system"; } catch (e) {}
     var dark = pref === "dark" || (pref !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
+    try { var ts = localStorage.getItem("copypaster-text-size"); if (ts === "small" || ts === "large") document.documentElement.dataset.text = ts; } catch (e) {}
   })();
 </script>
 <style>
@@ -37,6 +38,11 @@
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
     --fs-2xs: 10.5px; --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 13.5px; --fs-lg: 15px;
     --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 28px;
+  }
+  /* Text size (Settings → Appearance). */
+  :root[data-text="small"] { --fs-2xs: 10px; --fs-xs: 10.5px; --fs-sm: 11.5px; --fs-md: 12.5px; --fs-lg: 14px; --fs-xl: 16.5px; --fs-2xl: 20px; --fs-3xl: 26px; }
+  :root[data-text="large"] { --fs-2xs: 12px; --fs-xs: 13px; --fs-sm: 14.5px; --fs-md: 16px; --fs-lg: 17.5px; --fs-xl: 21px; --fs-2xl: 25px; --fs-3xl: 31px; }
+  :root {
     --lh-tight: 1.25; --lh: 1.5; --lh-loose: 1.65;
     --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
 
@@ -71,7 +77,7 @@
     --elevated: #1b1d23;      /* popovers, dialogs, toasts */
     --line: rgba(255, 255, 255, 0.07);
     --line-strong: rgba(255, 255, 255, 0.12);
-    --text: #ececf0; --text-2: #a3a6b0; --text-3: #6e727d;
+    --text: #ececf0; --text-2: #a3a6b0; --text-3: #868a96; /* all at least 4.5:1 on --bg (WCAG AA) */
     --accent: #4c8dff; --accent-hover: #6aa0ff; --accent-text: #ffffff;
     --accent-grad: linear-gradient(145deg, #5b9bff, #6a6cff); --accent-glow: rgba(76, 110, 255, 0.65);
     --accent-soft: rgba(76, 141, 255, 0.14); --accent-ring: rgba(76, 141, 255, 0.35);
@@ -100,7 +106,7 @@
     --elevated: #ffffff;
     --line: rgba(20, 20, 30, 0.08);
     --line-strong: rgba(20, 20, 30, 0.14);
-    --text: #17181c; --text-2: #5c5f68; --text-3: #8d9099;
+    --text: #17181c; --text-2: #5c5f68; --text-3: #676a73;
     --accent: #0a6cff; --accent-hover: #2a80ff; --accent-text: #ffffff;
     --accent-soft: rgba(10, 108, 255, 0.09); --accent-ring: rgba(10, 108, 255, 0.28);
     --danger: #e5352b; --danger-soft: rgba(229, 53, 43, 0.08);
@@ -528,6 +534,25 @@
   #empty-state .empty-title { color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: 4px; }
   #empty-state .empty-hint { max-width: 280px; margin: 0 auto; }
   #empty-state button { margin-top: var(--s-4); }
+  /* App lock (applock.js) */
+  #lock-screen { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    background: var(--bg); color: var(--text); }
+  .lock-box { width: min(340px, 100%); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+  .lock-box.shake { animation: lock-shake .35s; }
+  @keyframes lock-shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+  @media (prefers-reduced-motion: reduce) { .lock-box.shake { animation: none; } }
+  .lock-logo { width: 64px; height: 64px; border-radius: 16px; }
+  .lock-box h1 { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-semibold); }
+  .lock-row { display: flex; gap: 8px; width: 100%; }
+  #lock-pin { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--text);
+    font-size: 18px; letter-spacing: .3em; text-align: center; }
+  #lock-pin:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .lock-go { height: 44px; padding: 0 18px; border-radius: var(--r-md); border: none; background: var(--accent); color: var(--accent-text); font-weight: var(--fw-semibold); cursor: pointer; }
+  .lock-msg { margin: 0; min-height: 1.3em; color: #ff453a; font-size: var(--fs-sm); }
+  .lock-bio { height: 40px; padding: 0 16px; border-radius: var(--r-full); border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--text); cursor: pointer; font-weight: var(--fw-medium); }
+  .lock-forgot { font-size: var(--fs-sm); color: var(--text-2); text-align: left; }
+  .lock-forgot summary { cursor: pointer; text-align: center; color: var(--text-3); }
+  .lock-forgot p { margin: 8px 0 0; line-height: 1.45; }
   #sync-dot { width: var(--h-sm); height: var(--h-sm); display: inline-grid; place-items: center; background: none; border: none; border-radius: var(--r-md); cursor: pointer; flex-shrink: 0; padding: 0; }
   #sync-dot:hover { background: var(--surface-2); }
   #sync-dot.hidden { display: none; }
@@ -1367,6 +1392,14 @@
   }
   /* iPhone zooms into any text box under 16px when tapped, so on touch
      screens every text box is at least 16px. */
+  /* Fingers need bigger targets than mouse pointers (at least 36px). */
+  @media (pointer: coarse) {
+    .section-add-btn { width: 36px; height: 36px; }
+    .section-add-btn .icon { width: 17px; height: 17px; }
+    #sidebar-collapse-btn { width: 36px; height: 36px; }
+    .sidebar-section-header { padding-top: 0; padding-bottom: 0; }
+    .section-title-click { min-height: 36px; }
+  }
   @media (pointer: coarse) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(#title-input), textarea:not(#content-input), select { font-size: 16px !important; }
     #content-input.terminal, #content-input.login-notes { font-size: 16px !important; }
@@ -1658,6 +1691,7 @@
         <button class="settings-nav-item" data-page="appearance"><span class="sn-icon" style="background:#5b8cff"><svg class="icon"><use href="#icon-palette"></use></svg></span>Appearance<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="profiles"><span class="sn-icon" style="background:#34c759"><svg class="icon"><use href="#icon-users"></use></svg></span>Profiles<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="vault"><span class="sn-icon" style="background:#14b8a6"><svg class="icon"><use href="#icon-vault"></use></svg></span>Vault<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        <button class="settings-nav-item" data-page="lock"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-lock-closed"></use></svg></span>App lock<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Collections<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
@@ -1690,6 +1724,13 @@
                   <button class="theme-opt" data-glass-pick="strong" role="radio">Strong</button>
                 </div>
               </div>
+              <div class="settings-line"><span>Text size<small>For reading comfort. Your browser's zoom works too.</small></span>
+                <div id="text-size-picker" class="segmented" role="radiogroup" aria-label="Text size">
+                  <button class="theme-opt" data-text-pick="small" role="radio">Small</button>
+                  <button class="theme-opt" data-text-pick="normal" role="radio">Normal</button>
+                  <button class="theme-opt" data-text-pick="large" role="radio">Large</button>
+                </div>
+              </div>
               <div class="settings-line icon-style-line"><span>App icon<small>Changes the icon here and in the browser tab. On iPhone it's used the next time you Add to Home Screen; to change an icon already there, remove it and add it again (your data stays).</small></span>
                 <div id="icon-style-picker" role="radiogroup" aria-label="App icon"></div>
               </div>
@@ -1717,6 +1758,13 @@
           <h2 class="settings-page-title">Vault</h2>
           <p class="settings-page-lead">Encrypted on this device with a password only you know.</p>
           <div class="settings-group" id="vault-settings-body"></div>
+        </section>
+
+        <section class="settings-page" data-page="lock" id="lock-settings">
+          <h2 class="settings-page-title">App lock</h2>
+          <p class="settings-page-lead">Ask for a PIN before Stash opens on this device.</p>
+          <div class="settings-group" id="lock-settings-body"></div>
+          <p class="settings-hint">The lock is a screen in front of Stash, not encryption. To keep things secret, put them in the Vault.</p>
         </section>
 
         <section class="settings-page" data-page="groups" id="groups-settings">
@@ -1830,6 +1878,7 @@
 <script src="brain.js"></script>
 <script src="importer.js"></script>
 <script src="hints.js"></script>
+<script src="applock.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -2666,6 +2715,7 @@
     if (page === "tags") renderTagSettings();
     if (page === "appearance") renderDockSettings();
     if (page === "sync" && syncApi) syncApi.render();
+    if (page === "lock") renderLockSettings();
     if (page === "addons") renderAddons();
     if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
     try { localStorage.setItem(SETTINGS_PAGE_KEY, page); } catch {}
@@ -8912,6 +8962,62 @@
   document.getElementById("vault-lock-btn").addEventListener("click", () => (isVaultUnlocked() ? lockVault("Vault locked") : promptUnlock()));
 
   // ---- Settings ----
+
+  // ---------- App lock settings (applock.js does the locking) ----------
+  function renderLockSettings() {
+    const body = document.getElementById("lock-settings-body");
+    if (!body || !window.CPLock) return;
+    const L = window.CPLock, c = L.settings();
+    body.replaceChildren();
+    const line = (label, small, control) => {
+      const d = document.createElement("div"); d.className = "settings-line";
+      const sp = document.createElement("span"); sp.textContent = label;
+      if (small) { const sm = document.createElement("small"); sm.textContent = small; sp.appendChild(sm); }
+      d.append(sp, control); body.appendChild(d); return d;
+    };
+    const btn = (id, label, onClick, cls) => { const b = document.createElement("button"); b.type = "button"; b.id = id; b.className = cls || "btn"; b.textContent = label; b.addEventListener("click", onClick); return b; };
+    const pinFields = [{ name: "pin", label: "PIN (4 to 12 digits)", type: "password", placeholder: "\u2022\u2022\u2022\u2022" }, { name: "again", label: "The same PIN again", type: "password" }];
+    const pinError = ({ pin, again }) => !/^\d{4,12}$/.test(pin || "") ? "Use 4 to 12 digits." : pin !== again ? "The two PINs don't match." : null;
+    const askPin = (title, then) => openDialog({ title, iconName: "lock-closed", fields: [{ name: "pin", label: "Current PIN", type: "password" }], submitLabel: "Continue",
+      onSubmit: async ({ pin }) => { if (!(await L.check(pin || ""))) return "Wrong PIN."; setTimeout(then, 0); } });
+    if (!c) {
+      line("Lock with a PIN", "Stash asks for it when it opens.", btn("lock-set-pin", "Set a PIN", () => openDialog({ title: "Set a PIN", iconName: "lock-closed", fields: pinFields, submitLabel: "Turn on",
+        onSubmit: async (v) => { const err = pinError(v); if (err) return err; await L.setPin(v.pin, 0); renderLockSettings(); showToast("App lock is on"); } }), "settings-primary"));
+      return;
+    }
+    const sel = document.createElement("select");
+    sel.id = "lock-after"; sel.className = "settings-inline-select"; sel.setAttribute("aria-label", "Lock after");
+    [[0, "Right away"], [1, "After 1 minute"], [5, "After 5 minutes"], [15, "After 15 minutes"], [60, "After 1 hour"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
+    sel.value = String(c.after || 0);
+    sel.addEventListener("change", () => { L.setAfter(Number(sel.value)); showToast("Saved"); });
+    line("Lock when I leave Stash", "Also locks every time Stash opens.", sel);
+    if (L.passkeysOK()) line("Face ID / fingerprint", c.passkey ? "On. The PIN always works too." : "Unlock without typing the PIN, where this device allows it.",
+      c.passkey ? btn("lock-bio-off", "Turn off", () => { L.removePasskey(); renderLockSettings(); })
+        : btn("lock-bio-on", "Turn on", async () => {
+          try { await L.addPasskey(); renderLockSettings(); showToast("Face ID / fingerprint is on"); }
+          catch (err) { showToast(err && err.name === "NotAllowedError" ? "Cancelled" : "This device or browser can't do that here. The PIN still works."); }
+        }));
+    const row = document.createElement("div"); row.className = "settings-row-actions";
+    row.append(btn("lock-now", "Lock now", () => { closeSettings(); L.lock(); }),
+      btn("lock-change-pin", "Change PIN", () => askPin("Change PIN", () => openDialog({ title: "New PIN", iconName: "lock-closed", fields: pinFields, submitLabel: "Save",
+        onSubmit: async (v) => { const err = pinError(v); if (err) return err; await L.setPin(v.pin); showToast("PIN changed"); } }))),
+      btn("lock-off", "Turn off", () => askPin("Turn off app lock", () => { L.turnOff(); renderLockSettings(); showToast("App lock is off"); }), "btn danger ghost"));
+    body.appendChild(row);
+  }
+
+  // Text size: Small / Normal / Large (set before drawing by the script at the top).
+  (function () {
+    const picker = document.getElementById("text-size-picker");
+    const show = () => { const cur = document.documentElement.dataset.text || "normal"; picker.querySelectorAll("[data-text-pick]").forEach((b) => { const on = b.dataset.textPick === cur; b.classList.toggle("active", on); b.setAttribute("aria-checked", String(on)); }); };
+    picker.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-text-pick]"); if (!b) return;
+      const v = b.dataset.textPick;
+      if (v === "normal") delete document.documentElement.dataset.text; else document.documentElement.dataset.text = v;
+      try { localStorage.setItem("copypaster-text-size", v); } catch {}
+      show();
+    });
+    show();
+  })();
 
   function renderVaultSettings() {
     const body = document.getElementById("vault-settings-body");
