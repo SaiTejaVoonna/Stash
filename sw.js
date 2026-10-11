@@ -6,7 +6,7 @@
 // (bump CACHE when they do).
 // Your items are never touched here: they live in IndexedDB, not in this cache.
 
-const CACHE = "copypaster-v22";
+const CACHE = "copypaster-v23";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -36,6 +36,8 @@ const APP_SHELL = [
   "./extras.js",
   "./brain.js",
   "./importer.js",
+  "./help.html",
+  "./privacy.html",
   "./groups.js",
   "./groups.css",
   "./search-core.js",

@@ -1768,6 +1768,7 @@
           <h2 class="settings-page-title">About</h2>
           <div class="settings-group">
             <div class="settings-line"><span><b id="app-version"></b><small>Capture today. Find it tomorrow. Local-first, no account, works offline.</small></span><button id="check-updates-btn" type="button">Check for updates</button></div>
+            <div class="settings-line"><span>Help and privacy<small>How Stash works, and what it does (and never does) with your data.</small></span><span class="settings-row-actions"><a class="btn" id="help-link" href="help.html" target="_blank" rel="noopener">Help</a><a class="btn" id="privacy-link" href="privacy.html" target="_blank" rel="noopener">Privacy</a></span></div>
             <div id="update-status" class="hidden" aria-live="polite"><div class="update-bar"></div><div class="update-text"></div></div>
           </div>
           <div class="settings-section">
@@ -1815,7 +1816,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2.7";
+  const APP_VERSION = "2.8";
 
   // ---------- Profiles ----------
   // Each profile is its own IndexedDB database, so notes, folders, tags and
@@ -8240,16 +8241,16 @@
   // ---------- What's new: shown once after an update ----------
   const SEEN_VERSION_KEY = "copypaster-seen-version";
   const WHATS_NEW = [
-    ["cloud", "Sync your devices through your Google Drive", "Settings \u2192 Sync: what you add on your phone shows up on your laptop and back. It goes to your own Drive, with a readable file per collection that an AI you connect to your Drive can read."],
-    ["sparkle", "CopyPaster is now Stash", "Capture today. Find it tomorrow. New name and icon, same app; everything you saved is still here."],
-    ["layers", "Spaces are now Collections, sub-chats are Sections", "Same data, clearer words: Health › Prescriptions, Food › Cafes. Personal and Work are still your Profiles."],
-    ["chat", "Inbox: drop anything", "Text, photos and files, like messaging yourself, with a caption. Saved at once with when and where. Select messages and Move them into a collection."],
-    ["camera", "Snap in the middle", "Tap the middle of the dock to snap a photo straight into your Inbox. Hold it for the New menu."],
-    ["sparkle", "It guesses what you snapped", "\u201cLooks like food\u201d, worked out on your phone. The photo never leaves it. Only a suggestion."],
-    ["users", "People, places and things", "Doctors, cafes and bikes get their own page inside a collection, with their visits and totals."],
-    ["eye-off", "Hide with filters", "Tap a filter twice to hide it, like everything except Notes. Pick your own dates."],
-    ["menu", "Your dock", "Choose the tabs you want in Settings \u2192 Appearance."]
+    ["inbox", "Inbox: captions, albums, clean up", "Photos and files show first with a caption box. Several photos go as one album. Filters, search, archive and Clean up."],
+    ["sparkle", "Smart sorting", "Type @ to say where it goes and # for a tag. Stash spots dates and amounts and suggests where each message belongs. On your device only."],
+    ["layers", "Spaces are now Collections, sub-chats are Sections", "Same data, clearer words: Health \u203a Prescriptions, Food \u203a Cafes. Personal and Work are still your Profiles."],
+    ["file", "Scanner and Documents", "Scan paper to a clean PDF, sign it, and find it by the words on it. Every PDF and file in one list."],
+    ["pen", "A real sketch pad", "Pens, highlighter, shapes that snap neat, text, lasso and zoom."],
+    ["grid", "Template store and Add-ons", "The 12 most useful templates first, the rest in a store with previews. Switch off what you don't use."],
+    ["upload", "Bring in from other apps", "Google Keep, WhatsApp chat exports, text files and photos: Settings \u2192 Your data."],
+    ["cloud", "Sync your devices through your Google Drive", "Settings \u2192 Sync: what you add on your phone shows up on your laptop and back."]
   ];
+
   function showWhatsNew() {
     let seen = null;
     try { seen = localStorage.getItem(SEEN_VERSION_KEY); } catch { return; }

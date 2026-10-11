@@ -3,7 +3,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.join(__dirname, "..");
+// STASH_ROOT=dist serves the built (minified) copy instead.
+const ROOT = path.join(__dirname, "..", process.env.STASH_ROOT || "");
 const PORT = Number(process.env.PORT) || 8790;
 const TYPES = {
   ".html": "text/html; charset=utf-8",

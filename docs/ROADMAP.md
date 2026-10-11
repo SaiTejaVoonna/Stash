@@ -17,67 +17,67 @@ to be built in.
 ## Phase 1: Features (no support needed)
 
 ### 1.1 Capture
-- [ ] Caption preview for everything: camera, Snap, gallery, files, paste, drag and drop, share. Snap still saves the instant it's taken; the caption is added after.
-- [ ] Albums: several photos sent together show as one grid. HD on/off.
-- [ ] Edit caption later.
+- [x] Caption preview for everything: camera, Snap, gallery, files, paste, drag and drop, share. Snap still saves the instant it's taken; the caption is added after.
+- [x] Albums: several photos sent together show as one grid. HD on/off.
+- [x] Edit caption later.
 
 ### 1.2 Words and structure
-- [ ] Rename on screen: Me → **Inbox**, Spaces → **Collections**, Sub-chats → **Sections**, Pages → **Who / Where**, Forward → **Move to…** (data unchanged; "group" stays reserved).
-- [ ] Who / Where types: **Person · Place · Thing**, pre-picked from hint words ("Dr", "Hospital", "Cafe", "bike") and from the collection, corrected in one tap, learned from corrections.
-- [ ] Shared people, places and things across collections.
-- [ ] Doctors get a specialty; departments used as pages (e.g. "Dermatology", "ENT") are tidied into specialties once, with Undo.
+- [x] Rename on screen: Me → **Inbox**, Spaces → **Collections**, Sub-chats → **Sections**, Pages → **Who / Where**, Forward → **Move to…** (data unchanged; "group" stays reserved).
+- [x] Who / Where types: **Person · Place · Thing**, pre-picked from hint words ("Dr", "Hospital", "Cafe", "bike") and from the collection, corrected in one tap, learned from corrections.
+- [x] Shared people, places and things across collections.
+- [x] Doctors get a specialty; departments used as pages (e.g. "Dermatology", "ENT") are tidied into specialties once, with Undo.
 
 ### 1.3 Inbox
-- [ ] Filters: All · Unsorted · Photos · Files · Links · This week.
-- [ ] Select all · Move · Archive · Delete (Trash 30 days, Undo).
-- [ ] Clean up: blank messages, duplicates, old and untouched, biggest files. Optional auto-archive after 30 / 90 days.
-- [ ] "→ Collection › Section" tag on moved messages; tap to jump there.
-- [ ] Reply / quote, swipe to file, search inside the Inbox.
+- [x] Filters: All · Unsorted · Photos · Files · Links · This week.
+- [x] Select all · Move · Archive · Delete (Trash 30 days, Undo).
+- [x] Clean up: blank messages, duplicates, old and untouched, biggest files. Optional auto-archive after 30 / 90 days.
+- [x] Where it probably goes, on each message (one tap files it); the toast after moving says where. (A tag on moved messages isn't needed: they leave the Inbox.)
+- [x] Swipe to file, search inside the Inbox. (Reply / quote left out: moved messages leave the Inbox.)
 
 ### 1.4 Notes essentials
-- [ ] Formatting: bold, italic, headings, bullet and numbered lists.
-- [ ] Note colours. Share a note as PDF or image.
+- [x] Formatting: bold, italic, headings, bullet and numbered lists.
+- [x] Note colours. Share a note as PDF or image.
 
 ### 1.5 Drawing
-- [ ] Pens: pen, pencil, marker, highlighter, calligraphy. Many colours plus custom; sizes.
-- [ ] Stylus pressure (Apple Pencil, S Pen); pen-only mode (palm doesn't draw).
-- [ ] Shapes that snap neat (line, arrow, circle, square); ruler.
-- [ ] Lasso select / move / resize; stroke eraser and normal eraser; text boxes.
-- [ ] Zoom and pan; paper styles (plain, lined, grid, dots). Save as image or PDF.
+- [x] Pens: pen, pencil, marker, highlighter, calligraphy. Many colours plus custom; sizes.
+- [x] Stylus pressure (Apple Pencil, S Pen); pen-only mode (palm doesn't draw).
+- [x] Shapes that snap neat (line, arrow, circle, square); ruler.
+- [x] Lasso select / move / resize; stroke eraser and normal eraser; text boxes.
+- [x] Zoom and pan; paper styles (plain, lined, grid, dots). Save as image or PDF.
 
 ### 1.6 Files and media (add-ons)
-- [ ] Settings → Add-ons: switch features on or off; off ones aren't loaded.
-- [ ] Audio: add mp3 / m4a / wav; player with speed and skip; waveform.
-- [ ] Video: record or add; shrink big ones; player.
-- [ ] PDF viewer inside Stash; any other file stored and opened in the phone's app.
-- [ ] Bigger files (about 100 MB), storage used per collection, ask the browser to keep Stash's data.
+- [x] Settings → Add-ons: switch features on or off; off ones aren't loaded.
+- [x] Audio: add mp3 / m4a / wav; player with speed and skip; waveform.
+- [x] Video: record or add; shrink big ones; player.
+- [x] PDF viewer inside Stash; any other file stored and opened in the phone's app.
+- [x] Bigger files (about 100 MB), storage used per collection, ask the browser to keep Stash's data.
 
 ### 1.7 Documents and scanner
-- [ ] **Documents** view: every PDF and scan from every collection in one list, with thumbnails, search and sort. Files still live in their collection.
-- [ ] Scanner v1: Camera roll · Take photo · Scan document. Live camera with page edges, drag corners, straighten, filters (none, B&W, grey, colour boost), quality (small / medium / high), several pages → one PDF, reorder and delete pages, rename, share, print.
-- [ ] Signature: draw once, place on any PDF.
-- [ ] OCR on the device (Tesseract.js, downloaded on first use): text from photos and PDFs becomes searchable. Good on print, weak on handwriting.
-- [ ] Scanner v2 (later): auto-capture, annotate, merge / split, compress.
+- [x] **Documents** view: every PDF and scan from every collection in one list, with thumbnails, search and sort. Files still live in their collection.
+- [x] Scanner v1: Take photo · From photos. Page edges found on the photo (live camera outline comes with v2), drag corners, straighten, filters (none, B&W, grey, colour boost), quality (small / medium / high), several pages → one PDF, reorder and delete pages, rename, share, print.
+- [x] Signature: draw once, place on any PDF.
+- [x] OCR on the device (Tesseract.js, downloaded on first use): text from photos and PDFs becomes searchable. Good on print, weak on handwriting.
+- [ ] Scanner v2 (later): live camera outline, auto-capture, annotate, merge / split, compress.
 
 ### 1.8 Small extras (add-ons)
-- [ ] QR / barcode scanner. Contact cards (call / WhatsApp in one tap). Location pins (open in Maps). Add to calendar (.ics). Link cards. Voice to text where the phone supports it.
+- [x] QR / barcode scanner. Contact cards (call / WhatsApp in one tap). Location pins (open in Maps). Add to calendar (.ics). Link cards. (Voice to text: use the keyboard's mic; the browser's own speech service sends audio to Google or Apple, so it's left out.)
 
 ### 1.9 The brain (understanding what you type)
-- [ ] `@` (where it goes) and `#` (what it's about) suggestions, shown only when typed; chips only when tapped. Pick between sections with the same name; more than one collection allowed.
-- [ ] Spot dates, money, km / litres, phone numbers as tap-to-use chips.
-- [ ] Read whole sentences using the person's own names and habits.
-- [ ] Sort / Sort all with a review list; setting: Suggest (default) or Auto when sure (with Undo).
-- [ ] Place memory: a snap near a saved place suggests that place.
+- [x] `@` (where it goes) and `#` (what it's about) suggestions, shown only when typed; chips only when tapped. Pick between sections with the same name; more than one collection allowed.
+- [x] Spot dates, money, km / litres, phone numbers as tap-to-use chips.
+- [x] Read whole sentences using the person's own names and habits.
+- [x] Sort / Sort all with a review list; setting: Suggest (default) or Auto when sure (with Undo).
+- [x] Place memory: a snap near a saved place suggests that place.
 
 ### 1.10 Templates
-- [ ] Core 12 + Blank when creating; **Template store** for the rest: categories, search, featured, preview with example entries, Try for 7 days, share layouts by link (never entries).
+- [x] Core 12 + Blank when creating; **Template store** for the rest: categories, search, featured, preview with example entries, Try for 7 days, share layouts by link (never entries).
 
 ### 1.11 Bring data in
-- [ ] Import from Google Keep (Takeout), Apple Notes (exported files), WhatsApp chat export (with media), a folder of photos or PDFs.
+- [x] Import from Google Keep (Takeout), Apple Notes (exported files), WhatsApp chat export (with media), a folder of photos or PDFs.
 
 ### 1.12 Ready to publish
-- [ ] Minify build for the published copy (readable source stays in the repo).
-- [ ] Help / FAQ page and privacy page.
+- [x] Minify build for the published copy (`npm run build` → dist/; all tests pass on it too).
+- [x] Help / FAQ page and privacy page.
 
 ---
 
