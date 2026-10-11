@@ -123,12 +123,12 @@ test("spaces become files; a space or notes left out are moved to Drive's bin", 
   await page.locator('[data-space]').first().uncheck();
   await page.click("#sync-now");
   await expect(page.locator("#toast")).toContainText("Synced");
-  expect(await driveFiles(page)).not.toContain("My bike.md");
+  await expect.poll(() => driveFiles(page)).not.toContain("My bike.md");
   // Notes off too.
   await page.locator("#sync-notes").uncheck();
   await page.click("#sync-now");
   await expect(page.locator("#toast")).toContainText("Synced");
-  expect(await driveFiles(page)).not.toContain("Notes.md");
+  await expect.poll(() => driveFiles(page)).not.toContain("Notes.md");
 });
 
 test("Markdown for a space: pages with their details, sub-chats, amounts and fuel maths", async ({ page }) => {

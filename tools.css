@@ -448,3 +448,45 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 .icon-style-opt img { width: 52px; height: 52px; border-radius: 12px; display: block; }
 .icon-style-opt.active { border-color: var(--accent); color: var(--text); }
 @media (max-width: 720px) { #icon-style-picker { grid-template-columns: repeat(3, 72px); justify-content: start; width: 100%; } }
+
+/* ---------- Caption preview (Inbox) ---------- */
+.cx-preview { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; background: color-mix(in srgb, #000 92%, var(--bg)); color: #fff; }
+.cx-preview[hidden] { display: none; }
+.cx-pv-head { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) 10px 8px; }
+.cx-pv-head .btn { color: #fff; }
+.cx-pv-title { flex: 1; font-weight: var(--fw-semibold); font-size: 15px; }
+.cx-pv-hd { min-width: 44px; height: 32px; padding: 0 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,.5); background: transparent; color: rgba(255,255,255,.7); font-weight: 800; font-size: 13px; cursor: pointer; text-decoration: line-through; }
+.cx-pv-hd.on { color: #fff; border-color: #fff; text-decoration: none; }
+.cx-pv-stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 8px 14px; }
+.cx-pv-big { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
+.cx-pv-filebig { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 28px; border-radius: 18px; background: rgba(255,255,255,.08); max-width: 320px; word-break: break-word; }
+.cx-pv-filebig .icon { width: 56px; height: 56px; color: var(--accent); }
+.cx-pv-filebig small { color: rgba(255,255,255,.6); }
+.cx-pv-empty { color: rgba(255,255,255,.6); }
+.cx-pv-strip { display: flex; gap: 8px; overflow-x: auto; padding: 6px 14px; }
+.cx-pv-thumb { position: relative; flex: none; }
+.cx-pv-pick { width: 58px; height: 58px; border-radius: 10px; overflow: hidden; border: 2px solid transparent; padding: 0; background: rgba(255,255,255,.1); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.cx-pv-thumb.on .cx-pv-pick { border-color: var(--accent); }
+.cx-pv-pick img { width: 100%; height: 100%; object-fit: cover; }
+.cx-pv-x { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: none; background: #000; color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.cx-pv-x .icon { width: 12px; height: 12px; }
+.cx-pv-more { flex: none; width: 58px; height: 58px; border-radius: 10px; border: 1.5px dashed rgba(255,255,255,.4); background: none; color: #fff; display: grid; place-items: center; cursor: pointer; }
+.cx-pv-bar { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); }
+.cx-pv-bar .cx-box { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+#cx-caption { flex: 1; resize: none; border: none; background: transparent; color: #fff; font: inherit; font-size: 16px; line-height: 1.4; padding: 9px 0; outline: none; max-height: 120px; }
+#cx-caption::placeholder { color: rgba(255,255,255,.55); }
+/* An album in a message: up to four photos in a grid. */
+.cx-album { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; border-radius: 12px; overflow: hidden; width: min(280px, 64vw); }
+.cx-album-cell { position: relative; aspect-ratio: 1; }
+.cx-album.two .cx-album-cell { aspect-ratio: 3 / 4; }
+.cx-album-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cx-album-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: 24px; font-weight: 700; }
+body.cx-previewing #tab-bar { display: none !important; }
+/* Right after a snap: the text box adds its caption. */
+.cx-capbar { display: flex; align-items: center; gap: 10px; margin: 0 10px; padding: 6px 6px 6px 8px; border-radius: 14px 14px 0 0; background: var(--surface-2); border-left: 3px solid var(--accent); }
+.cx-capbar[hidden] { display: none; }
+.cx-capbar img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+.cx-capbar span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cx-capbar b { font-size: var(--fs-sm); }
+.cx-capbar small { font-size: var(--fs-xs); color: var(--text-3); }
+.cx-album.three .cx-album-cell:last-child { grid-column: span 2; aspect-ratio: 2 / 1; }

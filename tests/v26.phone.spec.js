@@ -76,6 +76,13 @@ test("Snap is the dock's middle button; holding it opens New; Settings can put N
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.tap("#tab-bar [data-tab='snap']")]);
   await chooser.setFiles({ name: "a.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64") });
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  // Saved at once; the box below now adds its caption.
+  await expect(page.locator("#cx-capbar")).toContainText("Saved");
+  await page.fill("#cx-input", "Matcha boba");
+  await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  await expect(page.locator("#chat-pane .cx-msg")).toContainText("Matcha boba");
+  await expect(page.locator("#cx-capbar")).toBeHidden();
   // Hold for the New menu.
   const snap = page.locator("#tab-bar [data-tab='snap']");
   const box = await snap.boundingBox();
@@ -158,10 +165,12 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
   const ch1 = page.waitForEvent("filechooser");
   await page.tap("#cx-gallery");
   await (await ch1).setFiles({ name: "receipt.png", mimeType: "image/png", buffer: PNG1 });
+  await page.tap("#cx-preview-send");
   await page.tap("#cx-plus");
   const ch2 = page.waitForEvent("filechooser");
   await page.tap("#cx-files");
   await (await ch2).setFiles({ name: "insurance.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
+  await page.tap("#cx-preview-send");
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(3);
   await expect(page.locator(".cx-file")).toContainText("insurance.pdf");
   await expect(page.locator("#chat-pane .cx-msg").first()).toContainText("Tyre pressure 32 psi");
@@ -209,4 +218,52 @@ test("Me chat: hold a message to select it, delete with Undo; Back leaves the ch
   await page.goBack();
   await expect(page.locator("#chat-pane")).toBeHidden();
   await expect(page.locator(".item-row", { hasText: "Call the dentist" })).toHaveCount(0);
+});
+
+test("Inbox captions: photos and a file show first, get a caption, and go as one album; HD off keeps no originals; edit later", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  await page.tap("#cx-plus");
+  const ch = page.waitForEvent("filechooser");
+  await page.tap("#cx-gallery");
+  await (await ch).setFiles([{ name: "a.png", mimeType: "image/png", buffer: PNG1 }, { name: "b.png", mimeType: "image/png", buffer: PNG1 },
+    { name: "c.png", mimeType: "image/png", buffer: PNG1 }, { name: "bill.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 x") }]);
+  await expect(page.locator("#cx-preview")).toBeVisible();
+  await expect(page.locator(".cx-pv-title")).toHaveText("4 to send");
+  await expect(page.locator("#tab-bar")).toBeHidden();
+  // Drop one, turn HD off, write a caption.
+  await page.locator(".cx-pv-x").nth(2).tap();
+  await expect(page.locator(".cx-pv-title")).toHaveText("3 to send");
+  await page.tap("#cx-hd");
+  await page.fill("#cx-caption", "Matcha boba at the cafe");
+  await page.tap("#cx-preview-send");
+  await expect(page.locator("#cx-preview")).toBeHidden();
+  const msg = page.locator("#chat-pane .cx-msg");
+  await expect(msg).toHaveCount(1);
+  await expect(msg.locator(".cx-album img")).toHaveCount(2);
+  await expect(msg.locator(".cx-file")).toContainText("bill.pdf");
+  await expect(msg).toContainText("Matcha boba at the cafe");
+  const stored = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("items").objectStore("items").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); const n = all.find((i) => i.chat); return { images: n.images.length, captures: n.captures.length, original: n.capture.original, content: n.content };
+  });
+  expect(stored).toEqual({ images: 2, captures: 1, original: null, content: "Matcha boba at the cafe" });
+  // Edit the caption later: select it → Edit caption.
+  await page.tap("#cx-select");
+  await msg.tap();
+  await page.tap("#cx-edit");
+  await expect(page.locator(".cx-pv-title")).toHaveText("Edit caption");
+  await page.fill("#cx-caption", "Matcha boba, 250");
+  await page.tap("#cx-preview-send");
+  await expect(msg).toContainText("Matcha boba, 250");
+  // Back closes the preview before anything else.
+  await page.tap("#cx-plus");
+  const ch2 = page.waitForEvent("filechooser");
+  await page.tap("#cx-files");
+  await (await ch2).setFiles({ name: "x.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 y") });
+  await expect(page.locator("#cx-preview")).toBeVisible();
+  await page.goBack();
+  await expect(page.locator("#cx-preview")).toBeHidden();
+  await expect(page.locator("#chat-pane")).toBeVisible();
+  await expect(msg).toHaveCount(1);
 });

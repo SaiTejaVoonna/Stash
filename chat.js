@@ -9,8 +9,8 @@
   "use strict";
 
   let api = null;
-  let pane, bodyEl, barEl, selBar, input, plusMenu;
-  const ui = { open: false, selecting: false, picked: new Set(), menu: false };
+  let pane, bodyEl, barEl, selBar, input, plusMenu, previewEl, capBar;
+  const ui = { open: false, selecting: false, picked: new Set(), menu: false, preview: null, captionFor: null };
 
   function h(tag, attrs, ...kids) {
     const el = document.createElement(tag);
@@ -60,7 +60,9 @@
       h("div", { class: "cx-box" }, input,
         h("button", { class: "gp-round", id: "cx-snap", "aria-label": "Camera", title: "Camera", onclick: () => api.camera() }, ic("camera"))),
       h("button", { class: "gp-round send", id: "cx-send", "aria-label": "Send", onclick: sendText }, ic("send")));
-    pane.append(head, bodyEl, plusMenu, selBar, barEl);
+    previewEl = h("div", { class: "cx-preview", id: "cx-preview", hidden: true, role: "dialog", "aria-label": "Add a caption" });
+    capBar = h("div", { class: "cx-capbar", id: "cx-capbar", hidden: true });
+    pane.append(head, bodyEl, plusMenu, selBar, capBar, barEl, previewEl);
     document.getElementById("list-pane").after(pane);
     // Drop files anywhere on the chat (computers).
     pane.addEventListener("dragover", (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
@@ -68,13 +70,13 @@
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      api.addFiles(files, "file").then(render);
+      openPreview(files, "file");
     });
     input.addEventListener("paste", (e) => {
       const files = Array.from((e.clipboardData && e.clipboardData.files) || []);
       if (!files.length) return;
       e.preventDefault();
-      api.addFiles(files, "file").then(render);
+      openPreview(files, "file");
     });
     document.addEventListener("pointerdown", (e) => {
       if (ui.menu && !e.target.closest("#cx-plus-menu, #cx-plus")) toggleMenu(false);
@@ -88,7 +90,7 @@
     el.addEventListener("change", async () => {
       const files = Array.from(el.files || []);
       el.remove();
-      if (files.length) { await api.addFiles(files, origin); render(); }
+      if (files.length) openPreview(files, origin);
     });
     document.body.append(el);
     el.click();
@@ -98,16 +100,136 @@
     if (!text) return;
     input.value = "";
     grow();
+    // Right after a snap, what you type is its caption.
+    if (ui.captionFor) { const id = ui.captionFor; captionMode(null); await api.setCaption(id, text); render(); input.focus(); return; }
     await api.addText(text);
     render();
     input.focus();
+  }
+
+  // ---------- Caption: look before you send, like WhatsApp ----------
+  // New photos and files: shown first, with a caption box. Send saves them as one
+  // message (several photos become an album). A snap is saved the moment it's
+  // taken; this then only adds its caption.
+  const HD_KEY = "copypaster-hd";
+  const hdOn = () => { try { return localStorage.getItem(HD_KEY) !== "0"; } catch { return true; } };
+  const isPhoto = (f) => /^image\//.test(f.type) && f.type !== "image/svg+xml";
+  function openPreview(files, origin) {
+    if (!files.length) return;
+    toggleMenu(false);
+    ui.preview = { mode: "new", files: files.slice(0, 10), origin, at: 0, caption: "", urls: new Map() };
+    document.body.classList.add("cx-previewing");
+    if (files.length > 10) api.toast("Up to 10 at a time; the first 10 are here");
+    renderPreview(true);
+  }
+  // After a snap: the box below becomes its caption (a small bar shows which photo).
+  function captionMode(id) {
+    ui.captionFor = id;
+    const n = id && api.items().find((x) => x.id === id);
+    capBar.hidden = !n;
+    input.placeholder = n ? "Add a caption to this photo…" : "Message yourself…";
+    if (!n) { capBar.replaceChildren(); return; }
+    capBar.replaceChildren(
+      n.images && n.images[0] ? h("img", { src: n.images[0], alt: "" }) : ic("camera"),
+      h("span", null, h("b", null, "Saved"), h("small", null, "Type a caption, or carry on")),
+      h("button", { class: "btn icon ghost", id: "cx-capbar-close", "aria-label": "No caption", onclick: () => captionMode(null) }, ic("close")));
+    if (!window.matchMedia("(pointer: coarse)").matches) input.focus();
+  }
+  // Adds or changes the caption of a message that's already saved.
+  function openCaption(id, { fresh = false } = {}) {
+    if (fresh) { captionMode(id); return; }
+    const n = api.items().find((x) => x.id === id);
+    if (!n) return;
+    toggleMenu(false);
+    ui.preview = { mode: "edit", id, fresh, photos: n.images || [], files: n.files || [], at: 0, caption: (n.content || "").trim() || "" };
+    document.body.classList.add("cx-previewing");
+    renderPreview(true);
+  }
+  function closePreview() {
+    if (!ui.preview) return;
+    if (ui.preview.urls) for (const u of ui.preview.urls.values()) URL.revokeObjectURL(u);
+    ui.preview = null;
+    document.body.classList.remove("cx-previewing");
+    previewEl.hidden = true;
+    previewEl.replaceChildren();
+  }
+  const urlOf = (f) => {
+    const m = ui.preview.urls;
+    if (!m.has(f)) m.set(f, URL.createObjectURL(f));
+    return m.get(f);
+  };
+  function renderPreview(focus) {
+    const pv = ui.preview;
+    if (!pv) return;
+    previewEl.hidden = false;
+    // What's being sent: photos (as images) and files (as cards).
+    const list = pv.mode === "new"
+      ? pv.files.map((f) => (isPhoto(f) ? { photo: urlOf(f), name: f.name, file: f } : { name: f.name || "file", size: f.size, type: f.type || "", file: f }))
+      : [...pv.photos.map((p) => ({ photo: p })), ...pv.files.map((f) => ({ name: f.name, size: f.size, type: f.type }))];
+    pv.at = Math.min(pv.at, Math.max(0, list.length - 1));
+    const cur = list[pv.at];
+    const big = !cur ? h("div", { class: "cx-pv-empty" }, "Nothing left to send")
+      : cur.photo ? h("img", { class: "cx-pv-big", src: cur.photo, alt: "" })
+      : h("div", { class: "cx-pv-filebig" }, ic("file"), h("b", null, cur.name), h("small", null, ((cur.type.split("/")[1] || "file").toUpperCase()) + (cur.size ? " · " + sizeOf(cur.size) : "")));
+    const strip = h("div", { class: "cx-pv-strip" }, list.map((x, i) => h("div", { class: "cx-pv-thumb" + (i === pv.at ? " on" : "") },
+      h("button", { class: "cx-pv-pick", "aria-label": "Show " + (x.name || "photo " + (i + 1)), onclick: () => { pv.at = i; renderPreview(); } },
+        x.photo ? h("img", { src: x.photo, alt: "" }) : ic("file")),
+      pv.mode === "new" ? h("button", { class: "cx-pv-x", "aria-label": "Remove " + (x.name || "this"), onclick: () => {
+        const f = pv.files[i];
+        if (pv.urls.has(f)) { URL.revokeObjectURL(pv.urls.get(f)); pv.urls.delete(f); }
+        pv.files.splice(i, 1);
+        if (!pv.files.length) { closePreview(); return; }
+        renderPreview();
+      } }, ic("close")) : null)),
+      pv.mode === "new" && pv.files.length < 10 ? h("button", { class: "cx-pv-more", "aria-label": "Add more", onclick: () => {
+        const el = h("input", { type: "file", multiple: true, hidden: true });
+        el.addEventListener("change", () => { const more = Array.from(el.files || []); el.remove(); pv.files.push(...more.slice(0, 10 - pv.files.length)); renderPreview(); });
+        document.body.append(el); el.click();
+      } }, ic("plus")) : null);
+    const cap = h("textarea", { id: "cx-caption", rows: "1", placeholder: "Add a caption…", "aria-label": "Caption", value: pv.caption,
+      oninput: (e) => { pv.caption = e.target.value; e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px"; },
+      onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); send(); } } });
+    const hasPhoto = pv.mode === "new" && pv.files.some(isPhoto);
+    const hd = hasPhoto ? h("button", { class: "cx-pv-hd" + (hdOn() ? " on" : ""), id: "cx-hd", type: "button", "aria-pressed": hdOn() ? "true" : "false",
+      title: "HD keeps the original photo too (bigger). Off keeps a smaller copy only.",
+      onclick: () => { try { localStorage.setItem(HD_KEY, hdOn() ? "0" : "1"); } catch {} renderPreview(); } }, "HD") : null;
+    const send = async () => {
+      const text = pv.caption.trim();
+      if (pv.mode === "new") {
+        const files = pv.files.slice(), origin = pv.origin;
+        closePreview();
+        await api.addFiles(files, origin, { caption: text, hd: hdOn() });
+      } else {
+        const id = pv.id;
+        closePreview();
+        await api.setCaption(id, text);
+      }
+      render();
+    };
+    previewEl.replaceChildren(
+      h("div", { class: "cx-pv-head" },
+        h("button", { class: "btn icon ghost", id: "cx-preview-close", "aria-label": pv.mode === "new" ? "Cancel" : "Close", onclick: closePreview }, ic("close", "icon-lg")),
+        h("span", { class: "cx-pv-title" }, pv.mode === "new" ? (list.length === 1 ? "1 to send" : list.length + " to send") : pv.fresh ? "Saved · add a caption?" : "Edit caption"),
+        hd),
+      h("div", { class: "cx-pv-stage" }, big),
+      list.length > 1 || pv.mode === "new" ? strip : null,
+      h("div", { class: "cx-pv-bar" }, h("div", { class: "cx-box" }, cap),
+        h("button", { class: "gp-round send", id: "cx-preview-send", "aria-label": pv.mode === "new" ? "Send" : "Save caption", disabled: pv.mode === "new" && !pv.files.length, onclick: send },
+          ic(pv.mode === "new" ? "send" : "check"))));
+    if (focus && !window.matchMedia("(pointer: coarse)").matches) setTimeout(() => cap.focus(), 30);
   }
 
   // ---------- Messages ----------
   function bubble(n) {
     const picked = ui.picked.has(n.id);
     const b = h("div", { class: "cx-msg" + (picked ? " picked" : ""), "data-id": n.id, role: "button", tabindex: "0" });
-    for (const p of (n.images || []).slice(0, 4)) b.append(h("img", { class: "cx-photo", src: p, alt: "", loading: "lazy" }));
+    const photos = n.images || [];
+    if (photos.length === 1) b.append(h("img", { class: "cx-photo", src: photos[0], alt: "", loading: "lazy" }));
+    else if (photos.length > 1) {
+      // An album: up to four in a grid, "+3" on the last when there are more.
+      b.append(h("div", { class: "cx-album" + (photos.length === 2 ? " two" : photos.length === 3 ? " three" : "") }, photos.slice(0, 4).map((p, i) => h("div", { class: "cx-album-cell" },
+        h("img", { src: p, alt: "", loading: "lazy" }), i === 3 && photos.length > 4 ? h("span", { class: "cx-album-more" }, "+" + (photos.length - 4)) : null))));
+    }
     for (const f of n.files || []) b.append(h("div", { class: "cx-file" }, ic("file"), h("span", null, h("b", null, f.name), h("small", null, (f.type.split("/")[1] || "file").toUpperCase() + " · " + sizeOf(f.size))),
       h("button", { class: "btn gp-small", "aria-label": "Open " + f.name, onclick: (e) => { e.stopPropagation(); api.openFile(f); } }, "Open")));
     // A file's name is its title; don't say it twice.
@@ -149,6 +271,7 @@
     const list = () => api.items().filter((x) => ui.picked.has(x.id));
     selBar.replaceChildren(
       h("span", { class: "cx-count" }, n ? n + " selected" : "Tap messages to pick them"),
+      n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),
       h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Forward"));
   }
@@ -190,11 +313,15 @@
     pane.hidden = true;
     document.body.classList.remove("chat-mode");
     toggleMenu(false);
+    closePreview();
+    captionMode(null);
     if (ui.selecting) setSelecting(false);
     api.onExit();
   }
   // Back: the + menu, then selecting, then leave.
   function stepBack() {
+    if (ui.preview) { closePreview(); return true; }
+    if (ui.captionFor) { captionMode(null); return true; }
     if (ui.menu) { toggleMenu(false); return true; }
     if (ui.selecting) { setSelecting(false); return true; }
     if (!ui.open) return false;
@@ -205,7 +332,7 @@
   function init(appApi) {
     api = appApi;
     build();
-    return { open, close, stepBack, render, isOpen: () => ui.open, focus: () => input && input.focus() };
+    return { open, close, stepBack, render, isOpen: () => ui.open, focus: () => input && input.focus(), caption: openCaption, preview: openPreview };
   }
   window.CPChat = { init };
 })();

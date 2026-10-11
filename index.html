@@ -2303,6 +2303,8 @@
     // v2.6: a snap waits in Inbox as "captured" until it's organised; capture keeps the original and how/when/where it was taken.
     item.captured = !!item.captured;
     item.capture = window.CPSnap && item.capture ? window.CPSnap.normalizeCapture(item.capture) : null;
+    // An album's other photos: how, when and where each was taken (the first is in capture).
+    item.captures = window.CPSnap && Array.isArray(item.captures) ? item.captures.map((c) => window.CPSnap.normalizeCapture(c)).filter(Boolean).slice(0, 20) : [];
     // v2.6: a message in the Me chat, and files dropped there (PDFs and the like, up to 10 MB each).
     item.chat = !!item.chat;
     item.files = (Array.isArray(item.files) ? item.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
@@ -6063,8 +6065,11 @@
     const item = normalize({ id: uuid(), type: "note", title: "", content: "", images: [shot.display], captured: true, chat: true, capture: shot.capture, createdAt: now, updatedAt: now });
     try { await saveItem(item); } catch { return; }
     renderAllViews();
-    // A snap is a message to yourself: show it in the Me chat.
-    if (chatApi) { if (!chatApi.isOpen()) await openChat(); else chatApi.render(); }
+    // A snap is a message to yourself: show it in the Me chat, then offer a caption.
+    if (chatApi) {
+      if (!chatApi.isOpen()) await openChat(); else chatApi.render();
+      chatApi.caption(item.id, { fresh: true });
+    }
     showToast("Saved", groupsApi ? { action: { label: "Sort", onClick: () => sortSnapById(item.id) } } : { action: { label: "Snap another", onClick: () => snapNow() } });
     if (snapLocationOn()) addSnapLocation(item.id);
     if (snapSeeOn()) addSnapGuess(item.id, shot.display);
@@ -9627,27 +9632,48 @@
         icon,
         items: () => cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted && !i._locked).sort((a, b) => a.createdAt - b.createdAt),
         addText: async (text) => { await chatAdd({ content: text }); renderNav(); },
-        // Photos keep their original and capture details, like a snap; other files are kept as they are.
-        addFiles: async (files, origin) => {
+        // Everything sent together is one message: photos become an album (each
+        // keeps how and when it was taken; HD keeps the originals too), other files
+        // ride along, and the caption is the message's text.
+        addFiles: async (files, origin, { caption = "", hd = true } = {}) => {
           let skipped = 0;
+          const images = [], captures = [], kept = [];
           for (const f of files) {
             if (/^image\//.test(f.type) && f.type !== "image/svg+xml" && window.CPSnap) {
               const shot = await window.CPSnap.fromFile(f, origin === "library" ? "library" : "file");
               if (shot) {
-                const item = await chatAdd({ images: [shot.display], captured: true, capture: shot.capture });
-                if (snapSeeOn()) addSnapGuess(item.id, shot.display);
+                images.push(shot.display);
+                captures.push(hd ? shot.capture : { ...shot.capture, original: null });
                 continue;
               }
             }
             if (f.size > CHAT_FILE_MAX || /^(text\/html|image\/svg)/i.test(f.type)) { skipped++; continue; }
             const data = await readFileData(f);
             if (!data) { skipped++; continue; }
-            await chatAdd({ title: f.name.slice(0, 200), files: [{ name: f.name, type: f.type || "application/octet-stream", size: f.size, data }] });
+            kept.push({ name: f.name, type: f.type || "application/octet-stream", size: f.size, data });
+          }
+          if (images.length || kept.length) {
+            const fields = { content: caption, files: kept };
+            if (images.length) Object.assign(fields, { images, captured: true, capture: captures[0], captures: captures.slice(1) });
+            else if (!caption && kept.length === 1) fields.title = kept[0].name.slice(0, 200);
+            const item = await chatAdd(fields);
+            if (images.length && snapSeeOn()) addSnapGuess(item.id, images[0]);
           }
           if (skipped) showToast(skipped === 1 ? "One file was skipped (over 10 MB, or a web page)" : skipped + " files were skipped (over 10 MB, or web pages)");
           renderNav();
           if (chatApi) chatApi.render();
         },
+        setCaption: async (id, text) => {
+          const item = cache.find((i) => i.id === id);
+          if (!item || item._locked) return;
+          if (editor && currentId === id) editor.flush();
+          item.content = text;
+          item.updatedAt = Date.now();
+          await saveItem(item);
+          if (currentId === id) { const ci = document.getElementById("content-input"); if (ci) ci.value = text; }
+          if (chatApi) chatApi.render();
+        },
+        toast: (msg) => showToast(msg),
         camera: () => snapNow(),
         open: async (id) => { if (currentId && currentId !== id) await saveOpenDraft(); openDetail(id); },
         openFile: (f) => openChatFile(f),
