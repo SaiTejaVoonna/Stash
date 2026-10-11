@@ -445,3 +445,12 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
 .gp-tpl-sec { font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
 .gp-ava.lg { width: 52px; height: 52px; font-size: 17px; }
 .gp-ent-photo { display: flex; gap: 10px; align-items: center; }
+
+/* Departments used as pages: a quiet card offering to tidy them up. */
+.gp-tidy { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; padding: 10px 12px; border-radius: var(--r-lg); border: 1px dashed var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); font-size: var(--fs-sm); }
+.gp-tidy > .icon { color: var(--accent); flex: none; }
+.gp-tidy > span { flex: 1 1 200px; }
+.gp-tidy-head { margin: 14px 0 6px; font-size: 15px; }
+.gp-tidy-entry { padding: 8px 0; border-top: 1px solid var(--line); }
+.gp-tidy-entry .gp-sort-row { margin-top: 6px; }
+.gp-specs { flex-basis: 100%; }

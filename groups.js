@@ -22,7 +22,7 @@
   let groups = [];
   let entries = [];
   let enabled = false;
-  const ui = { screen: null, g: null, s: "all", tag: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, drafts: {} };
+  const ui = { screen: null, g: null, s: "all", tag: null, spec: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, drafts: {} };
   let prefs = { lastSub: {}, lastTag: {}, snapDest: null, collapsed: [], sort: {} };
   const TRASH_DAYS = 30;
   // Each group remembers its own sort; a new group starts at Newest first.
@@ -347,7 +347,7 @@
     if (!groupById(gid)) return;
     await api.leaveNotes();
     // A doctor/place filter and search stay while you switch tabs in the same group.
-    if (ui.g !== gid) { ui.tag = null; ui.q = ""; ui.tools = false; }
+    if (ui.g !== gid) { ui.tag = null; ui.spec = null; ui.q = ""; ui.tools = false; }
     ui.menu = false;
     if (ui.g !== gid) ui.open = new Set();
     ui.screen = "group"; ui.g = gid; ui.s = sid;
@@ -436,11 +436,102 @@
   }
 
   // ---------- Main column ----------
+  // ---------- Doctors: specialties as filters, departments tidied ----------
+  // Pages of a doctors' collection that are really departments ("Dermatology", "ENT").
+  const isDoctors = (g) => !!g && !!g.mainLabel && groupType(g).key === "doctor";
+  const deptPages = (g) => (isDoctors(g) ? g.mainTags.filter((t) => E.specialtyOf(t.name)) : []);
+  const specOfPage = (t) => {
+    const ent = pageEntity(t);
+    const sp = ent && ent.type === "doctor" && ent.fields.specialty ? E.shortSpecialty(ent.fields.specialty) : "";
+    return sp || "";
+  };
+  // "Skin", "Gastro"…: from the doctors' specialties and from entries tagged with one.
+  function specialtiesIn(g) {
+    if (!isDoctors(g)) return [];
+    const set = new Map();
+    for (const t of g.mainTags) { const sp = specOfPage(t); if (sp) set.set(sp, (set.get(sp) || 0)); }
+    for (const e of C.inGroup(entries, g.id)) for (const tg of e.tags) { const sp = E.specialtyOf(tg); if (sp) set.set(sp.short, set.get(sp.short) || 0); }
+    return [...set.keys()];
+  }
+  function matchesSpec(e, g, spec) {
+    const r = e.refs.find((x) => x.g === g.id);
+    const t = r && r.tag ? g.mainTags.find((x) => x.id === r.tag) : null;
+    if (t && specOfPage(t) === spec) return true;
+    return e.tags.some((tg) => { const sp = E.specialtyOf(tg); return sp && sp.short === spec; });
+  }
+  function listFor(g) {
+    const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q);
+    return ui.spec ? list.filter((e) => matchesSpec(e, g, ui.spec)) : list;
+  }
+  // Turns department pages into a specialty: each entry gets a doctor, or keeps the
+  // specialty as a tag when the doctor isn't known. One Undo puts everything back.
+  function openTidyDepartments(g) {
+    const depts = deptPages(g);
+    if (!depts.length) return;
+    const doctors = g.mainTags.filter((t) => !E.specialtyOf(t.name));
+    const choice = new Map(); // entry id → doctor page id, or "" for not known
+    sheet("Tidy up departments", (body, close) => {
+      body.append(h("p", { class: "gp-hint" }, depts.map((t) => t.name).join(" and ") + (depts.length > 1 ? " look like specialties" : " looks like a specialty") +
+        ", not people. Pick the doctor for each entry. If you don't know, it keeps the specialty as a tag. Nothing is deleted."));
+      for (const t of depts) {
+        const sp = E.specialtyOf(t.name);
+        const list = entries.filter((e) => !e.deletedAt && e.refs.some((r) => r.g === g.id && r.tag === t.id));
+        const guess = doctors.filter((d) => specOfPage(d) === sp.short);
+        body.append(h("h4", { class: "gp-tidy-head" }, t.name, h("small", { class: "gp-dim" }, " · " + (list.length === 1 ? "1 entry" : list.length + " entries"))));
+        if (!list.length) body.append(h("p", { class: "gp-hint" }, "No entries; the page is just removed."));
+        for (const e of list) {
+          choice.set(e.id, guess.length === 1 ? guess[0].id : "");
+          const row = h("div", { class: "gp-sort-row gp-tidy-row", "data-entry": e.id });
+          const draw = () => row.replaceChildren(
+            ...doctors.map((d) => h("button", { class: "gp-mini" + (choice.get(e.id) === d.id ? " active" : ""), type: "button", onclick: () => { choice.set(e.id, d.id); draw(); } }, d.name)),
+            h("button", { class: "gp-mini" + (choice.get(e.id) === "" ? " active" : ""), type: "button", "data-unknown": "1", onclick: () => { choice.set(e.id, ""); draw(); } }, "Doctor not known"));
+          draw();
+          body.append(h("div", { class: "gp-tidy-entry" }, h("b", null, e.title || C.entryText(e).slice(0, 60) || "Entry"), h("small", { class: "gp-dim" }, " " + new Date(e.happenedOn).toLocaleDateString()), row));
+        }
+      }
+      body.append(h("div", { class: "gp-sheet-actions" },
+        h("button", { class: "btn ghost", onclick: close }, "Not now"),
+        h("button", { class: "btn primary", id: "gp-tidy-apply", onclick: async () => {
+          const before = { g: JSON.parse(JSON.stringify(g)), entries: [], ents: [] };
+          for (const t of depts) {
+            const sp = E.specialtyOf(t.name);
+            for (const e of entries.filter((x) => !x.deletedAt && x.refs.some((r) => r.g === g.id && r.tag === t.id))) {
+              before.entries.push(JSON.parse(JSON.stringify(e)));
+              const r = e.refs.find((x) => x.g === g.id && x.tag === t.id);
+              r.tag = choice.get(e.id) || null;
+              const tagName = C.normalizeTagName(sp.name);
+              if (!r.tag && tagName && !e.tags.includes(tagName)) e.tags.push(tagName);
+              await saveEntry(e);
+            }
+            g.mainTags = g.mainTags.filter((x) => x.id !== t.id);
+            const ent = pageEntity(t);
+            if (ent && !groups.some((x) => x.mainTags.some((y) => y.entity === ent.id))) {
+              before.ents.push(JSON.parse(JSON.stringify(ent)));
+              entities = entities.filter((x) => x !== ent);
+              await api.remove(ENTITIES_STORE, ent.id);
+            }
+          }
+          await saveGroup(g);
+          for (const t of depts) if (api.ensureTag) api.ensureTag(E.specialtyOf(t.name).name);
+          close();
+          if (ui.tag && !g.mainTags.some((x) => x.id === ui.tag)) ui.tag = null;
+          render();
+          api.showToast("Tidied up " + depts.map((t) => t.name).join(" and "), { action: { label: "Undo", onClick: async () => {
+            for (const ent of before.ents) { const x = E.normalizeEntity(ent, types); entities.push(x); await api.put(ENTITIES_STORE, x); }
+            for (const raw of before.entries) { const i = entries.findIndex((x) => x.id === raw.id); const e = C.normalizeEntry(raw); if (i >= 0) entries[i] = e; await api.put(ENTRIES_STORE, e); }
+            const gi = groups.findIndex((x) => x.id === g.id);
+            if (gi >= 0) { groups[gi] = C.normalizeGroup(before.g); await api.put(GROUPS_STORE, groups[gi]); }
+            changed(); render();
+          } } });
+        } }, "Tidy up")));
+    });
+  }
+
   function renderMain() {
     [headEl, filtersEl, timelineEl, dropEl].forEach((el) => el.replaceChildren());
     if (ui.screen === "home") { renderHome(); return; }
     const g = curGroup();
-    const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q);
+    const list = listFor(g);
     renderHead(g, list);
     renderFilters(g);
     renderTimeline(g, list);
@@ -511,6 +602,20 @@
       people.append(h("button", { class: "gp-person add", id: "gp-page-new", title: "New " + g.mainLabel.toLowerCase(), onclick: () => newMainTag(g, (t) => setTag(t.id)) },
         h("span", { class: "gp-ava md add" }, ic("plus")), h("span", { class: "gp-person-name" }, "New")));
       line.append(people);
+      // Departments used as pages: offer to tidy them into specialties.
+      const depts = deptPages(g);
+      if (depts.length && !(prefs.tidyLater || {})[g.id]) filtersEl.append(h("div", { class: "gp-tidy", id: "gp-tidy-card" },
+        ic("sparkle"), h("span", null, h("b", null, "Tidy up?"), " " + depts.map((t) => t.name).join(" and ") + (depts.length > 1 ? " look like specialties" : " looks like a specialty") + ", not people."),
+        h("button", { class: "btn primary gp-small", id: "gp-tidy", onclick: () => openTidyDepartments(g) }, "Tidy up"),
+        h("button", { class: "btn ghost gp-small", onclick: () => { prefs.tidyLater = { ...(prefs.tidyLater || {}), [g.id]: Date.now() }; savePrefs(); render(); } }, "Not now")));
+      // Specialties as filters: Gastro, Skin, ENT…
+      const specs = specialtiesIn(g);
+      if (specs.length >= 2 || ui.spec) {
+        const row = h("div", { class: "gp-chips gp-specs", id: "gp-specs" });
+        row.append(h("button", { class: "gp-chip plain" + (!ui.spec ? " active" : ""), onclick: () => { ui.spec = null; render(); } }, "All"));
+        specs.forEach((sp) => row.append(h("button", { class: "gp-chip plain" + (ui.spec === sp ? " active" : ""), "data-spec": sp, onclick: () => { ui.spec = ui.spec === sp ? null : sp; render(); } }, sp)));
+        line.append(row);
+      }
       if (cnt.noTag) {
         const chips = h("div", { class: "gp-chips" });
         chips.append(h("button", { class: "gp-chip" + (cnt.noTagNeeded ? " warn" : " plain") + (ui.tag === "__none" ? " active" : ""), onclick: () => setTag(ui.tag === "__none" ? null : "__none") },
@@ -520,7 +625,7 @@
     }
     const tools = h("div", { class: "gp-tools" });
     const search = h("input", { class: "input gp-search", id: "gp-search", type: "search", placeholder: "Search " + g.name, "aria-label": "Search in " + g.name, value: ui.q,
-      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderTimeline(g, list); }, 150); } });
+      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderTimeline(g, list); }, 150); } });
     tools.append(search);
     const sortSel = h("select", { class: "input gp-select", "aria-label": "Sort", onchange: (e) => { setSort(g, e.target.value); render(); } });
     const sorts = [["newest", "Newest first"], ["oldest", "Oldest first"]];
@@ -922,11 +1027,25 @@
     const type0 = groupType(target);
     const label = (target.mainLabel || type0.name).trim();
     sheet("New " + label.toLowerCase(), (body, close) => {
-      let typeKey = type0.key;
+      let typeKey = type0.key, picked = false;
       const input = h("input", { class: "input gp-input", id: "gp-page-name", placeholder: type0.key === "doctor" ? "Dr Asha Verma" : type0.key === "restaurant" ? "Nimrah Cafe" : "Name", autocomplete: "off", "aria-label": "Name", maxlength: E.MAX.name });
-      const typeSel = h("select", { class: "input gp-input", id: "gp-page-type", "aria-label": "Type", onchange: (e) => { typeKey = e.target.value; draw(); } });
-      types.forEach((t) => typeSel.append(h("option", { value: t.key }, t.name)));
-      typeSel.value = typeKey;
+      // Person · Place · Thing, then the exact kind. Guessed from the name until you pick.
+      const kindRow = h("div", { class: "gp-sort-row", id: "gp-page-kinds" });
+      const typeRow = h("div", { class: "gp-sort-row", id: "gp-page-types" });
+      const KIND_NAMES = { person: ["Person", "user"], place: ["Place", "map-pin"], thing: ["Thing", "layers"] };
+      const drawTypes = () => {
+        const kind = E.typeOf(types, typeKey).kind;
+        kindRow.replaceChildren(...Object.entries(KIND_NAMES).map(([k, [label, icon]]) => h("button", { class: "gp-mini" + (k === kind ? " active" : ""), "data-kind": k, type: "button",
+          onclick: () => { picked = true; if (E.typeOf(types, typeKey).kind !== k) typeKey = (types.find((t) => t.kind === k && t.key === k) || types.find((t) => t.kind === k)).key; drawTypes(); draw(); } }, ic(icon), label)));
+        typeRow.replaceChildren(...types.filter((t) => t.kind === kind).map((t) => h("button", { class: "gp-mini" + (t.key === typeKey ? " active" : ""), "data-type": t.key, type: "button",
+          onclick: () => { picked = true; typeKey = t.key; drawTypes(); draw(); } }, t.name)));
+      };
+      input.addEventListener("input", () => {
+        if (picked) return;
+        const g = E.guessType(input.value);
+        const next = g && types.some((t) => t.key === g) ? g : type0.key;
+        if (next !== typeKey) { typeKey = next; drawTypes(); }
+      });
       const list = h("div", { class: "tl-pick-list", id: "gp-page-matches" });
       const use = async (ent) => {
         const t = pageFor(target, ent);
@@ -957,8 +1076,9 @@
       input.addEventListener("input", draw);
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const b = list.querySelector(".gp-match") && E.fold(list.querySelector(".gp-match b").textContent) === E.fold(input.value) ? list.querySelector(".gp-match") : list.querySelector("#gp-page-create"); if (b) b.click(); } });
       body.append(h("label", { class: "gp-label", for: "gp-page-name" }, "Name"), input,
-        h("label", { class: "gp-label", for: "gp-page-type" }, "Type"), typeSel, list,
+        h("span", { class: "gp-label" }, "Is it a"), kindRow, typeRow, list,
         h("p", { class: "gp-hint" }, "Only the name is needed. Add details any time from the page."));
+      drawTypes();
       draw();
       setTimeout(() => input.focus(), 30);
     }, { stack: !!opts.workingCopy });
@@ -1256,7 +1376,7 @@
     if (!id) return;
     // Re-render rows so the selected one is highlighted.
     const g = curGroup();
-    if (g) { const st = timelineEl.scrollTop; timelineEl.replaceChildren(); renderTimeline(g, C.filterEntries(entries, g, ui.s, ui.tag, ui.q)); timelineEl.scrollTop = st; }
+    if (g) { const st = timelineEl.scrollTop; timelineEl.replaceChildren(); renderTimeline(g, listFor(g)); timelineEl.scrollTop = st; }
   }
 
   let saveTimer = null;
@@ -1264,7 +1384,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       await saveEntry(e);
-      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q); renderHead(g, list); renderTimeline(g, list); timelineEl.scrollTop = st; renderSidebar(); }
+      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = listFor(g); renderHead(g, list); renderTimeline(g, list); timelineEl.scrollTop = st; renderSidebar(); }
     }, 350);
   }
 

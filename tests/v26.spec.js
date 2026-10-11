@@ -616,3 +616,66 @@ test("App icon style: pick one in Appearance; the app logo, tab icon and iPhone 
   await page.reload();
   expect(await now()).toEqual(["icons/styles/style-glass.png", "icons/styles/style-glass.png", "icons/styles/style-glass-apple.png"]);
 });
+
+test("New person, place or thing: Person · Place · Thing chips, guessed from the name until you pick", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Food" }).first().click();
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await page.click("#gp-page-new");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Place");
+  await page.fill("#gp-page-name", "Dr Asha Verma");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Person");
+  await expect(page.locator("#gp-page-types .gp-mini.active")).toHaveText("Doctor");
+  await page.fill("#gp-page-name", "Chocolate Room");
+  await expect(page.locator("#gp-page-types .gp-mini.active")).toHaveText("Restaurant");
+  // Picked by hand: the guess stops changing it.
+  await page.locator("#gp-page-kinds .gp-mini", { hasText: "Thing" }).click();
+  await page.fill("#gp-page-name", "Chocolate Room box");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Thing");
+  await page.click("#gp-page-create");
+  const ent = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entities").objectStore("entities").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((e) => [e.name, e.kind]);
+  });
+  expect(ent).toContainEqual(["Chocolate Room box", "thing"]);
+});
+
+test("doctors: departments used as pages are tidied into a specialty; entries get a doctor or keep the specialty as a tag; Undo", async ({ page }) => {
+  // A Health collection with a doctor and a department page, as older versions allowed.
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Health" }).first().click();
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  for (const name of ["Dr Asha Verma", "Dermatology", "ENT"]) {
+    await page.click("#gp-page-new");
+    await page.fill("#gp-page-name", name);
+    if (name !== "Dr Asha Verma") await page.locator("#gp-page-types .gp-mini", { hasText: "Doctor" }).click();
+    await page.click("#gp-page-create");
+    await page.click(".gp-person.all");
+  }
+  // Two entries under Dermatology.
+  for (const text of ["Skin check", "Cream refill"]) {
+    await page.locator(".gp-person", { hasText: "Dermatology" }).click();
+    await page.fill("#gp-text", text);
+    await page.click("#gp-send");
+  }
+  await page.click(".gp-person.all");
+  await expect(page.locator("#gp-tidy-card")).toContainText("Dermatology and ENT look like specialties");
+  await page.click("#gp-tidy");
+  const rows = page.locator(".gp-tidy-row");
+  await expect(rows).toHaveCount(2);
+  await rows.first().locator(".gp-mini", { hasText: "Dr Asha Verma" }).click();
+  await page.click("#gp-tidy-apply");
+  await expect(page.locator(".gp-person", { hasText: "Dermatology" })).toHaveCount(0);
+  await expect(page.locator(".gp-person", { hasText: "ENT" })).toHaveCount(0);
+  await expect(page.locator("#gp-tidy-card")).toHaveCount(0);
+  const stored = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entries").objectStore("entries").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((e) => ({ t: e.title, page: !!e.refs[0].tag, tags: e.tags })).sort((a, b) => a.t.localeCompare(b.t));
+  });
+  expect(stored).toEqual([{ t: "Cream refill", page: false, tags: ["dermatology"] }, { t: "Skin check", page: true, tags: [] }]);
+  // Undo puts it all back.
+  await page.locator(".toast-item", { hasText: "Tidied up" }).getByRole("button", { name: "Undo" }).click();
+  await expect(page.locator(".gp-person", { hasText: "Dermatology" })).toHaveCount(1);
+});
