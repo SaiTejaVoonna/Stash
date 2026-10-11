@@ -57,7 +57,8 @@
     plusMenu = h("div", { class: "cx-plus-menu", id: "cx-plus-menu", hidden: true, role: "menu" },
       h("button", { role: "menuitem", id: "cx-camera", onclick: () => { toggleMenu(false); api.camera(); } }, ic("camera"), h("span", null, "Camera", h("small", null, "Take a photo now"))),
       h("button", { role: "menuitem", id: "cx-gallery", onclick: () => { toggleMenu(false); pick("image/*", "library"); } }, ic("image"), h("span", null, "Gallery", h("small", null, "Photos you already have"))),
-      h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, audio, video, anything up to 50 MB"))));
+      h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, audio, video, anything up to 50 MB"))),
+      h("button", { role: "menuitem", id: "cx-scan", onclick: () => { toggleMenu(false); api.scan(); } }, ic("clipboard"), h("span", null, "Scan document", h("small", null, "Paper to a clean PDF"))));
     input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
       oninput: () => grow(),
       onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); } } });
@@ -89,7 +90,10 @@
     }, true);
   }
   function grow() { input.style.height = "auto"; input.style.height = Math.min(140, input.scrollHeight) + "px"; }
-  function toggleMenu(on) { ui.menu = on; plusMenu.hidden = !on; document.getElementById("cx-plus").classList.toggle("on", on); }
+  function toggleMenu(on) {
+    const scan = document.getElementById("cx-scan");
+    if (scan) scan.hidden = !(api.addon && api.addon("scanner") && window.CPScan);
+    ui.menu = on; plusMenu.hidden = !on; document.getElementById("cx-plus").classList.toggle("on", on); }
   function pick(accept, origin) {
     const el = h("input", { type: "file", multiple: true, hidden: true });
     if (accept) el.accept = accept;

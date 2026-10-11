@@ -600,3 +600,33 @@ body.cx-previewing #tab-bar { display: none !important; }
 .dv-page { background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.35); }
 .dv-loading { color: #ddd; padding: 40px 0; }
 @media (max-width: 720px) { #dv-share span, .dv-zoom { display: none; } }
+
+/* ---------- Scanner and signature (scanner.js) ---------- */
+.scan-sheet .gp-sheet-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.scan-top { display: flex; gap: 8px; }
+.scan-top .input { flex: 1; min-width: 0; }
+.scan-top .gp-select { flex: 0 0 auto; width: auto; }
+.scan-pages { display: flex; gap: 10px; flex-wrap: wrap; align-content: flex-start; overflow-y: auto; flex: 1; }
+.scan-pages[hidden], .scan-edit[hidden] { display: none; }
+.scan-page { position: relative; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: var(--text); cursor: default; }
+.scan-page.pick { cursor: pointer; }
+.scan-page img { width: 120px; height: 160px; object-fit: contain; background: #fff; border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
+.scan-page small { color: var(--text-3); font-size: var(--fs-xs); }
+.scan-page-acts { display: flex; gap: 0; }
+.scan-page-acts .btn { width: 30px; height: 30px; }
+.scan-add { display: flex; flex-direction: column; gap: 8px; justify-content: center; width: 150px; min-height: 160px; }
+.scan-edit { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.scan-stage { position: relative; align-self: center; max-width: 100%; max-height: 60vh; touch-action: none; }
+.scan-photo { display: block; max-width: 100%; max-height: 60vh; border-radius: 6px; user-select: none; -webkit-user-drag: none; }
+.scan-quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.scan-quad polygon { fill: rgba(123, 97, 255, .14); stroke: #7B61FF; stroke-width: .6; vector-effect: non-scaling-stroke; }
+.scan-handle { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: rgba(255,255,255,.9); border: 3px solid #7B61FF; box-shadow: 0 1px 6px rgba(0,0,0,.35); cursor: grab; touch-action: none; }
+.sig-pad { width: 100%; max-width: 560px; aspect-ratio: 8 / 3; height: auto; background: #fff; border-radius: 12px; touch-action: none; box-shadow: inset 0 -2px 0 #d7d9e3; align-self: center; }
+.sig-stage { position: relative; align-self: center; max-width: 100%; }
+.sig-page { display: block; max-width: 100%; max-height: 62vh; border-radius: 6px; background: #fff; }
+.sig-mark { position: absolute; cursor: move; touch-action: none; outline: 1.5px dashed #7B61FF; outline-offset: 2px; mix-blend-mode: multiply; }
+.sig-size { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); color: var(--text-2); }
+.ocr-text { width: 100%; min-height: 200px; font: inherit; font-size: 15px; line-height: 1.5; }
+#scan-foot[hidden] { display: none; }
+.scan-edit { overflow-y: auto; }
+.scan-stage, .scan-photo { max-height: 52vh; }

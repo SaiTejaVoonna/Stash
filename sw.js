@@ -31,6 +31,8 @@ const APP_SHELL = [
   "./sketch.js",
   "./format.js",
   "./documents.js",
+  "./scanner.js",
+  "./ocr.js",
   "./groups.js",
   "./groups.css",
   "./search-core.js",
@@ -42,7 +44,7 @@ const APP_SHELL = [
 ];
 // The app's own code beside index.html. Like the page, fetched network-first
 // so an update never pairs a new page with old code; the saved copy is for offline.
-const CODE_FILES = ["./groups-core.js", "./entities-core.js", "./snap.js", "./see.js", "./chat.js", "./sync-core.js", "./sync.js", "./groups.js", "./groups.css", "./search-core.js", "./password-core.js", "./totp-core.js", "./sketch.js", "./format.js", "./documents.js", "./tools.js", "./tools.css", "./timeline.js"];
+const CODE_FILES = ["./groups-core.js", "./entities-core.js", "./snap.js", "./see.js", "./chat.js", "./sync-core.js", "./sync.js", "./groups.js", "./groups.css", "./search-core.js", "./password-core.js", "./totp-core.js", "./sketch.js", "./format.js", "./documents.js", "./scanner.js", "./ocr.js", "./tools.js", "./tools.css", "./timeline.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

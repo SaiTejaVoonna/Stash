@@ -1802,6 +1802,8 @@
 <script src="sketch.js"></script>
 <script src="format.js"></script>
 <script src="documents.js"></script>
+<script src="scanner.js"></script>
+<script src="ocr.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -2362,7 +2364,10 @@
     // v2.6: a message in the Inbox, and files dropped there (PDFs, audio, video and the like, up to 50 MB each).
     item.chat = !!item.chat;
     item.files = (Array.isArray(item.files) ? item.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
-      .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data }));
+      .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data,
+        ...(typeof f.text === "string" && f.text ? { text: f.text.slice(0, 50000) } : {}) }));
+    // Words read from the photos on this device (OCR), so search finds them.
+    item.ocr = typeof item.ocr === "string" && item.ocr ? item.ocr.slice(0, 50000) : null;
     // A guess at what a snap shows (worked out on this device). Only a suggestion.
     item.suggest = window.CPSee && item.suggest ? window.CPSee.normalize(item.suggest) : null;
     if (item.type === "password") item.login = { url: "", username: "", password: "", ...(item.login || {}) };
@@ -3795,7 +3800,9 @@
     const q = searchText();
     if (!q) return 0;
     const checklistText = item.checklist ? " " + item.checklist.map((c) => c.text).join(" ") : "";
-    const searchable = (item.content || "") + checklistText + (item.login ? " " + item.login.username + " " + item.login.url : "");
+    // Also the words read from its photos and files (OCR, PDF text) and file names.
+    const fileText = (item.files || []).map((f) => " " + f.name + " " + (f.text || "")).join("");
+    const searchable = (item.content || "") + checklistText + (item.login ? " " + item.login.username + " " + item.login.url : "") + (item.ocr ? " " + item.ocr : "") + fileText;
     const contentScore = fuzzyScore(q, searchable);
     const titleScore = fuzzyScore(q, item.title || "") + 50; // title matches rank slightly higher
     const tagNames = item.tags.map((tid) => tagById(tid)).filter(Boolean).map((t) => t.name);
@@ -6729,6 +6736,7 @@
       const here = groupsApi && groupsApi.snapContext();
       entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
     }
+    if (!inVault && window.CPScan && addonOn("scanner")) entries.push({ key: "scan", label: "Scan document", hint: "Paper to a clean PDF", icon: "file", cls: "cm-image", letter: "D", run: () => openScanner({ camera: true }) });
     // Switched-off add-ons aren't offered.
     const offKeys = { command: "commands", password: "passwords", voice: "voice", sketch: "sketch" };
     for (let i = entries.length - 1; i >= 0; i--) if (offKeys[entries[i].key] && !addonOn(offKeys[entries[i].key])) entries.splice(i, 1);
@@ -7089,6 +7097,7 @@
     const zoomInBtn = barBtn("zoom-in", "Zoom in (+)", () => zoomBy(1.5));
     sep();
     barBtn("download", "Download", () => downloadImage(src, item, idx));
+    if (window.CPOcr && addonOn("ocr")) barBtn("type", "Copy text from this photo", () => readPhotoText(src, item), "lb-ocr");
     if (item && !item.deletedAt) {
       barBtn("trash", "Delete image", async () => {
         if (await deleteAttachedImage(item, idx)) closeImageLightbox();
@@ -9766,9 +9775,99 @@
     }
     return out;
   }
+  // ---------- Scanner, signature and text from photos ----------
+  const scanTools = () => ({ sheet: toolsApi.sheet, h: toolsApi.h, ic: toolsApi.ic, toast: (m) => showToast(m) });
+  function openScanner(opts = {}) {
+    if (!window.CPScan || !toolsApi) return;
+    window.CPScan.open({ ...scanTools(), save: saveScan }, opts);
+  }
+  // A finished scan: a PDF in the Inbox; then (Text from photos on) its words are read for search.
+  async function saveScan({ name, pdf, size, pages }) {
+    const item = await chatAdd({ files: [{ name, type: "application/pdf", size, data: pdf }] });
+    renderNav();
+    if (chatApi) { if (!chatApi.isOpen()) await openChat(); else chatApi.render(); }
+    showToast("Scanned " + (pages.length === 1 ? "1 page" : pages.length + " pages") + " · in your Inbox");
+    if (window.CPOcr && addonOn("ocr")) readScanText(item.id, pages);
+    return item;
+  }
+  async function readScanText(id, pages) {
+    let text = "";
+    try { text = await window.CPOcr.readAll(pages); } catch (err) { showToast(err.message || "Couldn't read the text"); return; }
+    const item = cache.find((i) => i.id === id);
+    if (!item || !text || !(item.files || [])[0]) return;
+    item.files[0] = { ...item.files[0], text };
+    item.updatedAt = Date.now();
+    await saveItem(item);
+    showToast("Text read from the scan: search finds it now");
+  }
+  // "Copy text" on a photo: read it, show it, keep it for search.
+  async function readPhotoText(src, item) {
+    const t = showToast("Reading the text\u2026", { sticky: true });
+    let text = "";
+    try { text = await window.CPOcr.read(src); } catch (err) { if (t) t.close(); showToast(err.message || "Couldn't read the text"); return; }
+    if (t) t.close();
+    if (!text) { showToast("No text found in this photo"); return; }
+    closeImageLightbox();
+    if (item && !item._locked && !item.vaulted) {
+      const prev = item.ocr || "";
+      if (!prev.includes(text)) { item.ocr = (prev ? prev + "\n\n" : "") + text; await saveItem(item); }
+    }
+    toolsApi.sheet("Text from the photo", (body, finish) => {
+      const ta = toolsApi.h("textarea", { class: "input ocr-text", id: "ocr-text", rows: "10", readonly: true }, text);
+      body.append(toolsApi.h("p", { class: "gp-hint" }, "Read on this device. Search finds this photo by these words now."), ta,
+        toolsApi.h("div", { class: "gp-sheet-actions" },
+          item && !item._locked && !item.vaulted && item.type === "note" ? toolsApi.h("button", { class: "btn", onclick: async () => {
+            item.content = (item.content ? item.content.replace(/\s+$/, "") + "\n\n" : "") + text;
+            item.updatedAt = Date.now(); await saveItem(item);
+            if (currentId === item.id) { const ci = document.getElementById("content-input"); if (ci) ci.value = item.content; }
+            finish(); showToast("Added to the note");
+          } }, "Add to note") : null,
+          toolsApi.h("button", { class: "btn primary", id: "ocr-copy", onclick: () => { copyToClipboard(text, "Text copied"); finish(); } }, "Copy")));
+    });
+  }
+  // Sign a PDF: its pages become images, the signature goes on the page you pick,
+  // and a signed copy is saved to the Inbox (the original stays as it was).
+  async function signPdf(f) {
+    if (!window.CPScan || !docsApi) return;
+    let doc;
+    try { doc = await docsApi.loadPdf(f); } catch (err) { showToast(err.message || "Couldn't open this PDF"); return; }
+    const pages = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 30); i++) {
+      const page = await doc.getPage(i);
+      const v = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: 1600 / Math.max(v.width, v.height) });
+      const c = document.createElement("canvas");
+      c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: x, viewport: vp }).promise;
+      pages.push({ jpeg: c.toDataURL("image/jpeg", 0.88), w: c.width, h: c.height });
+    }
+    const pickPage = () => new Promise((ok) => {
+      if (pages.length === 1) { ok(0); return; }
+      let chosen = null;
+      toolsApi.sheet("Which page?", (body, finish) => {
+        body.append(toolsApi.h("div", { class: "scan-pages" }, pages.map((p, i) => toolsApi.h("button", { class: "scan-page pick", "data-page": i, onclick: () => { chosen = i; finish(); } },
+          toolsApi.h("img", { src: p.jpeg, alt: "" }), toolsApi.h("small", null, "Page " + (i + 1))))));
+      }, { onClose: () => ok(chosen) });
+    });
+    const i = await pickPage();
+    if (i == null) return;
+    const signed = await window.CPScan.placeSignature(scanTools(), pages[i].jpeg);
+    if (!signed) return;
+    pages[i] = { ...pages[i], jpeg: signed };
+    const out = window.CPScan.pdf(pages);
+    const name = f.name.replace(/\.pdf$/i, "") + " (signed).pdf";
+    await chatAdd({ files: [{ name, type: "application/pdf", size: out.size, data: out.dataUrl }] });
+    renderNav();
+    if (chatApi && chatApi.isOpen()) chatApi.render();
+    showToast("Saved a signed copy to your Inbox: " + name);
+  }
+
   function startDocs() {
     if (!window.CPDocs) return;
-    docsApi = window.CPDocs.init({ icon, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav() });
+    docsApi = window.CPDocs.init({ icon, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav(),
+      scan: window.CPScan && addonOn("scanner") ? () => openScanner() : null,
+      sign: window.CPScan ? (f) => signPdf(f) : null });
   }
   function openDocuments() {
     if (!docsApi) return;
@@ -9826,6 +9925,7 @@
         },
         toast: (msg) => showToast(msg),
         addon: (k) => addonOn(k),
+        scan: () => openScanner(),
         pdfThumb: (f) => (docsApi && addonOn("documents") ? docsApi.thumb(f) : null),
         // Archive (or bring back) Inbox messages, with Undo.
         archive: async (list, on, { auto = false } = {}) => {

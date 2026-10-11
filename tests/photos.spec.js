@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
 const zoom = (page) => page.locator(".lb-zoom-label");
 
 test("photo viewer: toolbar, zoom by buttons, keys, wheel and double-click", async ({ page }) => {
-  await expect(page.locator("#image-lightbox-bar .lb-btn")).toHaveCount(5);
+  await expect(page.locator("#image-lightbox-bar .lb-btn")).toHaveCount(6);
   await expect(zoom(page)).toHaveText("100%");
   await page.locator(".lb-btn[title^='Zoom in']").click();
   await expect(zoom(page)).toHaveText("150%");

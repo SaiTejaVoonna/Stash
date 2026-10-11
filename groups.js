@@ -2078,7 +2078,7 @@
     const photos = (n.images || []).filter((p) => typeof p === "string" && /^data:image\/(jpeg|png|webp|gif);/.test(p));
     const e = C.normalizeEntry({ refs: [where], title: (title || "").trim() || (n.title || "").trim() || (n.content || "").split("\n")[0].slice(0, 120) || "Photo",
       note: n.title ? n.content || "" : (n.content || "").split("\n").slice(1).join("\n"),
-      photos, files: n.files || [], capture: n.capture, happenedOn: (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now() });
+      photos, files: n.files || [], capture: n.capture, ocr: n.ocr || null, happenedOn: (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now() });
     await saveEntry(e);
     entries.push(e);
     changed();

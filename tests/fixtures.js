@@ -13,6 +13,9 @@ async function routeCdn(page) {
   await page.route(/^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//, (route) => {
     const url = route.request().url();
     for (const [re, file] of CDN) { const m = url.match(re); if (m) return route.fulfill({ path: file(m), contentType: "application/javascript" }); }
+    // The text reader: a stand-in that "reads" whatever the test sets in window.__ocrText.
+    if (/tesseract\.js@/.test(url)) return route.fulfill({ contentType: "application/javascript",
+      body: "window.Tesseract={createWorker:async function(){return{recognize:async function(){return{data:{text:window.__ocrText||'TOTAL 450'}}}}}};" });
     return route.abort();
   });
 }

@@ -305,7 +305,9 @@
       capture: e.capture && window.CPSnap ? window.CPSnap.normalizeCapture(e.capture) : null,
       // Files forwarded from the Me chat (PDFs and the like), kept as they were.
       files: (Array.isArray(e.files) ? e.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
-        .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data })),
+        .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data,
+          ...(typeof f.text === "string" && f.text ? { text: f.text.slice(0, 50000) } : {}) })),
+      ocr: typeof e.ocr === "string" && e.ocr ? e.ocr.slice(0, 50000) : null,
       happenedOn: typeof e.happenedOn === "number" ? e.happenedOn : (e.addedOn || now),
       addedOn: typeof e.addedOn === "number" ? e.addedOn : now,
       updatedAt: e.updatedAt || now,
@@ -369,7 +371,7 @@
   function entryText(e, g) {
     const r = g ? refIn(e, g.id) : null;
     const t = g && r ? tagOf(g, r.tag) : null;
-    return [e.title, e.note, e.link, ...e.tags, t && t.name, t && t.info, ...Object.values(e.fields || {})].filter(Boolean).join(" ").toLowerCase();
+    return [e.title, e.note, e.link, ...e.tags, t && t.name, t && t.info, ...Object.values(e.fields || {}), e.ocr, ...(e.files || []).map((f) => f.name + " " + (f.text || ""))].filter(Boolean).join(" ").toLowerCase();
   }
   // Counts that always add up: per sub-chat and per main tag.
   function counts(entries, g, sid) {

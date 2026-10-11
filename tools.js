@@ -46,15 +46,17 @@
 
   // ---------- Sheet ----------
   let closeTop = null;
+  // opts.stack: open on top of the current sheet (closing it goes back to that one).
   function sheet(title, build, opts = {}) {
-    close();
+    const below = opts.stack ? closeTop : null;
+    if (!opts.stack) close();
     const body = h("div", { class: "gp-sheet-body" });
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
       overlay.remove();
-      if (closeTop === finish) closeTop = null;
+      if (closeTop === finish) closeTop = below;
       if (opts.onClose) opts.onClose();
     };
     const overlay = h("div", { id: "cp-sheet-overlay", class: opts.full ? "full" : null, onmousedown: (e) => { if (e.target === overlay && !opts.sticky) finish(); } },
