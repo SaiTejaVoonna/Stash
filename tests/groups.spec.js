@@ -342,3 +342,28 @@ test("a pharmacy bill alone is not a visit; it joins the visit before it", async
   await expect(stat(page, "Visits")).toHaveText("1");
   await expect(page.locator(".gp-card", { hasText: "Visit · 2 items" })).toHaveCount(1);
 });
+
+test("template store: popular first, Browse all with categories, Preview with examples, Try it then Keep or Remove", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  // Popular first: 12 + Blank, then Browse all.
+  await expect(page.locator(".gp-tpl")).toHaveCount(13);
+  await page.click("#gp-tpl-store");
+  await expect(page.locator("#gp-tpl-cats")).toBeVisible();
+  await page.locator('#gp-tpl-cats [data-cat="Hobbies & games"]').click();
+  await expect(page.locator(".gp-tpl", { hasText: "Board & indoor games" })).toBeVisible();
+  await expect(page.locator(".gp-tpl", { hasText: "Health" })).toHaveCount(0);
+  await page.locator(".gp-tpl", { hasText: "Board & indoor games" }).click();
+  await page.click("#gp-tpl-preview");
+  await expect(page.locator("#gp-pv-list .gp-pv-entry").first()).toBeVisible();
+  await page.click("#gp-tpl-try");
+  await expect(page.locator("#gp-trial")).toContainText("Trying Board & indoor games");
+  await page.click("#gp-trial-remove");
+  await expect(page.locator(".toast-item").last()).toContainText("Removed Board & indoor games");
+  // Try another and keep it.
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Fitness" }).click();
+  await page.click("#gp-tpl-preview");
+  await page.click("#gp-tpl-try");
+  await page.click("#gp-trial-keep");
+  await expect(page.locator("#gp-trial")).toHaveCount(0);
+});

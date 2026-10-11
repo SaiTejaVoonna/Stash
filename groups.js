@@ -567,6 +567,20 @@
     timelineEl.append(wrap);
   }
 
+  // "Try it" from the store: keep it, or remove it (only asks when it has entries).
+  function trialBanner(g) {
+    if (!g.trialUntil) return null;
+    const n = C.inGroup(entries, g.id).length;
+    return h("div", { class: "gp-tidy gp-trial", id: "gp-trial" }, ic("sparkle"),
+      h("span", null, h("b", null, Date.now() > g.trialUntil ? "Keep " + g.name + "?" : "Trying " + g.name + "."), " Keep it if it's useful, or remove it."),
+      h("button", { class: "btn primary gp-small", id: "gp-trial-keep", onclick: async () => { g.trialUntil = null; await saveGroup(g); render(); api.showToast("Kept " + g.name); } }, "Keep"),
+      h("button", { class: "btn ghost gp-small", id: "gp-trial-remove", onclick: async () => {
+        if (n) { askDeleteGroup(g, () => {}); return; }
+        groups = groups.filter((x) => x !== g);
+        await api.remove(GROUPS_STORE, g.id);
+        changed(); if (groups.length) openGroup(groups[0].id); else exit(); api.showToast("Removed " + g.name);
+      } }, "Remove"));
+  }
   function renderHead(g, list) {
     const sub = ui.s !== "all" ? C.subOf(g, ui.s) : null;
     headEl.append(h("div", { class: "gp-id" },
@@ -584,6 +598,8 @@
   }
 
   function renderFilters(g) {
+    const tb = trialBanner(g);
+    if (tb) filtersEl.append(tb);
     const cnt = C.counts(entries, g, ui.s);
     if (g.subs.length) {
       const tabs = h("div", { class: "gp-tabs", role: "tablist" });
@@ -1663,6 +1679,7 @@
   function openNewGroup(prefill) {
     if (!enabled) { setEnabled(true); }
     let pick = prefill || C.TEMPLATES[0];
+    let store = false, cat = "All"; // the template store: every template, by category
     sheet("New collection", (body, close) => {
       const name = h("input", { class: "input gp-input", id: "gp-new-name", value: pick.key === "blank" ? "" : pick.name, placeholder: "Bike, Trips, Pets…", "aria-label": "Collection name" });
       const search = h("input", { class: "input gp-input", id: "gp-tpl-search", type: "search", placeholder: "Search templates: gym, rent, EMI\u2026", "aria-label": "Search templates", autocomplete: "off" });
@@ -1672,6 +1689,7 @@
         body.append(h("span", { class: "gp-label" }, "Start from"), search);
         const list = prefill ? [prefill, ...C.TEMPLATES] : C.TEMPLATES;
         const box = h("div", { class: "gp-tpl-sections", id: "gp-tpl-list" });
+        const cats = h("div", { class: "gp-sort-row gp-tpl-cats", id: "gp-tpl-cats", hidden: !store });
         const card = (t) => h("button", { class: "gp-tpl" + (pick === t ? " active" : ""), onclick: () => {
           const wasDefault = !name.value.trim() || list.some((x) => x.name === name.value.trim());
           pick = t; if (wasDefault) name.value = t.key === "blank" ? "" : t.name; draw();
@@ -1686,8 +1704,18 @@
             const words = [t.name, t.desc, t.mainLabel, ...t.subs.map((x) => x.name)].join(" ").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
             return q.split(/\s+/).every((w) => words.some((x) => x.startsWith(w)));
           };
-          const sections = C.templateSections(list.filter((t) => t !== prefill));
+          let sections;
+          if (!store && !q) {
+            // First: Blank and the popular ones; everything else is in the store.
+            sections = [{ name: "Popular", items: [C.TEMPLATES.find((t) => t.key === "blank"), ...C.POPULAR.map((k) => C.TEMPLATES.find((t) => t.key === k)).filter(Boolean)] }];
+          } else {
+            sections = C.templateSections(list.filter((t) => t !== prefill));
+            if (store && cat !== "All") sections = sections.filter((s) => s.name === cat);
+          }
           if (prefill && hit(prefill)) sections.unshift({ name: "Imported", items: [prefill] });
+          cats.hidden = !store;
+          cats.replaceChildren(...["All", ...C.templateSections(C.TEMPLATES).map((s) => s.name).filter((n) => n !== "Start")].map((n) =>
+            h("button", { class: "gp-mini" + (cat === n ? " active" : ""), "data-cat": n, onclick: () => { cat = n; drawList(); } }, n)));
           let shown = 0;
           for (const sec of sections) {
             const items = sec.items.filter(hit);
@@ -1696,26 +1724,51 @@
             box.append(h("div", { class: "gp-tpl-sec" }, sec.name), h("div", { class: "gp-tpl-grid" }, ...items.map(card)));
           }
           if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sections."));
+          if (!store && !q) box.append(h("button", { class: "btn gp-wide", id: "gp-tpl-store", onclick: () => { store = true; drawList(); box.scrollIntoView({ block: "start" }); } },
+            ic("grid"), "Browse all " + C.TEMPLATES.length + " templates"));
         };
         search.oninput = drawList;
         drawList();
-        body.append(box);
+        body.append(cats, box);
         body.append(h("p", { class: "gp-hint" }, "Everything can be changed later with Edit collection: sections, fields, currency, icon or photo."));
+        const create = async (trial) => {
+          const g = C.groupFromTemplate(pick, name.value.trim() || pick.name);
+          g.order = Date.now();
+          if (trial) g.trialUntil = Date.now() + 7 * C.DAY;
+          await saveGroup(g);
+          groups.push(g);
+          close();
+          api.showToast(trial ? "Trying " + g.name + ": keep it or remove it any time" : "Created " + g.name);
+          openGroup(g.id);
+        };
         body.append(h("div", { class: "gp-sheet-actions" },
-          h("button", { class: "btn", onclick: () => importTemplateFile(close) }, ic("upload"), "Import template"),
-          h("button", { class: "btn primary", onclick: async () => {
-            const g = C.groupFromTemplate(pick, name.value.trim() || pick.name);
-            g.order = Date.now();
-            await saveGroup(g);
-            groups.push(g);
-            close();
-            api.showToast("Created " + g.name);
-            openGroup(g.id);
-          } }, "Create collection")));
+          h("button", { class: "btn ghost", onclick: () => importTemplateFile(close) }, ic("upload"), "Import"),
+          pick.key !== "blank" ? h("button", { class: "btn", id: "gp-tpl-preview", onclick: () => previewTemplate(pick, () => create(true)) }, ic("eye"), "Preview") : null,
+          h("button", { class: "btn primary", onclick: () => create(false) }, "Create collection")));
       };
       draw();
       if (!isPhone()) setTimeout(() => name.focus(), 50);
     });
+  }
+
+  // What a template gives you, filled with examples, before you add it.
+  function previewTemplate(t, onTry) {
+    sheet("Preview: " + t.name, (body, close) => {
+      const ex = C.templateExamples(t);
+      body.append(
+        h("div", { class: "gp-pv-head" }, tile(t.icon, t.color), h("span", null, h("b", null, t.name), h("small", null, t.desc))),
+        t.subs.length ? h("div", { class: "gp-tabs gp-pv-tabs" }, h("span", { class: "gp-tab active" }, "All"), ...t.subs.map((s) => h("span", { class: "gp-tab" }, s.name))) : null,
+        t.mainLabel ? h("p", { class: "gp-hint" }, "Each " + t.mainLabel.toLowerCase() + " gets a page with their visits and totals.") : null,
+        h("div", { class: "gp-pv-list", id: "gp-pv-list" }, ex.map((e) => h("div", { class: "gp-pv-entry" },
+          h("span", { class: "gp-pv-sec" }, e.section || "Entry"),
+          h("b", null, e.title), e.page ? h("small", null, e.page) : null,
+          e.amount ? h("span", { class: "gp-pv-amt" }, "\u20b9" + e.amount.toLocaleString("en-IN")) : null))),
+        t.fields && t.fields.custom && t.fields.custom.length ? h("p", { class: "gp-hint" }, "Details on each entry: " + t.fields.custom.map((f) => f.name).join(", ") + ".") : null,
+        h("p", { class: "gp-hint" }, "These are examples; your collection starts empty. Sections and details can be changed any time."),
+        h("div", { class: "gp-sheet-actions" },
+          h("button", { class: "btn", onclick: close }, "Back"),
+          h("button", { class: "btn primary", id: "gp-tpl-try", onclick: () => { close(); onTry(); } }, "Try it")));
+    }, { stack: true });
   }
 
   function importTemplateFile(closeParent) {

@@ -420,6 +420,8 @@ test("Sort this snap with no matching collection offers to make one from the rig
 
 test("45 templates in sections with search, and a color you pick in Appearance", async ({ page }) => {
   await page.click("#groups-add-btn");
+  await expect(page.locator(".gp-tpl")).toHaveCount(13);
+  await page.click("#gp-tpl-store");
   await expect(page.locator(".gp-tpl")).toHaveCount(45);
   await expect(page.locator(".gp-tpl-sec")).toHaveText(["Start", "Health", "Food", "Money", "Home & family", "Travel & vehicles", "Work & study", "Documents & gadgets", "Hobbies & games"]);
   await page.fill("#gp-tpl-search", "emi");

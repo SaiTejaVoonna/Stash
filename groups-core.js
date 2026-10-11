@@ -194,7 +194,7 @@
     T("photography", "Photography", "Shoots, edits, gear and ideas", "camera", "#64748b",
       [sub("Shoots", "Shoot", "camera", "#4c8dff"), sub("Edits", "Edit", "image", "#8b5cf6"), sub("Gear", "Gear", "cog", "#64748b"), sub("Ideas", "Idea", "quote", "#f5b544", { noStatus: true })],
       { mainLabel: "Place", mainType: "place", custom: [] }),
-    T("collections", "Collections", "Things you collect: owned, wanted, sold", "star", "#f5b544",
+    T("collections", "Hobby collections", "Things you collect: owned, wanted, sold", "star", "#f5b544",
       [sub("Owned", "Owned", "check", "#22c55e"), sub("Wanted", "Wanted", "heart", "#ec4899"), sub("Sold", "Sold", "wallet", "#f97316")],
       { mainLabel: "Item", mainType: "thing", rating: true, custom: [] })
   ];
@@ -275,6 +275,8 @@
         }))
       },
       cards: CARD_MODES.includes(g.cards) ? g.cards : "none",
+      // Made with "Try it" from the template store: a Keep / Remove banner until then.
+      trialUntil: Number.isFinite(g.trialUntil) ? g.trialUntil : null,
       cardWord: clampStr(g.cardWord, MAX.label),
       createdAt: g.createdAt || Date.now(),
       updatedAt: g.updatedAt || Date.now(),
@@ -553,8 +555,21 @@
     return validateTemplate(JSON.parse(new TextDecoder().decode(bytes)));
   }
 
+  // The templates offered first when making a collection; the rest are in the store.
+  const POPULAR = ["hospital", "food", "money", "bike", "home", "trips", "work", "study", "shopping", "movies", "fitness", "documents"];
+  // Example entries for a template's preview: a few per section, so you see what you'd get.
+  function templateExamples(t) {
+    const who = { doctor: "Dr Asha Verma", restaurant: "Corner Cafe", vehicle: "My scooter", person: "Asha", place: "Home", clinic: "City Clinic", title: "A favourite show" };
+    const page = t.mainLabel ? (who[t.mainType] || "Example " + t.mainLabel.toLowerCase()) : null;
+    const out = [];
+    const subs = t.subs.length ? t.subs.slice(0, 4) : [{ name: "", label: "Entry" }];
+    subs.forEach((s, i) => {
+      out.push({ section: s.name, title: (s.label || "Entry") + (i % 2 ? " this week" : " today"), page, amount: t.fields && t.fields.amount && t.fields.amount.on !== false ? [350, 1200, 799, 450][i % 4] : null });
+    });
+    return out;
+  }
   window.CPGroupsCore = {
-    DAY, ICONS, COLORS, CURRENCIES, FIELD_TYPES, CARD_MODES, TEMPLATES, templateSections, MAX,
+    DAY, ICONS, COLORS, CURRENCIES, FIELD_TYPES, CARD_MODES, TEMPLATES, templateSections, POPULAR, templateExamples, MAX,
     uid, normalizeGroup, normalizeEntry, normalizeTagName, groupFromTemplate,
     toMinor, formatMoney, formatTotals, totals, entryCurrency, formatNumber, plural,
     refIn, subOf, tagOf, sameDay, monthKey, inGroup, inSub, filterEntries, entryText, counts,
