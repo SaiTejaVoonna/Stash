@@ -1804,6 +1804,7 @@
 <script src="documents.js"></script>
 <script src="scanner.js"></script>
 <script src="ocr.js"></script>
+<script src="extras.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -2366,6 +2367,9 @@
     item.files = (Array.isArray(item.files) ? item.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
       .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data,
         ...(typeof f.text === "string" && f.text ? { text: f.text.slice(0, 50000) } : {}) }));
+    // A contact card and a location pin sent to the Inbox (extras).
+    item.contact = item.contact && typeof item.contact === "object" ? { name: String(item.contact.name || "").slice(0, 120), phone: String(item.contact.phone || "").slice(0, 40) } : null;
+    item.pin = !!item.pin;
     // Words read from the photos on this device (OCR), so search finds them.
     item.ocr = typeof item.ocr === "string" && item.ocr ? item.ocr.slice(0, 50000) : null;
     // A guess at what a snap shows (worked out on this device). Only a suggestion.
@@ -4078,6 +4082,10 @@
             copyToClipboard(now.code, "Code copied \u00b7 " + now.left + " s left");
           } }] : [])]
         : [{ label: "Copy", run: () => copyItemSmart(item) }]),
+      ...(item.remindAt && !item._locked && window.CPExtras && addonOn("extras") ? [{ label: "Add to calendar", icon: "calendar", run: () => {
+        window.CPExtras.downloadIcs({ title: item.title || firstLine(item.content) || "Reminder", start: item.remindAt, notes: (item.content || "").slice(0, 500) });
+        showToast("Calendar event downloaded: open it to add it");
+      } }] : []),
       ...(item.type === "note" && !item._locked && window.CPFormat ? [
         { label: "Share as image", icon: "image", run: async () => {
           if (editor && currentId === item.id) editor.flush();
@@ -9926,6 +9934,34 @@
         toast: (msg) => showToast(msg),
         addon: (k) => addonOn(k),
         scan: () => openScanner(),
+        location: async () => {
+          if (!window.CPSnap) return;
+          const t = showToast("Finding where you are\u2026", { sticky: true });
+          let why = null;
+          const loc = await window.CPSnap.locate({ onFail: (w) => { why = w; } });
+          if (t) t.close();
+          if (!loc) { showToast(window.CPSnap.locateMessage(why).replace("Location not added: ", "")); return; }
+          await chatAdd({ content: "", pin: true, capture: { at: Date.now(), origin: "file", location: loc } });
+          renderNav(); if (chatApi) chatApi.render();
+        },
+        contact: () => openDialog({ title: "Contact", iconName: "user", fields: [{ name: "name", label: "Name" }, { name: "phone", label: "Phone", type: "tel" }], submitLabel: "Save",
+          onSubmit: async ({ name, phone }) => {
+            name = (name || "").trim(); phone = (phone || "").trim();
+            if (!name && !phone) return "Add a name or a number.";
+            await chatAdd({ content: [name, phone].filter(Boolean).join("\n"), contact: { name, phone } });
+            renderNav(); if (chatApi) chatApi.render();
+          } }),
+        qr: () => {
+          if (!window.CPExtras || !toolsApi) return;
+          window.CPExtras.openQr({ ...scanTools(), save: async (raw, p) => {
+            const fields = p.kind === "contact" ? { content: [p.name, p.phone].filter(Boolean).join("\n"), contact: { name: p.name, phone: p.phone } }
+              : p.kind === "wifi" ? { title: "Wi-Fi: " + (p.ssid || "network"), content: p.password ? "Password: " + p.password : "No password" }
+              : { content: raw };
+            await chatAdd(fields);
+            renderNav(); if (chatApi) { if (!chatApi.isOpen()) await openChat(); else chatApi.render(); }
+            showToast("Saved to your Inbox");
+          } });
+        },
         pdfThumb: (f) => (docsApi && addonOn("documents") ? docsApi.thumb(f) : null),
         // Archive (or bring back) Inbox messages, with Undo.
         archive: async (list, on, { auto = false } = {}) => {

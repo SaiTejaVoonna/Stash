@@ -630,3 +630,17 @@ body.cx-previewing #tab-bar { display: none !important; }
 #scan-foot[hidden] { display: none; }
 .scan-edit { overflow-y: auto; }
 .scan-stage, .scan-photo { max-height: 52vh; }
+
+/* ---------- Extras (extras.js) ---------- */
+.cx-card { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--bg) 55%, transparent); color: var(--text); text-decoration: none; min-width: 220px; }
+.cx-card > .icon { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.cx-card span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cx-card b { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-card small { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-card .btn { flex: none; text-decoration: none; }
+.cx-plus-menu [hidden] { display: none; }
+.qr-video { width: 100%; max-height: 50vh; border-radius: 14px; background: #000; object-fit: cover; }
+.qr-video[hidden], .qr-result[hidden] { display: none; }
+.qr-what { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--surface-1); word-break: break-word; }
+.qr-pass code { font-family: var(--mono); font-size: 18px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); }
+.qr-raw { color: var(--text-2); font-size: var(--fs-sm); }

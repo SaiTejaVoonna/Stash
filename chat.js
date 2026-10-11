@@ -58,7 +58,10 @@
       h("button", { role: "menuitem", id: "cx-camera", onclick: () => { toggleMenu(false); api.camera(); } }, ic("camera"), h("span", null, "Camera", h("small", null, "Take a photo now"))),
       h("button", { role: "menuitem", id: "cx-gallery", onclick: () => { toggleMenu(false); pick("image/*", "library"); } }, ic("image"), h("span", null, "Gallery", h("small", null, "Photos you already have"))),
       h("button", { role: "menuitem", id: "cx-files", onclick: () => { toggleMenu(false); pick("", "file"); } }, ic("file"), h("span", null, "Files", h("small", null, "PDFs, audio, video, anything up to 50 MB"))),
-      h("button", { role: "menuitem", id: "cx-scan", onclick: () => { toggleMenu(false); api.scan(); } }, ic("clipboard"), h("span", null, "Scan document", h("small", null, "Paper to a clean PDF"))));
+      h("button", { role: "menuitem", id: "cx-scan", onclick: () => { toggleMenu(false); api.scan(); } }, ic("clipboard"), h("span", null, "Scan document", h("small", null, "Paper to a clean PDF"))),
+      h("button", { role: "menuitem", id: "cx-location", "data-extra": "1", onclick: () => { toggleMenu(false); api.location(); } }, ic("map-pin"), h("span", null, "Location", h("small", null, "Where you are now, as a pin"))),
+      h("button", { role: "menuitem", id: "cx-contact", "data-extra": "1", onclick: () => { toggleMenu(false); api.contact(); } }, ic("user"), h("span", null, "Contact", h("small", null, "A name and number, call in one tap"))),
+      h("button", { role: "menuitem", id: "cx-qr", "data-extra": "1", onclick: () => { toggleMenu(false); api.qr(); } }, ic("grid"), h("span", null, "Scan QR code", h("small", null, "Links, Wi-Fi passwords, anything"))));
     input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
       oninput: () => grow(),
       onkeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !window.matchMedia("(pointer: coarse)").matches) { e.preventDefault(); sendText(); } } });
@@ -93,6 +96,7 @@
   function toggleMenu(on) {
     const scan = document.getElementById("cx-scan");
     if (scan) scan.hidden = !(api.addon && api.addon("scanner") && window.CPScan);
+    plusMenu.querySelectorAll("[data-extra]").forEach((b) => { b.hidden = !(api.addon && api.addon("extras") && window.CPExtras); });
     ui.menu = on; plusMenu.hidden = !on; document.getElementById("cx-plus").classList.toggle("on", on); }
   function pick(accept, origin) {
     const el = h("input", { type: "file", multiple: true, hidden: true });
@@ -350,12 +354,20 @@
         h("span", null, h("b", null, f.name), h("small", null, (f.type.split("/")[1] || "file").toUpperCase() + " · " + sizeOf(f.size))),
         h("button", { class: "btn gp-small", "aria-label": "Open " + f.name, onclick: (e) => { e.stopPropagation(); api.openFile(f); } }, "Open")));
     }
+    const X = window.CPExtras;
+    if (X && n.contact) b.append(h("div", { class: "cx-card cx-contact" }, ic("user"), h("span", null, h("b", null, n.contact.name || "Contact"), h("small", null, n.contact.phone || "")),
+      n.contact.phone ? h("a", { class: "btn gp-small", href: X.telUrl(n.contact.phone), onclick: (e) => e.stopPropagation() }, "Call") : null,
+      n.contact.phone ? h("a", { class: "btn gp-small", href: X.waUrl(n.contact.phone), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "WhatsApp") : null));
+    if (X && n.pin && n.capture && n.capture.location) b.append(h("div", { class: "cx-card cx-pin" }, ic("map-pin"), h("span", null, h("b", null, "Location"), h("small", null, n.capture.location.lat.toFixed(5) + ", " + n.capture.location.lng.toFixed(5))),
+      h("a", { class: "btn gp-small", href: X.mapsUrl(n.capture.location.lat, n.capture.location.lng), target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "Open in Maps")));
+    const link = X ? X.firstLink([n.title, n.content].join(" ")) : null;
     // A file's name is its title; don't say it twice.
     const text = [n.title, n.content].filter((x) => x && x.trim() && !(n.files || []).some((f) => f.name === x.trim())).join("\n");
-    if (text) b.append(h("div", { class: "cx-text" }, text));
+    if (text && !n.contact) b.append(h("div", { class: "cx-text" }, text));
+    if (link) b.append(h("a", { class: "cx-card cx-link", href: link, target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, ic("link"), h("span", null, h("b", null, X.hostOf(link)), h("small", null, link))));
     const meta = [];
     if (n.suggest) meta.push(api.describeGuess(n.suggest));
-    if (n.capture && n.capture.location) meta.push("\u{1F4CD} " + n.capture.location.lat.toFixed(3) + ", " + n.capture.location.lng.toFixed(3));
+    if (n.capture && n.capture.location && !n.pin) meta.push("\u{1F4CD} " + n.capture.location.lat.toFixed(3) + ", " + n.capture.location.lng.toFixed(3));
     meta.push(timeOf((n.capture && n.capture.at) || n.createdAt));
     b.append(h("div", { class: "cx-meta" }, meta.join(" · ")));
     if (ui.selecting) b.prepend(h("span", { class: "cx-check" + (picked ? " on" : "") }, picked ? ic("check") : null));
