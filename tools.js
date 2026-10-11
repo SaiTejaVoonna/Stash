@@ -472,6 +472,8 @@
   // Strokes are kept as points (0..1 of the width and height), so resizing,
   // undo and the eraser simply redraw them; the eraser uncovers the photo.
   function sketch(opts = {}) {
+    // The full sketch pad (sketch.js) when it's loaded; this simple one otherwise.
+    if (window.CPSketch) return window.CPSketch.open({ sheet, h, ic, toast: (m) => api.showToast(m) }, opts);
     return new Promise((resolve) => {
       let result = null;
       let onResize = null;
@@ -593,7 +595,7 @@
     const first = document.querySelector("svg symbol");
     const sprite = first && first.parentNode;
     if (!sprite) return;
-    for (const [name, paths] of Object.entries(ICON_PATHS)) {
+    for (const [name, paths] of Object.entries({ ...ICON_PATHS, ...(window.CPSketch ? window.CPSketch.ICONS : {}) })) {
       if (document.getElementById("icon-" + name)) continue;
       const sym = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
       sym.id = "icon-" + name;

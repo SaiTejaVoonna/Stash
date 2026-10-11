@@ -1792,6 +1792,8 @@
 <script src="search-core.js"></script>
 <script src="password-core.js"></script>
 <script src="totp-core.js"></script>
+<script src="sketch.js"></script>
+<script src="format.js"></script>
 <script src="tools.js"></script>
 <script src="timeline.js"></script>
 <script>
@@ -4011,6 +4013,23 @@
             copyToClipboard(now.code, "Code copied \u00b7 " + now.left + " s left");
           } }] : [])]
         : [{ label: "Copy", run: () => copyItemSmart(item) }]),
+      ...(item.type === "note" && !item._locked && window.CPFormat ? [
+        { label: "Share as image", icon: "image", run: async () => {
+          if (editor && currentId === item.id) editor.flush();
+          const blob = await window.CPFormat.toImage(item);
+          if (!blob) { showToast("Couldn't make the image"); return; }
+          const name = ((item.title || "note").replace(/[^\w\- ]+/g, "").trim() || "note") + ".png";
+          const file = new File([blob], name, { type: "image/png" });
+          try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (err) { if (err && err.name === "AbortError") return; }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+          showToast("Image saved to Downloads");
+        } },
+        { label: "Print or save as PDF", icon: "download", run: () => {
+          if (editor && currentId === item.id) editor.flush();
+          if (!window.CPFormat.print(item)) showToast("Allow pop-ups for Stash to print");
+        } }] : []),
       { label: item.unread ? "Mark as read" : "Mark as unread", run: async () => {
         item.unread = !item.unread;
         await saveItem(item);
@@ -4538,7 +4557,7 @@
       if (subText) {
         const sub = document.createElement("div");
         sub.className = "item-subtext" + (kind === "command" ? " mono" : "");
-        sub.textContent = subText.slice(0, 200);
+        sub.textContent = (item.type === "note" && window.CPFormat ? window.CPFormat.plain(subText) : subText).slice(0, 200);
         preview.appendChild(sub);
       }
 
@@ -5083,6 +5102,36 @@
         sketchBtn.title = "Draw something";
         sketchBtn.addEventListener("click", () => addSketch(item));
         editToolbar.append(sep, listBtn, voiceBtn, sketchBtn);
+        // Formatting: a little Markdown, from buttons or typed; Preview shows it formatted.
+        if (window.CPFormat) {
+          const F = window.CPFormat;
+          const fsep = document.createElement("span");
+          fsep.className = "toolbar-sep";
+          const fbtn = (id, html, title, run) => {
+            const b = document.createElement("button");
+            b.id = id; b.className = "fmt-btn"; b.innerHTML = html; b.title = title; b.setAttribute("aria-label", title);
+            b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the selection
+            b.addEventListener("click", run);
+            return b;
+          };
+          editToolbar.prepend(
+            fbtn("fmt-bold", "<b>B</b>", "Bold (Ctrl+B)", () => F.wrap(textarea, "**")),
+            fbtn("fmt-italic", "<i>I</i>", "Italic (Ctrl+I)", () => F.wrap(textarea, "*")),
+            fbtn("fmt-heading", "<b>H</b>", "Heading", () => F.lines(textarea, "heading")),
+            fbtn("fmt-bullets", "\u2022\u2009\u2014", "Bullet list", () => F.lines(textarea, "bullet")),
+            fbtn("fmt-numbers", "1.\u2009\u2014", "Numbered list", () => F.lines(textarea, "number")),
+            fbtn("fmt-preview", icon("eye") + "<span>Preview</span>", "See it formatted", () => {
+              const on = !body.classList.contains("previewing");
+              body.classList.toggle("previewing", on);
+              document.getElementById("fmt-preview").classList.toggle("on", on);
+              const pv = document.getElementById("note-preview");
+              if (on) { ed.flush(); pv.innerHTML = F.toHtml(textarea.value) || '<p class="fm-empty">Nothing written yet.</p>'; }
+            }), fsep);
+          textarea.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "b" || e.key === "i")) { e.preventDefault(); F.wrap(textarea, e.key === "b" ? "**" : "*"); return; }
+            F.onKey(e);
+          });
+        }
       }
       body.appendChild(editToolbar);
     }
@@ -5136,6 +5185,12 @@
       body.appendChild(terminalWrap);
     } else {
       body.appendChild(textarea);
+      if (item.type === "note") {
+        const pv = document.createElement("div");
+        pv.id = "note-preview";
+        pv.className = "note-preview";
+        body.appendChild(pv);
+      }
     }
 
     const varsRow = document.createElement("div");

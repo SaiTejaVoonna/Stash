@@ -6,7 +6,7 @@
 // (bump CACHE when they do).
 // Your items are never touched here: they live in IndexedDB, not in this cache.
 
-const CACHE = "copypaster-v21";
+const CACHE = "copypaster-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -28,6 +28,8 @@ const APP_SHELL = [
   "./chat.js",
   "./sync-core.js",
   "./sync.js",
+  "./sketch.js",
+  "./format.js",
   "./groups.js",
   "./groups.css",
   "./search-core.js",
@@ -39,7 +41,7 @@ const APP_SHELL = [
 ];
 // The app's own code beside index.html. Like the page, fetched network-first
 // so an update never pairs a new page with old code; the saved copy is for offline.
-const CODE_FILES = ["./groups-core.js", "./entities-core.js", "./snap.js", "./see.js", "./chat.js", "./sync-core.js", "./sync.js", "./groups.js", "./groups.css", "./search-core.js", "./password-core.js", "./totp-core.js", "./tools.js", "./tools.css", "./timeline.js"];
+const CODE_FILES = ["./groups-core.js", "./entities-core.js", "./snap.js", "./see.js", "./chat.js", "./sync-core.js", "./sync.js", "./groups.js", "./groups.css", "./search-core.js", "./password-core.js", "./totp-core.js", "./sketch.js", "./format.js", "./tools.js", "./tools.css", "./timeline.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
