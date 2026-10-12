@@ -1373,7 +1373,7 @@
     #type-select .type-btn .type-label { display: none; }
     #type-select .type-btn.active .type-label { display: inline; }
     .icon-toggle { min-width: 38px; height: 38px; }
-    .icon-toggle.unread, .icon-toggle.archive, .header-sep { display: none; }
+    .icon-toggle.unread, .icon-toggle.archive, .icon-toggle.vault, .icon-toggle.zen, .header-sep { display: none; }
     #detail-main { padding: var(--s-3) var(--s-5) var(--s-4); }
     #title-input { font-size: 26px; }
     #content-input { font-size: 17px; min-height: 180px; }
@@ -5188,6 +5188,26 @@
     const right = document.createElement("div");
     right.id = "detail-header-right";
     if (!inTrash) {
+      // Undo / Redo, always in reach (Ctrl+Z / Ctrl+Y work too).
+      if (item.type !== "password" && !(item.type === "command" && item.locked)) {
+        const ur = document.createElement("span");
+        ur.className = "undo-redo";
+        for (const [id, name, label] of [["undo-btn", "undo", "Undo"], ["redo-btn", "redo", "Redo"]]) {
+          const b = document.createElement("button");
+          b.id = id; b.type = "button"; b.className = "icon-toggle " + name;
+          b.innerHTML = icon(name);
+          b.title = label; b.setAttribute("aria-label", label);
+          b.addEventListener("mousedown", (e) => e.preventDefault());
+          b.addEventListener("click", () => {
+            const t = editor && (editor.rich || editor.textarea);
+            if (!t) return;
+            if (document.activeElement !== t) t.focus();
+            document.execCommand(name);
+          });
+          ur.appendChild(b);
+        }
+        right.appendChild(ur);
+      }
       const zenBtn = document.createElement("button");
       zenBtn.className = "icon-toggle zen" + (document.body.classList.contains("zen-mode") ? " on" : "");
       zenBtn.innerHTML = icon(document.body.classList.contains("zen-mode") ? "fullscreen-exit" : "fullscreen-enter");
@@ -5353,78 +5373,98 @@
 
     const readLogin = item.type === "password" ? buildLoginFields(ed, body, () => scheduleAutosave()) : null;
 
+    // The rich editor (notes): you see bold as bold; it's kept as plain text
+    // underneath (see format.js), so search, sync and backups don't change.
+    const rich = item.type === "note" && !textarea.disabled && window.CPFormat && richEditorOn() ? buildRichInput(ed, textarea) : null;
+    ed.rich = rich;
+    // The formatting bar: under the text on computers, above the keyboard on
+    // phones while you write. Undo and Redo are in the top bar.
+    let editToolbar = null;
     if (!textarea.disabled && item.type !== "password") {
-      const editToolbar = document.createElement("div");
+      editToolbar = document.createElement("div");
       editToolbar.id = "edit-toolbar";
-      const undoBtn = document.createElement("button");
-      undoBtn.innerHTML = icon("undo") + "<span>Undo</span>";
-      undoBtn.title = "Undo (Ctrl+Z also works)";
-      undoBtn.addEventListener("click", () => { textarea.focus(); document.execCommand("undo"); });
-      const redoBtn = document.createElement("button");
-      redoBtn.innerHTML = icon("redo") + "<span>Redo</span>";
-      redoBtn.title = "Redo (Ctrl+Y also works)";
-      redoBtn.addEventListener("click", () => { textarea.focus(); document.execCommand("redo"); });
-      const cleanBtn = document.createElement("button");
-      cleanBtn.innerHTML = icon("sparkle") + "<span>Clean up</span>" + icon("chevron-down", "icon-sm");
-      cleanBtn.title = "Clean up the selection (or all text): spaces, quotes, case, your find & replace rules";
-      cleanBtn.addEventListener("click", (e) => { e.stopPropagation(); openCleanupMenu(cleanBtn, textarea); });
-      editToolbar.appendChild(undoBtn);
-      editToolbar.appendChild(redoBtn);
-      editToolbar.appendChild(cleanBtn);
+      editToolbar.setAttribute("role", "toolbar");
+      editToolbar.setAttribute("aria-label", "Formatting");
+      const tb = (id, html, title, run, label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        if (id) b.id = id;
+        b.innerHTML = html + (label ? '<span class="tb-label">' + label + "</span>" : "");
+        b.title = title; b.setAttribute("aria-label", title);
+        b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the selection
+        b.addEventListener("click", run);
+        return b;
+      };
+      const sep = () => { const x = document.createElement("span"); x.className = "toolbar-sep"; return x; };
+      const target = () => rich || textarea;
       if (item.type === "note") {
-        const sep = document.createElement("span");
-        sep.className = "toolbar-sep";
-        const listBtn = document.createElement("button");
-        listBtn.id = "checklist-btn";
-        listBtn.className = item.checklist ? "on" : "";
-        listBtn.innerHTML = icon("checklist") + "<span>" + (item.checklist ? "Checklist on" : "Checklist") + "</span>";
-        listBtn.title = item.checklist ? "Turn the checklist back into text" : "Turn the lines into a checklist";
-        listBtn.addEventListener("click", () => toggleChecklist(ed));
-        const voiceBtn = document.createElement("button");
-        voiceBtn.id = "voice-btn";
-        voiceBtn.innerHTML = icon("mic") + "<span>Voice</span>";
-        voiceBtn.title = "Record a voice note";
-        voiceBtn.addEventListener("click", () => addVoiceNote(item));
-        const sketchBtn = document.createElement("button");
-        sketchBtn.id = "sketch-btn";
-        sketchBtn.innerHTML = icon("pen") + "<span>Sketch</span>";
-        sketchBtn.title = "Draw something";
-        sketchBtn.addEventListener("click", () => addSketch(item));
-        editToolbar.append(sep, listBtn);
-        if (addonOn("voice")) editToolbar.append(voiceBtn);
-        if (addonOn("sketch")) editToolbar.append(sketchBtn);
-        // Formatting: a little Markdown, from buttons or typed; Preview shows it formatted.
-        if (window.CPFormat) {
-          const F = window.CPFormat;
-          const fsep = document.createElement("span");
-          fsep.className = "toolbar-sep";
-          const fbtn = (id, html, title, run) => {
-            const b = document.createElement("button");
-            b.id = id; b.className = "fmt-btn"; b.innerHTML = html; b.title = title; b.setAttribute("aria-label", title);
-            b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the selection
-            b.addEventListener("click", run);
-            return b;
-          };
-          editToolbar.prepend(
-            fbtn("fmt-bold", "<b>B</b>", "Bold (Ctrl+B)", () => F.wrap(textarea, "**")),
-            fbtn("fmt-italic", "<i>I</i>", "Italic (Ctrl+I)", () => F.wrap(textarea, "*")),
-            fbtn("fmt-heading", "<b>H</b>", "Heading", () => F.lines(textarea, "heading")),
-            fbtn("fmt-bullets", "\u2022\u2009\u2014", "Bullet list", () => F.lines(textarea, "bullet")),
-            fbtn("fmt-numbers", "1.\u2009\u2014", "Numbered list", () => F.lines(textarea, "number")),
-            fbtn("fmt-preview", icon("eye") + "<span>Preview</span>", "See it formatted", () => {
-              const on = !body.classList.contains("previewing");
-              body.classList.toggle("previewing", on);
-              document.getElementById("fmt-preview").classList.toggle("on", on);
-              const pv = document.getElementById("note-preview");
-              if (on) { ed.flush(); pv.innerHTML = F.toHtml(textarea.value) || '<p class="fm-empty">Nothing written yet.</p>'; }
-            }), fsep);
+        // One "+" for everything you can add to a note.
+        const addBtn = tb("note-add-btn", icon("plus"), "Add to this note", (e) => {
+          e.stopPropagation();
+          const acts = [
+            { label: "Photo", icon: "image", run: () => document.getElementById("attach-image-file").click() },
+            { label: "Take a photo", icon: "camera", run: () => {
+              const inp = document.getElementById("attach-image-file");
+              inp.setAttribute("capture", "environment"); inp.click();
+              setTimeout(() => inp.removeAttribute("capture"), 1500);
+            } },
+            ...(addonOn("sketch") ? [{ label: "Drawing", icon: "pen", run: () => addSketch(item) }] : []),
+            ...(addonOn("voice") ? [{ label: "Recording", icon: "mic", run: () => addVoiceNote(item) }] : []),
+            { label: item.checklist ? "Tick boxes back to text" : "Tick boxes", icon: "checklist", run: () => toggleChecklist(ed) }
+          ];
+          if (isDrawerMode()) { openSheet("Add to this note", acts, false); return; }
+          const r = addBtn.getBoundingClientRect();
+          showContextMenu(r.left, r.top - 8 - acts.length * 38, acts.map((a) => ({ label: a.label, icon: a.icon, onClick: a.run })));
+        }, "Add");
+        addBtn.classList.add("tb-add");
+        editToolbar.append(addBtn, sep());
+        const F = window.CPFormat;
+        const fmt = (cmd, mark) => () => (rich ? richCommand(rich, cmd) : F.wrap(textarea, mark));
+        const blk = (cmd, kind) => () => (rich ? richCommand(rich, cmd) : F.lines(textarea, kind));
+        editToolbar.append(
+          tb("fmt-bold", "<b>B</b>", "Bold (Ctrl+B)", fmt("bold", "**")),
+          tb("fmt-italic", "<i>I</i>", "Italic (Ctrl+I)", fmt("italic", "*")),
+          tb("fmt-underline", "<u>U</u>", "Underline (Ctrl+U)", fmt("underline", "++")),
+          tb("fmt-strike", "<s>S</s>", "Strike through", fmt("strikeThrough", "~~")),
+          tb("fmt-mark", '<span class="tb-mark">A</span>', "Highlight", fmt("mark", "==")),
+          sep(),
+          tb("fmt-heading", "<b>H</b>", "Heading", blk("heading", "heading")),
+          tb("fmt-bullets", "\u2022\u2009\u2014", "Bullet list", blk("insertUnorderedList", "bullet")),
+          tb("fmt-numbers", "1.\u2009\u2014", "Numbered list", blk("insertOrderedList", "number")),
+          tb("checklist-btn", icon("checklist"), item.checklist ? "Turn the tick boxes back into text" : "Turn the lines into tick boxes", () => toggleChecklist(ed)));
+        if (item.checklist) editToolbar.querySelector("#checklist-btn").classList.add("on");
+        if (!rich) {
+          editToolbar.append(tb("fmt-preview", icon("eye"), "See it formatted", () => {
+            const on = !body.classList.contains("previewing");
+            body.classList.toggle("previewing", on);
+            document.getElementById("fmt-preview").classList.toggle("on", on);
+            const pv = document.getElementById("note-preview");
+            if (on) { ed.flush(); pv.innerHTML = F.toHtml(textarea.value) || '<p class="fm-empty">Nothing written yet.</p>'; }
+          }, "Preview"));
           textarea.addEventListener("keydown", (e) => {
-            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "b" || e.key === "i")) { e.preventDefault(); F.wrap(textarea, e.key === "b" ? "**" : "*"); return; }
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "b" || e.key === "i" || e.key === "u")) { e.preventDefault(); F.wrap(textarea, e.key === "b" ? "**" : e.key === "i" ? "*" : "++"); return; }
             F.onKey(e);
           });
         }
+        editToolbar.append(sep());
       }
-      body.appendChild(editToolbar);
+      const cleanBtn = tb("clean-btn", icon("sparkle"), "Clean up the selection (or all text): spaces, quotes, case, your find & replace rules", (e) => {
+        e.stopPropagation();
+        if (rich) { showToast("Clean up works in plain text. Switch with the Aa button."); return; }
+        openCleanupMenu(cleanBtn, textarea);
+      }, "Clean up");
+      editToolbar.append(cleanBtn);
+      if (item.type === "note") {
+        // Rich or plain text (Markdown): your choice, remembered.
+        editToolbar.append(tb("fmt-mode", '<span class="tb-aa">' + (rich ? "M\u2193" : "Aa") + "</span>", rich ? "Write in plain text (Markdown)" : "Write with formatting shown", () => {
+          ed.flush();
+          setRichEditor(!rich);
+          openDetail(item.id);
+          showToast(rich ? "Plain text: **bold**, *italic*, # heading" : "Formatting shown as you write");
+        }));
+      }
+      // Phones: the bar rides above the keyboard while you write.
+      if (window.visualViewport) keepAboveKeyboard(editToolbar);
     }
 
     if (item.type === "command" && !inTrash) {
@@ -5476,6 +5516,7 @@
       body.appendChild(terminalWrap);
     } else {
       body.appendChild(textarea);
+      if (rich) { textarea.hidden = true; body.appendChild(rich); }
       if (item.type === "note") {
         const pv = document.createElement("div");
         pv.id = "note-preview";
@@ -5483,6 +5524,7 @@
         body.appendChild(pv);
       }
     }
+    if (editToolbar) body.appendChild(editToolbar);
 
     const varsRow = document.createElement("div");
     varsRow.id = "vars-row";
@@ -5554,6 +5596,140 @@
     }
     if (!titleInput.disabled) titleInput.addEventListener("input", scheduleAutosave);
     if (!textarea.disabled) textarea.addEventListener("input", scheduleAutosave);
+  }
+
+  // ---------- Rich editor (notes) ----------
+  const EDITOR_KEY = "copypaster-editor";
+  function richEditorOn() { try { return localStorage.getItem(EDITOR_KEY) !== "plain"; } catch { return true; } }
+  function setRichEditor(on) { try { localStorage.setItem(EDITOR_KEY, on ? "rich" : "plain"); } catch {} }
+
+  // A writing surface that shows formatting. Every change is turned back into
+  // the note's plain text (in the hidden textarea), so autosave and everything
+  // else work as before.
+  function buildRichInput(ed, textarea) {
+    const F = window.CPFormat;
+    const rich = document.createElement("div");
+    rich.id = "rich-input";
+    rich.className = "rich-input";
+    rich.contentEditable = "true";
+    rich.setAttribute("role", "textbox");
+    rich.setAttribute("aria-multiline", "true");
+    rich.setAttribute("aria-label", "Note");
+    rich.dataset.placeholder = ed.item.checklist ? "Notes (optional)" : "Note";
+    rich.spellcheck = true;
+    // Escaped by toHtml. Always at least one paragraph, so lines stay lines.
+    rich.innerHTML = F.toHtml(textarea.value, { editable: true }) || "<p><br></p>";
+    const empty = () => rich.classList.toggle("is-empty", !rich.textContent.trim() && !rich.querySelector("li"));
+    empty();
+    const sync = () => {
+      if (!rich.firstElementChild && !rich.textContent) rich.innerHTML = "<p><br></p>";
+      empty();
+      const md = F.fromHtml(rich);
+      if (md === textarea.value) return;
+      textarea.value = md;
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    rich.addEventListener("input", sync);
+    rich.addEventListener("focus", () => { try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch {} });
+    // Typing "- ", "1. ", "# " or "[] " at the start of a line makes a list,
+    // numbered list, heading or tick box, like Keep and Notes.
+    rich.addEventListener("keyup", (e) => {
+      if (e.key !== " ") return;
+      const sel = getSelection();
+      if (!sel.rangeCount || !sel.isCollapsed) return;
+      const node = sel.anchorNode;
+      if (!node || node.nodeType !== 3 || sel.anchorOffset !== node.nodeValue.length) return;
+      const block = node.parentElement && node.parentElement.closest("p,div,li,h2,h3,h4");
+      if (!block || block === rich && node.parentNode !== rich) return;
+      const text = (block === rich ? node.nodeValue : block.textContent).replace(/\u00a0/g, " ");
+      const cmd = { "- ": "insertUnorderedList", "* ": "insertUnorderedList", "1. ": "insertOrderedList", "# ": "heading", "[] ": "tasks", "[ ] ": "tasks" }[text];
+      if (!cmd || block.closest("li") && cmd !== "heading") return;
+      for (let i = 0; i < text.length; i++) document.execCommand("delete"); // take the "- " back off (Undo brings it back)
+      richCommand(rich, cmd);
+    });
+    // Tick boxes in the text: tapping the box ticks it.
+    rich.addEventListener("click", (e) => {
+      const li = e.target.closest && e.target.closest("ul.fm-tasks > li");
+      if (!li || e.clientX - li.getBoundingClientRect().left > 26) return;
+      e.preventDefault();
+      li.classList.toggle("done");
+      sync();
+    });
+    // Pasting: words keep bold/italic/lists/links, nothing else comes along.
+    // Pictures go to the note's photos (the app-wide paste handles them).
+    rich.addEventListener("paste", (e) => {
+      const cd = e.clipboardData;
+      if (!cd) return;
+      if ([...cd.items].some((x) => x.type && x.type.startsWith("image/"))) return;
+      e.preventDefault(); e.stopPropagation();
+      const html = cd.getData("text/html");
+      let md = cd.getData("text/plain");
+      if (html) {
+        const doc = new DOMParser().parseFromString(html, "text/html"); // inert: nothing runs
+        const got = F.fromHtml(doc.body);
+        if (got.trim()) md = got;
+      }
+      if (!md) return;
+      const frag = F.toHtml(md, { editable: true });
+      // One line pastes inline; more lines paste as blocks.
+      document.execCommand("insertHTML", false, md.includes("\n") ? frag : frag.replace(/^<p>|<\/p>$/g, ""));
+    });
+    rich.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.types.includes("text/html")) { e.preventDefault(); } });
+    rich.addEventListener("keydown", (e) => {
+      if (e.key === "Tab" && rich.contains(getSelection().anchorNode) && getSelection().anchorNode.parentElement.closest("li")) {
+        e.preventDefault(); document.execCommand(e.shiftKey ? "outdent" : "indent");
+      }
+    });
+    return rich;
+  }
+  // Formatting on the rich editor. Highlight, headings and tick lists are
+  // done by hand; the rest uses the browser's own editing (so Undo works).
+  function richCommand(rich, cmd) {
+    if (document.activeElement !== rich && !rich.contains(document.activeElement)) rich.focus();
+    try { document.execCommand("styleWithCSS", false, false); } catch {}
+    const sel = getSelection();
+    const blockOf = () => { const n = sel.anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement); return el && el.closest("h2,h3,h4,p,div,li"); };
+    if (cmd === "mark") {
+      const n = sel.anchorNode, el = n && (n.nodeType === 1 ? n : n.parentElement);
+      const m = el && el.closest("mark");
+      if (m && rich.contains(m)) { m.replaceWith(...m.childNodes); }
+      else if (!sel.isCollapsed) {
+        const txt = sel.toString();
+        document.execCommand("insertHTML", false, "<mark>" + escapeHtml(txt).replace(/\n/g, "<br>") + "</mark>");
+      }
+    } else if (cmd === "heading") {
+      const b = blockOf();
+      document.execCommand("formatBlock", false, b && /^H\d$/.test(b.tagName) ? "p" : "h2");
+    } else if (cmd === "tasks") {
+      const b = blockOf();
+      if (!(b && b.closest("ul"))) document.execCommand("insertUnorderedList");
+      const ul = blockOf() && blockOf().closest("ul");
+      if (ul && rich.contains(ul)) ul.classList.add("fm-tasks");
+    } else {
+      if (cmd === "insertUnorderedList") { const b = blockOf(); const ul = b && b.closest("ul.fm-tasks"); if (ul) ul.classList.remove("fm-tasks"); }
+      document.execCommand(cmd);
+    }
+    rich.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  // Text changed from outside the editor (read from a photo, edited in the Inbox).
+  function setEditorText(text) {
+    const ci = document.getElementById("content-input");
+    if (ci) ci.value = text;
+    if (editor && editor.rich && editor.rich.isConnected) editor.rich.innerHTML = window.CPFormat.toHtml(text, { editable: true });
+  }
+  // Phones: the formatting bar sits right above the on-screen keyboard while
+  // you write, and tucks away when you're done.
+  function keepAboveKeyboard(bar) {
+    const vv = window.visualViewport;
+    const place = () => {
+      if (!bar.isConnected) { vv.removeEventListener("resize", place); vv.removeEventListener("scroll", place); return; }
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      bar.style.setProperty("--kb", kb + "px");
+      bar.classList.toggle("over-keyboard", kb > 80);
+    };
+    vv.addEventListener("resize", place);
+    vv.addEventListener("scroll", place);
+    place();
   }
 
   // Details: folder, tags, auto-delete, color and dates. A quiet card under the
@@ -5786,12 +5962,12 @@
     const btn = document.querySelector("#detail-pane .icon-toggle.organise");
     if (btn) { btn.classList.toggle("on", open); btn.title = open ? "Hide Organise" : "Show Organise"; }
   }
-  // Open by default on bigger screens, folded on phones; your last choice wins.
+  // Folded by default, so a note opens calm (just your words); your last choice wins.
   const DETAILS_OPEN_KEY = "copypaster-details-open";
   function detailsOpen() {
     let saved = null;
     try { saved = localStorage.getItem(DETAILS_OPEN_KEY); } catch {}
-    return saved === null ? !window.matchMedia("(max-width: 720px)").matches : saved === "1";
+    return saved === "1";
   }
   // One line for the folded card: "Work · 2 tags · In 7d · Green".
   function detailsSummary(item) {
@@ -5876,56 +6052,11 @@
         copyItemSmart(item, textarea ? textarea.value : item.content);
       });
 
-      const pasteFooterBtn = document.createElement("button");
-      pasteFooterBtn.className = "action";
-      pasteFooterBtn.innerHTML = icon("paste") + " Paste";
-      pasteFooterBtn.title = "Paste from clipboard into this item";
-      pasteFooterBtn.disabled = inTrash;
-      pasteFooterBtn.addEventListener("click", async () => {
-        try {
-          if (!navigator.clipboard || !navigator.clipboard.read) throw new Error("Clipboard read API unavailable");
-          const clipboardItems = await navigator.clipboard.read();
-          ed.flush();
-          for (const ci of clipboardItems) {
-            const imageType = ci.types.find((t) => t.startsWith("image/"));
-            if (imageType) {
-              const blob = await ci.getType(imageType);
-              const dataUrl = await dataUrlFromBlob(blob);
-              convertStandaloneImageToGallery(item);
-              item.images.push(dataUrl);
-              item.updatedAt = Date.now();
-              await saveItem(item);
-              openDetail(item.id); // show the new photo
-              showToast("Image pasted into this item");
-              return;
-            }
-          }
-          if (navigator.clipboard.readText) {
-            const text = await navigator.clipboard.readText();
-            if (text && text.trim() && textarea && !textarea.disabled) {
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              const val = textarea.value;
-              textarea.value = val.slice(0, start) + text + val.slice(end);
-              const newPos = start + text.length;
-              textarea.selectionStart = textarea.selectionEnd = newPos;
-              textarea.focus();
-              textarea.dispatchEvent(new Event("input", { bubbles: true }));
-              showToast("Pasted");
-              return;
-            }
-          }
-          showToast("Clipboard is empty, unreadable, or this field is locked");
-        } catch (err) {
-          console.error("Clipboard read failed:", err);
-          showToast("Clipboard read blocked: " + (err.name || err.message || "unknown error") + " \u2014 try Ctrl/Cmd+V instead");
-        }
-      });
-
       const saveBtn = document.createElement("button");
       saveBtn.className = "action primary";
-      saveBtn.innerHTML = icon("check") + " Save";
-      saveBtn.title = "Save changes";
+      // Everything saves as you type; Done is for finishing (and on phones, going back).
+      saveBtn.innerHTML = icon("check") + " Done";
+      saveBtn.title = "Done (changes save as you type)";
       saveBtn.disabled = textarea ? textarea.disabled : false;
       saveBtn.addEventListener("click", async () => {
         item.title = titleInput.value.trim();
@@ -5935,13 +6066,12 @@
         item.updatedAt = Date.now();
         await saveItem(item);
         showToast("Saved");
-        // On phones the item covers the list, so Save also takes you back.
+        // On phones the item covers the list, so Done also takes you back.
         if (window.matchMedia("(max-width: 720px)").matches) { await closeDetail(); return; }
         if (justLocked) openDetail(item.id);
       });
       actions.appendChild(delBtn);
       actions.appendChild(copyBtn);
-      actions.appendChild(pasteFooterBtn);
       actions.appendChild(saveBtn);
     }
 
@@ -7116,7 +7246,7 @@
     await saveItem(item);
     renderAllViews();
     openDetail(item.id);
-    const first = document.getElementById(type === "password" ? "title-input" : "content-input");
+    const first = type === "password" ? document.getElementById("title-input") : editor && editor.rich || document.getElementById("content-input");
     if (first) first.focus();
   }
 
@@ -7870,7 +8000,7 @@
     await saveItem(item);
     renderAllViews();
     openDetail(item.id);
-    const contentField = document.getElementById("content-input");
+    const contentField = editor && editor.rich || document.getElementById("content-input");
     if (contentField) contentField.focus();
     if (intoVault) { showToast("Saved in the Vault"); return item; }
     const secret = detectSecret(text);
@@ -8173,7 +8303,7 @@
 
   document.addEventListener("keydown", (e) => {
     const active = document.activeElement;
-    const inTextField = active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT");
+    const inTextField = active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT" || active.tagName === "SELECT" || active.isContentEditable);
 
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "k") {
       e.preventDefault();
@@ -10375,7 +10505,7 @@
           item && !item._locked && !item.vaulted && item.type === "note" ? toolsApi.h("button", { class: "btn", onclick: async () => {
             item.content = (item.content ? item.content.replace(/\s+$/, "") + "\n\n" : "") + text;
             item.updatedAt = Date.now(); await saveItem(item);
-            if (currentId === item.id) { const ci = document.getElementById("content-input"); if (ci) ci.value = item.content; }
+            if (currentId === item.id) setEditorText(item.content);
             finish(); showToast("Added to the note");
           } }, "Add to note") : null,
           toolsApi.h("button", { class: "btn primary", id: "ocr-copy", onclick: () => { copyToClipboard(text, "Text copied"); finish(); } }, "Copy")));
@@ -10480,7 +10610,7 @@
           item.content = text;
           item.updatedAt = Date.now();
           await saveItem(item);
-          if (currentId === id) { const ci = document.getElementById("content-input"); if (ci) ci.value = text; }
+          if (currentId === id) setEditorText(text);
           if (chatApi) chatApi.render();
         },
         toast: (msg) => showToast(msg),

@@ -38,6 +38,10 @@ const test = base.test.extend({
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
     // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
+    // Tests type into the plain-text editor; the rich editor has its own tests.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && !localStorage.getItem("copypaster-editor")) localStorage.setItem("copypaster-editor", "plain"); } catch {} });
+    // Older tests expect Organise open on computers (it now starts folded; rich.spec checks that).
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && innerWidth > 720 && localStorage.getItem("copypaster-details-open") === null) localStorage.setItem("copypaster-details-open", "1"); } catch {} });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.stack || e.message));
     page.on("dialog", (d) => d.accept()); // confirm() prompts: say OK

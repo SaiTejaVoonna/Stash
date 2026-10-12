@@ -119,7 +119,7 @@ test("Save on a phone says Saved and goes back to the list", async ({ page }) =>
   await newBtn(page).tap();
   await page.tap('#new-menu [data-new="note"]');
   await page.fill("#content-input", "saved from phone");
-  await page.locator("#detail-pane button.action", { hasText: "Save" }).tap();
+  await page.locator("#detail-pane button.action", { hasText: "Done" }).tap();
   await expect(lastToast(page)).toContainText("Saved");
   await expect(page.locator("#detail-pane")).not.toHaveClass(/open/);
   await expect(page.locator(".item-row", { hasText: "saved from phone" })).toBeVisible();

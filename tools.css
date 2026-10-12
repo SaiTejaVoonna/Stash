@@ -543,8 +543,43 @@ body.cx-previewing #tab-bar { display: none !important; }
 .sk-left .sk-more { margin-left: 4px; max-width: 110px; }
 
 /* ---------- Note formatting (format.js) ---------- */
-.fmt-btn { min-width: 34px; justify-content: center; font-size: 15px; }
-.fmt-btn i { font-family: Georgia, serif; font-size: 16px; }
+/* The rich editor: formatting shown as you write. */
+.rich-input { position: relative; flex: 1; min-height: 220px; outline: none; color: var(--text); font-size: var(--fs-lg); line-height: var(--lh-loose); padding: var(--s-1) 0 var(--s-6); overflow-wrap: anywhere; caret-color: var(--accent); }
+.rich-input.is-empty::before { content: attr(data-placeholder); position: absolute; color: var(--text-3); pointer-events: none; }
+.rich-input p, .rich-input div { margin: 0; }
+.rich-input h2 { font-size: 1.4em; line-height: 1.3; margin: 10px 0 4px; font-weight: 700; letter-spacing: -.01em; }
+.rich-input h3 { font-size: 1.2em; margin: 8px 0 2px; }
+.rich-input h4 { font-size: 1.05em; margin: 6px 0 2px; }
+.rich-input ul, .rich-input ol { margin: 2px 0; padding-left: 24px; }
+.rich-input ul.fm-tasks { list-style: none; padding-left: 2px; }
+.rich-input ul.fm-tasks > li { position: relative; padding-left: 28px; }
+.rich-input ul.fm-tasks > li::before { content: ""; position: absolute; left: 2px; top: .38em; width: 16px; height: 16px; border-radius: 5px; border: 1.8px solid var(--text-3); cursor: pointer; box-sizing: border-box; }
+.rich-input ul.fm-tasks > li.done { color: var(--text-3); text-decoration: line-through; }
+.rich-input ul.fm-tasks > li.done::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2.5px var(--bg); }
+.rich-input blockquote { margin: 4px 0; padding-left: 12px; border-left: 3px solid var(--line-strong); color: var(--text-2); }
+.rich-input code, .note-preview code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+.rich-input a { color: var(--accent); }
+.rich-input mark, .note-preview mark { background: color-mix(in srgb, var(--warning) 32%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.rich-input u, .note-preview u { text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
+.previewing .rich-input { display: none; }
+
+/* The formatting bar: under the text, always in reach. */
+#edit-toolbar { position: sticky; bottom: 0; z-index: 3; order: 99; margin: 0 calc(-1 * var(--s-2)); padding: 6px var(--s-2); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; align-items: center; }
+#edit-toolbar::-webkit-scrollbar { display: none; }
+#edit-toolbar button { flex: none; min-width: 34px; justify-content: center; font-size: 15px; color: var(--text-2); }
+#edit-toolbar button i { font-family: Georgia, serif; font-size: 16px; }
+#edit-toolbar .tb-label { font-size: var(--fs-sm); }
+#edit-toolbar .tb-add { color: var(--accent); }
+#edit-toolbar .tb-add .icon { width: 17px; height: 17px; }
+#edit-toolbar .tb-mark { background: color-mix(in srgb, var(--warning) 40%, transparent); padding: 0 4px; border-radius: 3px; font-weight: 700; }
+#edit-toolbar .tb-aa { font-size: 13px; font-weight: 700; letter-spacing: -.02em; }
+#fmt-mode { margin-left: auto; }
+@container detail (max-width: 560px) { #edit-toolbar .tb-label { display: none; } }
+/* Phones: above the keyboard while you write. */
+#edit-toolbar.over-keyboard { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); margin: 0; padding: 6px 10px; z-index: 60; background: var(--elevated); box-shadow: 0 -1px 0 var(--line); }
+/* Undo / Redo in the top bar. */
+.undo-redo { display: inline-flex; margin-right: 4px; }
+.undo-redo .icon-toggle .icon { width: 17px; height: 17px; }
 #fmt-preview.on { color: var(--accent); background: var(--accent-soft); }
 .note-preview { display: none; }
 .previewing #content-input { display: none !important; }

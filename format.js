@@ -2,8 +2,10 @@
 // formatted in Preview, and a note shared as an image or printed / saved as
 // PDF. window.CPFormat
 //
-// Notes stay plain text (**bold**, *italic*, # heading, - list, 1. list), so
-// they search, sync, copy and back up exactly as before.
+// Notes stay plain text (**bold**, *italic*, ++underline++, ~~strike~~,
+// ==highlight==, # heading, - list, 1. list), so they search, sync, copy and
+// back up exactly as before. The rich editor shows them formatted and turns
+// what you write back into the same plain text (fromHtml).
 (function () {
   "use strict";
 
@@ -13,11 +15,14 @@
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>")
       .replace(/~~(.+?)~~/g, "<del>$1</del>")
+      .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")
+      .replace(/==(.+?)==/g, "<mark>$1</mark>")
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
   }
   // Markdown (the small part people use in notes) → safe HTML.
-  function toHtml(md) {
+  // { editable: true } is for the rich editor: blank lines stay typeable.
+  function toHtml(md, opts = {}) {
     const out = [];
     let list = null; // "ul" | "ol"
     const close = () => { if (list) { out.push("</" + list + ">"); list = null; } };
@@ -31,14 +36,97 @@
       close();
       if ((m = line.match(/^>\s?(.*)$/))) { out.push("<blockquote>" + inline(m[1]) + "</blockquote>"); continue; }
       if (/^(-{3,}|\*{3,})$/.test(line.trim())) { out.push("<hr>"); continue; }
-      out.push(line.trim() ? "<p>" + inline(line) + "</p>" : '<p class="fm-gap"></p>');
+      out.push(line.trim() ? "<p>" + inline(line) + "</p>" : opts.editable ? "<p><br></p>" : '<p class="fm-gap"></p>');
     }
     close();
     return out.join("");
   }
   // Markdown marks taken out, for list previews and shared images.
   function plain(md) {
-    return String(md || "").replace(/^#{1,3}\s+/gm, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1$2").replace(/~~(.+?)~~/g, "$1").replace(/`([^`]+)`/g, "$1");
+    return String(md || "").replace(/^#{1,3}\s+/gm, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1$2").replace(/~~(.+?)~~/g, "$1").replace(/\+\+(.+?)\+\+/g, "$1").replace(/==(.+?)==/g, "$1").replace(/`([^`]+)`/g, "$1");
+  }
+
+  // The rich editor's page → the same plain text (Markdown) notes are kept in.
+  // Handles what the editor makes (and what pasting brings): bold, italic,
+  // underline, strike, highlight, code, links, headings, lists, tick lists,
+  // quotes, lines. Anything else keeps just its words.
+  const BLOCKS = new Set(["P", "DIV", "H1", "H2", "H3", "H4", "H5", "H6", "UL", "OL", "LI", "BLOCKQUOTE", "PRE", "HR", "TABLE", "TR", "SECTION", "ARTICLE", "HEADER", "FOOTER"]);
+  function fromHtml(root) {
+    const lines = [];
+    const marks = (n) => {
+      const t = n.tagName, st = n.style || {};
+      const m = [];
+      if (t === "B" || t === "STRONG" || /^(bold|[6-9]00)$/.test(st.fontWeight || "")) m.push("**");
+      if (t === "I" || t === "EM" || st.fontStyle === "italic") m.push("*");
+      if (t === "U" || /underline/.test(st.textDecoration || st.textDecorationLine || "")) m.push("++");
+      if (t === "S" || t === "STRIKE" || t === "DEL" || /line-through/.test(st.textDecoration || st.textDecorationLine || "")) m.push("~~");
+      if (t === "MARK") m.push("==");
+      if (t === "CODE") m.push("`");
+      return m;
+    };
+    function inl(node) {
+      let s = "";
+      for (const c of node.childNodes) {
+        if (c.nodeType === 3) { s += c.nodeValue.replace(/\u00a0/g, " ").replace(/[\r\n]+/g, " "); continue; }
+        if (c.nodeType !== 1 || /^(SCRIPT|STYLE|IMG|SVG|BUTTON|INPUT)$/.test(c.tagName)) continue;
+        if (c.tagName === "BR") { s += "\n"; continue; }
+        if (BLOCKS.has(c.tagName)) { s += "\n" + inl(c) + "\n"; continue; }
+        let inner = inl(c);
+        if (c.tagName === "A") { const href = c.getAttribute("href") || ""; if (/^https?:/i.test(href) && href !== inner.trim()) inner = inner + " (" + href + ")"; }
+        const ms = marks(c);
+        if (!ms.length || !inner.trim()) { s += inner; continue; }
+        // Marks hug the words: " **bold** " not "** bold **"; one per line.
+        s += inner.split("\n").map((part) => {
+          if (!part.trim()) return part;
+          const lead = part.match(/^\s*/)[0], trail = part.match(/\s*$/)[0];
+          return lead + ms.join("") + part.trim() + ms.slice().reverse().join("") + trail;
+        }).join("\n");
+      }
+      return s;
+    }
+    const push = (text, prefix = "") => {
+      let t = text.replace(/\n$/, "");
+      t.split("\n").forEach((l, i) => lines.push((i === 0 ? prefix : prefix ? " ".repeat(prefix.length) : "") + l.replace(/\s+$/, "")));
+    };
+    function list(el, depth) {
+      let n = 0;
+      const tasks = el.classList.contains("fm-tasks");
+      for (const li of el.children) {
+        if (li.tagName !== "LI") { walk(li, depth); continue; }
+        n++;
+        const nested = [...li.children].filter((c) => c.tagName === "UL" || c.tagName === "OL");
+        const copy = li.cloneNode(true);
+        copy.querySelectorAll(":scope > ul, :scope > ol").forEach((x) => x.remove());
+        const pad = "  ".repeat(depth);
+        const prefix = el.tagName === "OL" ? n + ". " : tasks ? (li.classList.contains("done") ? "- [x] " : "- [ ] ") : "- ";
+        push(inl(copy).replace(/^\n+/, ""), pad + prefix);
+        nested.forEach((x) => list(x, depth + 1));
+      }
+    }
+    function walk(node, depth = 0) {
+      let run = null; // inline bits between blocks
+      const flush = () => { if (run !== null) { const t = inl(run); if (t.replace(/\n/g, "").trim() || t.includes("\n")) push(t); run = null; } };
+      for (const c of [...node.childNodes]) {
+        if (c.nodeType === 1 && BLOCKS.has(c.tagName)) {
+          flush();
+          const t = c.tagName;
+          if (t === "UL" || t === "OL") list(c, depth);
+          else if (t === "HR") lines.push("---");
+          else if (/^H[1-6]$/.test(t)) push(inl(c).trim(), "#".repeat(Math.max(1, Math.min(3, Number(t[1]) - 1))) + " ");
+          else if (t === "BLOCKQUOTE") push(inl(c).trim(), "> ");
+          else if (t === "PRE") c.textContent.replace(/\n$/, "").split("\n").forEach((l) => lines.push(l));
+          else if ([...c.children].some((k) => BLOCKS.has(k.tagName))) walk(c, depth);
+          else push(inl(c));
+        } else {
+          if (!run) run = document.createElement("span");
+          run.appendChild(c.cloneNode(true));
+        }
+      }
+      flush();
+    }
+    walk(root);
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    return lines.join("\n");
   }
 
   // ---------- Editing helpers (on a <textarea>) ----------
@@ -155,5 +243,5 @@
     return true;
   }
 
-  window.CPFormat = { toHtml, plain, wrap, lines, onKey, toImage, print };
+  window.CPFormat = { toHtml, fromHtml, plain, wrap, lines, onKey, toImage, print };
 })();

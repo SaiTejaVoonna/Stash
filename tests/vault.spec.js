@@ -251,6 +251,7 @@ test("Face ID / fingerprint unlock with a passkey", async ({ page }) => {
 test("importing items from a different Vault re-encrypts them into this one", async ({ page, browser }) => {
   // Another device with its own Vault and password.
   const other = await browser.newPage();
+  await other.addInitScript(() => localStorage.setItem("copypaster-editor", "plain"));
   await openApp(other);
   await setUpVault(other, "the other password");
   await vaultNote(other, "from the other vault");
