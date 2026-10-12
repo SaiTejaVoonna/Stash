@@ -1,16 +1,35 @@
 # Stash roadmap
 
-Four phases. Phase 1 and 2 need nothing from the owner: no accounts, no keys,
-everything runs on the device. Phase 3 and 4 need the owner's accounts.
+**Capture today. Find it tomorrow.** A private place for the things in your
+life. You drop things in without thinking; Stash remembers, connects and finds;
+any AI you choose can help, only with what you allow.
 
-Rules for every phase: each part is built on the working branch, tested, and
-shared as a test link. Nothing reaches `main` without the owner's "ok". No real
-personal or medical data in code or tests. No keys or secrets in code. No
-medical advice. Stash stores nothing on any server of ours.
+North star: from "where was that?" to having it in your hand in under 10
+seconds, without filing anything by hand.
 
-Already done (on the branch): Google Drive sync (readable files per collection,
-full backup) and two-way sync between devices, with Stash's own client ID ready
-to be built in.
+Principles:
+- **Your device is the engine.** Storage, search, text reading and suggestions
+  run on the phone or computer. No server of ours; running cost near zero.
+- **You decide, the machine remembers.** People judge and name; Stash and AI
+  recall, match and add up. Nothing moves without a tap; everything has Undo.
+- **Open to any AI.** We build the best data and permissions; Claude, ChatGPT,
+  Gemini or a local model connect through one open door (MCP). We don't build
+  our own big AI.
+- **Calm by default.** New people see only the Inbox; more appears when needed.
+
+Rules for every phase: built on the working branch, tested (source and minified
+build), shared as a test link. Nothing reaches `main` without the owner's "ok".
+No real personal or medical data in code or tests. No keys or secrets in code.
+No medical advice. Stash stores nothing on any server of ours. Personalisation
+stays on the device, is visible, and can be wiped; nothing trains anyone's AI.
+
+Technology: plain JavaScript, modernised in place (modules, type checking
+through comments). Node.js only as a build and test tool. **Not** Next.js (it's
+for server websites; Stash has no server on purpose) and no rewrite. Next:
+SQLite on the device (WASM + OPFS), Web Workers, WebGPU for on-device models,
+CRDTs for sync, Capacitor (phones), Tauri / Rust (computers), MCP (AI).
+
+Visual preview of this plan: the "Stash Vision" page (shared separately).
 
 ---
 
@@ -109,45 +128,77 @@ to be built in.
 
 ---
 
-## Phase 3: Cloud and hosting (needs the owner)
+Below, **[you]** marks where the owner is needed; everything else needs no one.
 
+## Phase 3: A safe home [you · about ₹1,000 a year]
+
+- [ ] **[you]** Buy a domain, make a free Cloudflare account, create the Google client ID (about 30 minutes, guided).
+- [ ] Hosting: Cloudflare Pages from the repo, the domain (or free `.pages.dev`), domains added to each provider's settings; then the GitHub repo can go private.
+- [ ] **Before anyone stores real data: its own address.** The test link (raw.githack.com) is shared with every other project served there, and browsers keep data per address, so another page there could read Stash's data. Test link: fake data only.
+- [ ] Security headers: a Content Security Policy (only Stash's own files and the named CDNs may run), no framing, strict referrer; checked on real devices.
+- [ ] Self-host the on-device libraries (photo guesser, text reader) so nothing runs from a CDN.
+- [ ] Updates that always arrive: a clear "New version, tap to update", so no one is stuck on an old saved copy.
+- [ ] Free code scanning: CodeQL and Dependabot on GitHub.
 - [ ] Google: Stash's client ID built in; Google app published (Audience → Publish).
-- [ ] Sync providers: Offline only (default) · Google Drive · Microsoft OneDrive · Dropbox · Nextcloud / WebDAV. One at a time; easy switching; optional weekly backup elsewhere; large files only on Wi-Fi. (Owner registers the Microsoft and Dropbox apps.) iCloud has no way in from a web page; it comes with the iPhone app (Phase 4).
-- [ ] Hosting: Cloudflare Pages from the repo, owner's domain (or free `.pages.dev`), domains added to each provider's settings, test, then make the GitHub repo private.
-- [ ] **Before anyone stores real data: its own address.** The test link (raw.githack.com) is shared with every other project served there, and browsers keep data per address, so another page there could read Stash's data. Real use starts only on Stash's own domain (or `.pages.dev`). Test link: fake data only.
-- [ ] Security headers on the real domain: a Content Security Policy (only Stash's own files and the named CDNs may run), no framing, strict referrer. Checked on real devices, since a wrong policy silently breaks features.
-- [ ] Before inviting users: test on real iPhone and Android, a small beta with fake data, then an independent security review (OWASP testing guide).
-- [ ] Updates that always arrive: a clear "New version, tap to update" on every device, so no one is stuck on an old saved copy (the "cache issue").
-- [ ] Trademark check for the name.
 
-## Phase 4: Apps (needs the owner)
+## Phase 3½: Stronger foundations [no one needed · ₹0]
 
-- [ ] Wrap the web app with Capacitor: one codebase for web, Android and iPhone.
-- [ ] Android first (Google Play, $25 once; builds without a Mac).
-- [ ] iPhone: Apple Developer account ($99 / year), cloud Mac build (Codemagic or GitHub Actions), TestFlight.
-- [ ] Native powers on phones: Apple's document scanner and text recognition, Face ID, safe file storage, share into Stash from any app, reliable reminder notifications; later iCloud sync and widgets.
-- [ ] Computers (Windows, Mac, Linux) with Tauri: a small real app. This is what closes the biggest gap the assessments found: **clipboard history that catches every copy in any app, and a global shortcut** (e.g. Ctrl+Shift+V) that opens Stash from anywhere. A web page can never do either.
+- [ ] Split `index.html` (10,500 lines) into modules; type checking through JSDoc comments.
+- [ ] Suggestions that say why ("because your last 4 service bills went here") and learn from every correction.
+- [ ] Personal dictionary v1: learns your words (nicknames, abbreviations like PUC, shop names, Telugu and Hindi written in English letters).
+- [ ] "What Stash has learned" page: everything personalised, readable, one tap to wipe.
+- [ ] Progressive disclosure: a new person sees only the Inbox; collections appear once there's something to sort.
+- [ ] "Copy for AI": selected items as clean context for any chatbot. Stash's open data format written down.
+- [ ] SQLite on the device (WASM + OPFS) with full-text search; heavy work in Web Workers.
+- [ ] Find by memory: search by when, where, who and what, with the reason each result matched.
+
+## Phase 4: Closed beta [you · ₹0 to small thank-yous]
+
+- [ ] **[you]** Invite 10–20 friends or family (fake data first); watch 5 of them do set tasks without helping.
+- [ ] Tasks, questions and a feedback form written for you; measure task success, time to find, and the System Usability Scale (SUS).
+- [ ] Three rounds of fix → test with 5 people (Nielsen: about 5 people find most problems).
+
+## Phase 5: Apps [you · $25 once + $99 a year]
+
+- [ ] **[you]** Google Play account first; Apple Developer account when ready for iPhone.
+- [ ] Android and iPhone with Capacitor (iPhone builds on a cloud Mac: Codemagic or GitHub Actions), TestFlight.
+- [ ] Native powers: the phone's own document scanner and text recognition (handwriting too), Face ID, safe file storage, share into Stash from any app, reliable reminders; later iCloud and widgets.
+- [ ] Computers (Windows, Mac, Linux) with Tauri: **clipboard history from any app and a global shortcut** (e.g. Ctrl+Shift+V). A web page can never do either.
 - [ ] Optional browser extension: "Save to Stash" from any page or selection.
 
-## Phase 5: Stash AI (optional, off by default, one switch turns it all off)
+## Phase 6: Open to any AI [mostly no one · ₹0 for us]
 
-- [ ] Three ways, the person picks: **On this device** (a free local model, downloaded once, works offline; needs a recent phone or computer), **Your own key** (Claude, ChatGPT, Gemini), or later **Stash AI** (paid, because it costs us).
-- [ ] What it does: ask across all your notes and collections ("when was the scooter last serviced?"), summarise, rewrite, Sort all with AI, read a bill or prescription into fields.
-- [ ] Rules: only what you select is sent (nothing for the local model); nothing moves without your OK; the Vault is never sent; no medical advice.
-- [ ] Settings → AI: Off · On this device · Your key. Off removes every AI button.
+- [ ] An MCP connector, running on the person's own device: search, read, summarise, suggest into the Inbox.
+- [ ] Permissions per collection (read-only by default; the Vault never), and a log of every read.
+- [ ] On the device: search by meaning with a small model (about 25 MB), automatic connections between related items, a knowledge graph of people, places, things, dates and amounts.
+- [ ] Autonomy levels the person picks: suggest → one tap → automatic with Undo → routines (monthly totals, expiry radar).
+- [ ] Reflections from your own data only ("fuel up 20% this month", "passport expires in 3 months"); never medical or financial advice.
+- [ ] Settings → AI: Off (default) · On this device · Connected apps. Off removes every AI button.
+- [ ] **[you]** Try it with your own Claude or ChatGPT.
 
-## Phase 6: Stronger privacy
+## Phase 7: Privacy plus [you once · about ₹0.5–3 lakh]
 
-- [ ] Encrypt everything, not just the Vault: an option where a passphrase (not the 4-digit PIN, which is too short to be real encryption) locks the whole database on the device.
-- [ ] Encrypted sync: files in Drive / OneDrive readable only by Stash, as an option (the readable files stay the default, because AI tools can use them).
+- [ ] Encrypt everything with a passphrase (not the 4-digit PIN, which is too short to be real encryption).
+- [ ] Sync that never loses an edit (CRDTs) and, as an option, encrypted sync; end-to-end encrypted family sharing.
+- [ ] Free checks first: OWASP ZAP, Mozilla Observatory, securityheaders.com.
+- [ ] **[you]** An independent security test before public launch.
 
-## Always going on
+## Phase 8: Launch and keep crafting [you]
 
-- [ ] Smoother: subtle motion everywhere (started in the Inbox), faster start, fewer taps.
-- [ ] Sketching: more pens, layers, handwriting to text (later with AI).
-- [ ] Bugs from real use, every round.
+- [ ] **[you]** Name check and trademark, store listings, a simple website.
+- [ ] Monthly rounds from real use: smoother motion, faster start, fewer taps; sketching with layers and handwriting to text; more sync providers (OneDrive, Dropbox, WebDAV; iCloud through the iPhone app).
 
----
+## Research the plan stands on
+
+Vannevar Bush, *As We May Think* (1945) · William Jones, *Keeping Found Things
+Found* (2007) · Don Norman, *The Design of Everyday Things* · Steve Krug,
+*Don't Make Me Think* · Daniel Kahneman, *Thinking, Fast and Slow* · B.J. Fogg,
+*Tiny Habits* · Jef Raskin, *The Humane Interface* · Thaler and Sunstein,
+*Nudge* · Barry Schwartz, *The Paradox of Choice* · Jon Yablonski, *Laws of UX*
+· Ben Shneiderman, *Human-Centered AI* (2022) · Amershi et al., *Guidelines for
+Human-AI Interaction* (CHI 2019) · Risko and Gilbert, *Cognitive offloading*
+(2016) · Kleppmann et al., *Local-first software* (2019) · Tiago Forte,
+*Building a Second Brain* · Sönke Ahrens, *How to Take Smart Notes*.
 
 ## What the outside assessments said, checked against the code
 
