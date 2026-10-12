@@ -105,7 +105,7 @@ to be built in.
 - [x] Text size (small / normal / large). Reduced motion respected.
 - [x] Screen-reader labels, bigger tap targets, contrast check in light and dark.
 - [x] Speed with thousands of items (lists draw only what's on screen).
-- [ ] App language: English first; Telugu and Hindi drafted (checked by a native speaker later).
+- [ ] App language: English first; Telugu and Hindi drafted (checked by a native speaker later). Not started: every on-screen word would first need moving into one word list, a large change across all files. Best done with a native speaker, once the words settle.
 
 ---
 

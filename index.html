@@ -1888,7 +1888,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2.8";
+  const APP_VERSION = "2.9";
 
   // ---------- Profiles ----------
   // Each profile is its own IndexedDB database, so notes, folders, tags and
@@ -8414,6 +8414,10 @@
   // ---------- What's new: shown once after an update ----------
   const SEEN_VERSION_KEY = "copypaster-seen-version";
   const WHATS_NEW = [
+    ["layers", "One way to file anything", "Move to\u2026 is the same picker everywhere, with search and + New for a collection, section, person, place or tag. The send bar is one calm line of chips."],
+    ["lock-closed", "App lock and text size", "Settings \u2192 App lock: a PIN, and Face ID or fingerprint where your device allows. Appearance \u2192 Text size."],
+    ["sidebar", "Your layout", "Sidebar full, icons only or hidden (Ctrl+\\), folded sections remembered. Rest on a note to peek at it; hold an icon on your phone to see its name."],
+    ["sparkle", "Faster with lots of notes", "Long lists draw as you scroll, so thousands of notes open in a blink. A green dot shows when you're synced, and more things can be undone."],
     ["inbox", "Inbox: captions, albums, clean up", "Photos and files show first with a caption box. Several photos go as one album. Filters, search, archive and Clean up."],
     ["sparkle", "Smart sorting", "Type @ to say where it goes and # for a tag. Stash spots dates and amounts and suggests where each message belongs. On your device only."],
     ["layers", "Spaces are now Collections, sub-chats are Sections", "Same data, clearer words: Health \u203a Prescriptions, Food \u203a Cafes. Personal and Work are still your Profiles."],
