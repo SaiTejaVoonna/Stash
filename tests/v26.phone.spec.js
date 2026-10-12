@@ -342,6 +342,8 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   const msg = page.locator("#chat-pane .cx-msg").last();
   await expect(msg.locator(".cx-guess")).toContainText("Food");
   await expect(msg.locator(".cx-guess")).toContainText("Nimrah Cafe");
+  // It says why, in plain words.
+  await expect(msg.locator(".cx-why")).toContainText("Because you picked it");
   // One tap files it, with the amount and the tag.
   await msg.locator(".cx-guess").tap();
   await expect(page.locator(".toast-item").last()).toContainText("Filed to Food");

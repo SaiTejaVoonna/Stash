@@ -49,4 +49,26 @@ test("a Word file in the Inbox says Word document, not its long technical type",
   await expect(page.locator(".cx-file small").last()).toHaveText(/^Word document · 1[78](\.\d)? KB$/);
 });
 
-
+test("Not this: a suggestion can be turned down, and isn't offered again for that message", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Food" }).first().click();
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await page.click("#gp-text");
+  await page.click("#gp-c-page");
+  await page.locator(".gp-extras .gp-mini:has-text('New')").click();
+  await page.fill("#gp-page-name", "Nimrah Cafe");
+  await page.click("#gp-page-create");
+  await expect(page.locator("#gp-c-page")).toContainText("Nimrah Cafe");
+  await page.locator('#main-nav [data-nav="chat"]').click();
+  await page.fill("#cx-input", "Irani chai at Nimrah Cafe");
+  await page.click("#cx-send");
+  const msg = page.locator("#chat-pane .cx-msg").last();
+  await expect(msg.locator(".cx-why")).toContainText("Because it mentions Nimrah Cafe");
+  await msg.locator(".cx-not").click();
+  await expect(page.locator(".toast-item").last()).toContainText("won't suggest");
+  await expect(msg.locator(".cx-guess")).toHaveCount(0);
+  await page.reload();
+  await page.locator('#main-nav [data-nav="chat"]').click();
+  await expect(page.locator("#chat-pane .cx-msg").last()).toContainText("Irani chai");
+  await expect(page.locator("#chat-pane .cx-msg").last().locator(".cx-guess")).toHaveCount(0);
+});

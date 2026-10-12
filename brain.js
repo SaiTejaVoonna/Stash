@@ -58,6 +58,30 @@
     try { localStorage.setItem(storeKey, JSON.stringify(m)); } catch {}
   }
   const sum = (o) => Object.values(o).reduce((t, v) => t + v, 0);
+  // "Not this": these words count less for that place, and this message
+  // won't be suggested there again.
+  function forget(text, dest, id) {
+    const m = memory();
+    const k = destKey(dest);
+    for (const w of new Set(words(text))) {
+      const row = m.words[w];
+      if (!row || !row[k]) continue;
+      row[k] -= 2;
+      if (row[k] <= 0) delete row[k];
+      if (!Object.keys(row).length) delete m.words[w];
+    }
+    if (id) {
+      m.skip = m.skip || {};
+      (m.skip[id] = m.skip[id] || []).push(k);
+      const ids = Object.keys(m.skip);
+      if (ids.length > 500) ids.slice(0, ids.length - 500).forEach((x) => delete m.skip[x]);
+    }
+    try { localStorage.setItem(storeKey, JSON.stringify(m)); } catch {}
+  }
+  const skipped = (id, dest) => { const m = memory(); return !!(m.skip && m.skip[id] && m.skip[id].includes(destKey(dest))); };
+  // Everything learned, for the "What Stash has learned" page, and wiping it.
+  function learned() { const m = memory(); return { words: m.words, tags: m.tags, skips: Object.keys(m.skip || {}).length }; }
+  function wipe() { mem = { words: {}, tags: {} }; try { localStorage.removeItem(storeKey); } catch {} }
 
   // ---------- What you have: collections, sections, people, places, tags ----------
   // data: { groups, entries, entities, tags: [names] }
@@ -188,16 +212,16 @@
     // 2. Names you've saved: people, places, sections, collections.
     for (const p of ix.pages) {
       const hit = p.words.filter((w) => w.length >= 4 && low.includes(" " + w + " ")).length;
-      if (hit) add(p.g.id, 25 + 10 * (hit - 1), p.t.name, null, p.t.id);
+      if (hit) add(p.g.id, 25 + 10 * (hit - 1), "it mentions " + p.t.name, null, p.t.id);
     }
     for (const g of ix.groups) {
-      for (const w of words(g.name)) if (w.length >= 3 && !STOP.has(w) && ws.some((x) => stem(x) === stem(w))) add(g.id, 15, g.name);
-      for (const s of g.subs) for (const w of words(s.name)) if (w.length >= 3 && ws.some((x) => stem(x) === stem(w))) add(g.id, 18, s.name, s.id);
+      for (const w of words(g.name)) if (w.length >= 3 && !STOP.has(w) && ws.some((x) => stem(x) === stem(w))) add(g.id, 15, "it mentions " + g.name);
+      for (const s of g.subs) for (const w of words(s.name)) if (w.length >= 3 && ws.some((x) => stem(x) === stem(w))) add(g.id, 18, "it mentions " + s.name, s.id);
     }
     // 3. Hint words → a section with a matching name.
     for (const [re, sub] of SECTION_HINTS) {
       if (!re.test(low)) continue;
-      for (const g of ix.groups) for (const s of g.subs) if (sub.test(s.name)) add(g.id, 10, s.name, s.id);
+      for (const g of ix.groups) for (const s of g.subs) if (sub.test(s.name)) add(g.id, 10, "it sounds like " + s.name.toLowerCase(), s.id);
     }
     // 4. Files and photos.
     if ((msg.files || []).some((f) => /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || ""))) for (const g of ix.groups) for (const s of g.subs) if (/report|document|bill|prescription|paper/i.test(s.name)) add(g.id, 4, null, s.id);
@@ -213,7 +237,7 @@
     for (const w of new Set(ws)) {
       const row = m.words[w];
       if (!row) continue;
-      for (const [k, n] of Object.entries(row)) { const [g, s, tag] = k.split("|"); if (ix.groups.some((x) => x.id === g)) add(g, Math.min(9, 3 * n), "like before", s || null, tag || null); }
+      for (const [k, n] of Object.entries(row)) { const [g, s, tag] = k.split("|"); if (ix.groups.some((x) => x.id === g)) add(g, Math.min(9, 3 * n), "you filed things like it there before", s || null, tag || null); }
     }
     for (const t of msg.tags || []) {
       const row = m.tags[t];
@@ -238,5 +262,5 @@
     return g.name + (s ? " › " + s.name : "") + (t ? " · " + t.name : "");
   }
 
-  window.CPBrain = { build, complete, spot, understand, label, learn, setStore, fold };
+  window.CPBrain = { build, complete, spot, understand, label, learn, setStore, fold, forget, skipped, learned, wipe };
 })();

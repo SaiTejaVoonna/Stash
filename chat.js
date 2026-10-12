@@ -504,7 +504,11 @@
     // Where it probably goes: one tap files it (Smart sorting: Suggest).
     if (!ui.selecting && !n.archivedAt && api.understand && api.smart && api.smart() !== "off") {
       const d = guessFor(n);
-      if (d) b.append(h("button", { class: "cx-guess", "data-guess": d.label, title: d.why.join(" · "), onclick: (e) => { e.stopPropagation(); api.fileInto([n], [d]); } }, ic("layers"), "→ " + d.label));
+      // The suggestion says why, in plain words; "Not this" teaches Stash.
+      if (d) b.append(h("div", { class: "cx-sugg" },
+        h("button", { class: "cx-guess", "data-guess": d.label, "aria-label": "File in " + d.label, onclick: (e) => { e.stopPropagation(); api.fileInto([n], [d]); } }, ic("layers"), "→ " + d.label),
+        h("small", { class: "cx-why" }, whyText(d),
+          h("button", { class: "cx-not", type: "button", onclick: (e) => { e.stopPropagation(); notThis(n, d); } }, "Not this"))));
     }
     if (ui.selecting) b.prepend(h("span", { class: "cx-check" + (picked ? " on" : "") }, picked ? ic("check") : null));
     // Tap: open it (or pick it while selecting). Hold: start selecting.
@@ -553,8 +557,24 @@
   const guessCache = new Map();
   function guessFor(n) {
     const k = n.id + ":" + n.updatedAt;
-    if (!guessCache.has(k)) { const d = api.understand(n).dests[0]; guessCache.set(k, d && (d.score >= 25 || (n.pick && n.pick.dest.length)) ? d : null); }
+    if (!guessCache.has(k)) {
+      const B = window.CPBrain;
+      const d = api.understand(n).dests.find((x) => !(B && B.skipped && B.skipped(n.id, x)));
+      guessCache.set(k, d && (d.score >= 25 || (n.pick && n.pick.dest.length)) ? d : null);
+    }
     return guessCache.get(k);
+  }
+  // "Because it mentions Nimrah Cafe and you filed things like it there before."
+  function whyText(d) {
+    const w = (d.why || []).filter(Boolean).slice(0, 2);
+    return w.length ? "Because " + w.join(" and ") + ". " : "";
+  }
+  function notThis(n, d) {
+    const B = window.CPBrain;
+    if (B && B.forget) B.forget([n.title, n.content].join(" "), d, n.id);
+    guessCache.clear();
+    render();
+    api.toast("Got it. Stash won't suggest " + d.label + " for this.");
   }
   function toggle(id) {
     if (ui.picked.has(id)) ui.picked.delete(id); else ui.picked.add(id);
