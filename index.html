@@ -1653,6 +1653,7 @@
         <button id="sync-dot" class="hidden" type="button" aria-label="Sync"><span class="sync-dot-light"></span></button>
         <button id="vault-lock-btn" class="hidden" type="button"></button>
         <button id="mark-read-btn" class="hidden" title="Mark all read"><svg class="icon"><use href="#icon-check-all"></use></svg></button>
+        <button id="view-mode-btn" class="icon-btn" type="button" title="Show as cards" aria-label="Show as cards"><svg class="icon"><use href="#icon-grid"></use></svg></button>
         <button id="select-mode-btn" title="Select multiple"><svg class="icon"><use href="#icon-check-box"></use></svg></button>
         <button id="paste-btn" title="Paste from clipboard — attaches to the open item, or creates a new one"><svg class="icon"><use href="#icon-paste"></use></svg></button>
         <button id="new-btn" title="New item"><svg class="icon"><use href="#icon-plus"></use></svg><span class="new-label">New</span></button>
@@ -4617,6 +4618,27 @@
 
   const LIST_PAGE = 150;
   let listPaging = { key: null, limit: LIST_PAGE }, listObserver = null;
+  // Cards (like Keep) or a list; your choice, remembered.
+  const LIST_VIEW_KEY = "copypaster-list-view";
+  function listAsCards() { try { return localStorage.getItem(LIST_VIEW_KEY) === "cards"; } catch { return false; } }
+  function updateViewModeBtn() {
+    const b = document.getElementById("view-mode-btn");
+    if (!b) return;
+    const cards = listAsCards();
+    b.innerHTML = icon(cards ? "list-ul" : "grid");
+    b.title = cards ? "Show as a list" : "Show as cards";
+    b.setAttribute("aria-label", b.title);
+    b.classList.toggle("on", cards);
+  }
+  document.getElementById("view-mode-btn").addEventListener("click", () => {
+    const cards = !listAsCards();
+    try { localStorage.setItem(LIST_VIEW_KEY, cards ? "cards" : "list"); } catch {}
+    updateViewModeBtn();
+    renderList();
+    showToast(cards ? "Cards" : "List");
+  });
+  updateViewModeBtn();
+
   function renderList() {
     document.getElementById("list-title").textContent = currentViewLabel();
     // The Me chat shows the same items; keep it current (a guess or a location arriving, an edit).
@@ -4645,6 +4667,8 @@
     updateSelectAllRow();
 
     itemsEl.innerHTML = "";
+    const asCards = listAsCards();
+    itemsEl.classList.toggle("as-cards", asCards);
     renderBackupBanner();
     if (remindersMode && !searchQuery) renderDueDates();
 
@@ -4813,11 +4837,11 @@
         else if (item.checklist && item.checklist.length && item.type === "note") {
           // The first item is the title when there's no other: don't repeat it.
           const rest = !item.title && !firstLine(item.content) ? item.checklist.slice(1) : item.checklist;
-          subText = rest.filter((c) => !c.done).map((c) => "\u2610 " + c.text).join("  ") || (rest.length ? "All done" : "");
+          subText = rest.filter((c) => !c.done).map((c) => "\u2610 " + c.text).join(asCards ? "\n" : "  ") || (rest.length ? "All done" : "");
         }
-        else if (item.title) subText = lines[0] || "";
+        else if (item.title) subText = asCards ? lines.slice(0, 10).join("\n") : lines[0] || "";
         else if (kind === "link") subText = hostOf(lines[0]) || "";
-        else subText = lines.slice(1).join("  ");
+        else subText = lines.slice(1, asCards ? 11 : undefined).join(asCards ? "\n" : "  ");
         // A snap waiting in Inbox: what it looks like and where it was taken.
         if (!subText && item.captured && item.capture) {
           const loc = item.capture.location;
@@ -4827,7 +4851,7 @@
         if (subText) {
           const sub = document.createElement("div");
           sub.className = "item-subtext" + (kind === "command" ? " mono" : "");
-          sub.textContent = (item.type === "note" && window.CPFormat ? window.CPFormat.plain(subText) : subText).slice(0, 200);
+          sub.textContent = (item.type === "note" && window.CPFormat ? window.CPFormat.plain(subText) : subText).slice(0, asCards ? 400 : 200);
           preview.appendChild(sub);
         }
 
@@ -5446,7 +5470,35 @@
             F.onKey(e);
           });
         }
-        editToolbar.append(sep());
+        const bgBtn = tb("fmt-color", icon("palette"), "Background colour", (e) => {
+          e.stopPropagation();
+          closeAnyPopover();
+          const pop = document.createElement("div");
+          pop.className = "popover swatches note-bg-pop";
+          pop.setAttribute("role", "menu");
+          [null, ...SWATCHES].forEach((c, i) => {
+            const sw = document.createElement("button");
+            sw.type = "button";
+            sw.className = "swatch" + (c ? "" : " color-none") + ((item.color || null) === c ? " selected" : "");
+            if (c) sw.style.background = c;
+            const name = c ? SWATCH_NAMES[i - 1] : "No colour";
+            sw.title = name; sw.setAttribute("aria-label", name);
+            sw.addEventListener("click", async () => {
+              closeAnyPopover();
+              item.color = c; item.updatedAt = Date.now();
+              await saveItem(item);
+              redrawDetail("properties");
+              showToast(c ? "Background: " + name : "Background removed");
+            });
+            pop.appendChild(sw);
+          });
+          document.body.appendChild(pop);
+          const r = bgBtn.getBoundingClientRect();
+          pop.style.left = Math.max(8, Math.min(r.left - 60, innerWidth - 300)) + "px";
+          pop.style.top = Math.max(8, r.top - 58) + "px";
+          setTimeout(() => document.addEventListener("click", function out(ev) { if (!pop.contains(ev.target)) pop.remove(); }, { once: true }), 0);
+        });
+        editToolbar.append(bgBtn, sep());
       }
       const cleanBtn = tb("clean-btn", icon("sparkle"), "Clean up the selection (or all text): spaces, quotes, case, your find & replace rules", (e) => {
         e.stopPropagation();
@@ -5736,6 +5788,9 @@
   // text, or an Info column beside it when the editor is wide.
   function buildDetailProperties(ed) {
     const { item, inTrash } = ed;
+    // A note's colour tints the whole page, like a coloured Keep card.
+    detailPane.classList.toggle("tinted", !!item.color && !inTrash);
+    if (item.color) detailPane.style.setProperty("--note-tint", item.color); else detailPane.style.removeProperty("--note-tint");
     const panel = document.createElement("div");
     panel.id = "detail-properties";
     const open = detailsOpen();

@@ -751,3 +751,33 @@ body.cx-previewing #tab-bar { display: none !important; }
 .cx-start-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .cx-start-acts .btn { display: inline-flex; align-items: center; gap: 6px; }
 .cx-filters[hidden], .cx-head .btn[hidden] { display: none; }
+
+/* ---------- Notes as cards (like Keep) ---------- */
+#items.as-cards { column-width: 168px; column-gap: 10px; padding-left: 10px; padding-right: 10px; }
+#items.as-cards > :not(.item-row) { column-span: all; }
+#items.as-cards .list-group { position: static; padding-left: 4px; }
+#items.as-cards .item-row { display: flex; flex-direction: column; gap: 8px; break-inside: avoid; margin: 0 0 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-1, var(--bg)); }
+#items.as-cards .item-row + .item-row { margin-top: 0; }
+#items.as-cards .item-row[data-color] { background: color-mix(in srgb, var(--row-color) 16%, var(--bg)); border-color: color-mix(in srgb, var(--row-color) 35%, transparent); }
+#items.as-cards .item-row[data-color]::before { display: none; }
+#items.as-cards .item-row.selected { box-shadow: 0 0 0 2px var(--accent); }
+#items.as-cards .type-dot { display: none; }
+#items.as-cards .row-thumb-wrap { margin: -12px -12px 0; }
+#items.as-cards .row-thumb { width: 100%; height: auto; max-height: 220px; aspect-ratio: auto; border-radius: 13px 13px 0 0; box-shadow: none; }
+#items.as-cards .row-image-badge { right: 8px; bottom: 8px; }
+#items.as-cards .item-preview { width: 100%; }
+#items.as-cards .item-title-line { flex-wrap: wrap; }
+#items.as-cards .item-text { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+#items.as-cards .item-time { display: none; }
+#items.as-cards .item-subtext { white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; margin-top: 4px; line-height: 1.45; }
+#items.as-cards .row-icons { position: absolute; top: 6px; right: 6px; margin: 0; }
+#items.as-cards .drag-handle { display: none; }
+#view-mode-btn.on { color: var(--accent); }
+
+/* A note's colour tints its page. */
+#detail-pane.tinted { background: color-mix(in srgb, var(--note-tint) 12%, var(--bg)); }
+#detail-pane.tinted #detail-footer, #detail-pane.tinted #edit-toolbar:not(.over-keyboard) { background: color-mix(in srgb, var(--note-tint) 12%, var(--bg)); }
+.note-bg-pop { position: fixed; display: flex; gap: 6px; padding: 8px; width: auto; flex-wrap: wrap; max-width: 300px; z-index: 80; }
+/* The + in the formatting bar adds photos, so the empty "Add photo" button isn't needed. */
+#detail-main:has(#note-add-btn) #add-image-btn.empty { display: none; }
+#detail-main:has(#note-add-btn) #gallery-row:not(:has(img)) { display: none; }

@@ -2,7 +2,7 @@
 const { test, expect, openApp, storedItems, newBtn } = require("./fixtures");
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => { try { sessionStorage.setItem("cp-test-rich", "1"); localStorage.removeItem("copypaster-editor"); } catch {} });
+  await page.addInitScript(() => { try { sessionStorage.setItem("cp-test-rich", "1"); localStorage.removeItem("copypaster-editor"); localStorage.removeItem("copypaster-details-open"); } catch {} });
   await openApp(page);
 });
 
@@ -97,4 +97,20 @@ test("rich editor: one + menu, and Undo / Redo in the top bar", async ({ page })
   await expect(rich).not.toContainText("hello");
   await page.click("#redo-btn");
   await expect(rich).toContainText("hello");
+});
+
+test("notes as cards, and a note's background colour tints its page and its card", async ({ page }) => {
+  const rich = await newRichNote(page);
+  await rich.type("Shopping\nmilk\nbread");
+  await page.click("#fmt-color");
+  await page.click('.note-bg-pop [aria-label="Yellow"]');
+  await expect(page.locator("#detail-pane")).toHaveClass(/tinted/);
+  await expect.poll(async () => (await saved(page) || {}).color).toBe("#ffd60a");
+  await page.click("#view-mode-btn");
+  await expect(page.locator("#items")).toHaveClass(/as-cards/);
+  await expect(page.locator("#items .item-row[data-color]")).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator("#items")).toHaveClass(/as-cards/); // remembered
+  await page.click("#view-mode-btn");
+  await expect(page.locator("#items")).not.toHaveClass(/as-cards/);
 });

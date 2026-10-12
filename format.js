@@ -43,7 +43,7 @@
   }
   // Markdown marks taken out, for list previews and shared images.
   function plain(md) {
-    return String(md || "").replace(/^#{1,3}\s+/gm, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1$2").replace(/~~(.+?)~~/g, "$1").replace(/\+\+(.+?)\+\+/g, "$1").replace(/==(.+?)==/g, "$1").replace(/`([^`]+)`/g, "$1");
+    return String(md || "").replace(/^(\s*)[-*•]\s+\[ \]\s+/gm, "$1\u2610 ").replace(/^(\s*)[-*•]\s+\[x\]\s+/gim, "$1\u2611 ").replace(/^(\s*)[-*]\s+/gm, "$1\u2022 ").replace(/^#{1,3}\s+/gm, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1$2").replace(/~~(.+?)~~/g, "$1").replace(/\+\+(.+?)\+\+/g, "$1").replace(/==(.+?)==/g, "$1").replace(/`([^`]+)`/g, "$1");
   }
 
   // The rich editor's page → the same plain text (Markdown) notes are kept in.
