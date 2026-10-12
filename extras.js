@@ -7,7 +7,9 @@
 (function () {
   "use strict";
 
-  const JSQR = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js";
+  const JSQR = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+  // The exact file, checked by the browser before it runs (Subresource Integrity).
+  const JSQR_SRI = "sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx";
 
   // ---------- What a scanned code means ----------
   // "WIFI:S:Home;T:WPA;P:secret;;" → { kind: "wifi", ssid, password, security }
@@ -35,6 +37,7 @@
     if (!jsqr) jsqr = new Promise((ok, fail) => {
       const s = document.createElement("script");
       s.src = JSQR;
+      s.integrity = JSQR_SRI; s.crossOrigin = "anonymous";
       s.onload = () => ok(window.jsQR);
       s.onerror = () => { jsqr = null; fail(new Error("Couldn't load the QR reader. Check your connection.")); };
       document.head.append(s);

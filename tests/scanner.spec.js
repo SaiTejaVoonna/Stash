@@ -31,8 +31,8 @@ test("finds the paper's corners, straightens it, cleans it up and writes a PDF t
   expect(r.w).toBeGreaterThan(r.h * 1.05);
   // The PDF is real: pdf.js opens it and finds both pages.
   const pages = await page.evaluate(async (dataUrl) => {
-    await new Promise((ok) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload = ok; document.head.append(s); });
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    await new Promise((ok) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"; s.onload = ok; document.head.append(s); });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     const bin = atob(dataUrl.split(",")[1]); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     return (await window.pdfjsLib.getDocument({ data: u }).promise).numPages;
   }, r.pdf);

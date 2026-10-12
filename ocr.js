@@ -8,6 +8,8 @@
   "use strict";
 
   const TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  // The exact file, checked by the browser before it runs (Subresource Integrity).
+  const TESS_SRI = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
   let workerPromise = null;
 
   function loadScript(src) {
@@ -15,6 +17,7 @@
       if (window.Tesseract) return ok();
       const s = document.createElement("script");
       s.src = src;
+      s.integrity = TESS_SRI; s.crossOrigin = "anonymous";
       s.onload = () => ok();
       s.onerror = () => fail(new Error("Couldn't download the text reader. Check your connection and try again."));
       document.head.append(s);

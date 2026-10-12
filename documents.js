@@ -8,7 +8,9 @@
 (function () {
   "use strict";
 
-  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/";
+  // The exact file, checked by the browser before it runs (Subresource Integrity).
+  const PDFJS_SRI = "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e";
   let api = null, pane = null, listEl = null, searchEl = null, viewer = null;
   const ui = { open: false, q: "", sort: "new", where: "all" };
   const thumbs = new Map(); // file key → data URL of page 1
@@ -38,6 +40,7 @@
       libPromise = new Promise((ok, fail) => {
         const s = document.createElement("script");
         s.src = PDFJS + "pdf.min.js";
+        s.integrity = PDFJS_SRI; s.crossOrigin = "anonymous";
         s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; ok(window.pdfjsLib); };
         s.onerror = () => { libPromise = null; fail(new Error("Couldn't load the PDF reader. Check your connection.")); };
         document.head.append(s);

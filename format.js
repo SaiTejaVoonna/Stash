@@ -140,7 +140,9 @@
   // Opens the note formatted on a clean page and the print dialog (where
   // "Save as PDF" lives on phones and computers).
   function print(note) {
-    const imgs = (note.images || []).map((src) => '<img src="' + src + '" alt="">').join("");
+    // Only real embedded pictures, and escaped: anything else is left out.
+    const imgs = (note.images || []).filter((src) => typeof src === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(src))
+      .map((src) => '<img src="' + esc(src) + '" alt="">').join("");
     const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(note.title || "Note") + '</title><meta name="viewport" content="width=device-width,initial-scale=1">' +
       "<style>body{font:16px/1.55 -apple-system,system-ui,'Segoe UI',sans-serif;color:#16171d;max-width:720px;margin:32px auto;padding:0 24px}h1{font-size:28px;margin:0 0 16px}" +
       "img{max-width:100%;border-radius:8px;margin:12px 0;display:block}blockquote{border-left:3px solid #ccc;margin:0;padding-left:12px;color:#555}code{background:#f2f2f5;padding:1px 4px;border-radius:4px}" +

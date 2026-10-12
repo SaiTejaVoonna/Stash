@@ -323,6 +323,8 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
   await page.fill("#gp-page-name", "Nimrah Cafe");
   await page.tap("#gp-page-create");
+  // Saved and shown before the reload (a reload can cut off a save still in progress).
+  await expect(page.locator("#gp-c-page")).toContainText("Nimrah Cafe");
   await openApp(page);
   await page.tap("#tab-bar [data-tab='chat']");
   // @ list: pick the page.

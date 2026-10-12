@@ -3161,7 +3161,7 @@
     }
 
     cache.sort((a, b) => b.updatedAt - a.updatedAt);
-    tagCache = await getAll(TAGS_STORE);
+    tagCache = (await getAll(TAGS_STORE)).map(safeTag).filter(Boolean);
     folderCache = await getAll(FOLDERS_STORE);
     renderNav();
     renderFoldersList();
@@ -3652,9 +3652,7 @@
       const isActive = typeof currentView === "object" && currentView.tag === tag.id;
       row.className = "nav-item" + (isActive ? " active" : "");
       row.title = tag.name + " (" + count + ") \u2014 right-click to edit or delete";
-      const marker = tag.emoji
-        ? '<span class="tag-emoji">' + tag.emoji + '</span>'
-        : '<span class="tag-dot" style="background:' + tag.color + '"></span>';
+      const marker = tagMarker(tag);
       row.innerHTML = '<span class="nav-label">' + marker + escapeHtml(tag.name) + '</span>' + '<span class="count">' + count + '</span>';
       row.addEventListener("click", () => {
         switchView({ tag: tag.id });
@@ -3689,10 +3687,21 @@
     showToast("Tag deleted");
   }
 
+  // Escapes text for use in HTML, including inside quoted attributes.
   function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+  // Tags can arrive from backups and sync, so their look is checked, never trusted:
+  // a colour must be a plain #hex, an emoji a few characters with no markup.
+  const SAFE_COLOR = /^#[0-9a-f]{3,8}$/i;
+  const safeColor = (c, fallback = "#8e8e93") => (typeof c === "string" && SAFE_COLOR.test(c) ? c : fallback);
+  function safeTag(t) {
+    if (!t || typeof t !== "object" || typeof t.id !== "string" || !t.id) return null;
+    const emoji = typeof t.emoji === "string" ? [...t.emoji.replace(/[<>&"'`\\]/g, "")].slice(0, 4).join("") : "";
+    return { ...t, name: String(t.name == null ? "" : t.name).slice(0, 80), color: safeColor(t.color), emoji };
+  }
+  function tagMarker(tag, dotClass = "tag-dot") {
+    return tag.emoji ? '<span class="tag-emoji">' + escapeHtml(tag.emoji) + "</span>" : '<span class="' + dotClass + '" style="background:' + safeColor(tag.color) + '"></span>';
   }
 
   function positionPopover(pop, anchorEl) {
@@ -4865,7 +4874,7 @@
           if (!tg) continue;
           const pill = document.createElement("span");
           pill.className = "meta-pill";
-          pill.innerHTML = tg.emoji ? '<span class="tag-emoji">' + tg.emoji + "</span>" : '<span class="mini-tag" style="background:' + tg.color + '"></span>';
+          pill.innerHTML = tagMarker(tg, "mini-tag");
           pill.appendChild(document.createTextNode(tg.name));
           pill.title = tg.name;
           meta.appendChild(pill);
@@ -5607,7 +5616,7 @@
         if (!tg) continue;
         const chip = document.createElement("div");
         chip.className = "tag-chip";
-        const marker = tg.emoji ? '<span class="tag-emoji">' + tg.emoji + '</span>' : '<span class="tag-dot" style="background:' + tg.color + '"></span>';
+        const marker = tagMarker(tg);
         chip.innerHTML = marker + escapeHtml(tg.name);
         const removeBtn = document.createElement("button");
         removeBtn.textContent = "\u00d7";
@@ -6705,7 +6714,7 @@
         row.className = "popover-list-item" + (checked ? " checked" : "");
         row.setAttribute("role", "option");
         row.setAttribute("aria-selected", checked ? "true" : "false");
-        const marker = tag.emoji ? '<span class="tag-emoji">' + tag.emoji + '</span>' : '<span class="tag-dot" style="background:' + tag.color + '"></span>';
+        const marker = tagMarker(tag);
         row.innerHTML = marker + "<span></span>" + '<span class="tag-count"></span>';
         row.children[1].textContent = tag.name;
         row.lastChild.textContent = used.get(tagKey(tag.name)) || "";
@@ -6937,8 +6946,9 @@
       folderCache.push(folder);
       addedFolders++;
     }
-    for (const tag of (data.tags || [])) {
-      if (!tag.id || existingTagIds.has(tag.id)) continue;
+    for (const raw of (Array.isArray(data.tags) ? data.tags : [])) {
+      const tag = safeTag(raw);
+      if (!tag || existingTagIds.has(tag.id)) continue;
       await put(TAGS_STORE, tag);
       tagCache.push(tag);
       addedTags++;
@@ -7175,9 +7185,7 @@
     for (const tag of tagCache) {
       const row = document.createElement("div");
       row.className = "popover-list-item";
-      const marker = tag.emoji
-        ? '<span class="tag-emoji">' + tag.emoji + '</span>'
-        : '<span class="tag-dot" style="background:' + tag.color + '"></span>';
+      const marker = tagMarker(tag);
       row.innerHTML = marker + escapeHtml(tag.name);
       row.addEventListener("click", async () => {
         for (const id of selectedIds) {
@@ -10093,8 +10101,10 @@
             notes = true;
           } else if (store === TAGS_STORE || store === FOLDERS_STORE) {
             const list = store === TAGS_STORE ? tagCache : folderCache;
+            const clean = store === TAGS_STORE ? safeTag(rec) : rec;
+            if (!clean) continue;
             const i = list.findIndex((c) => c.id === id);
-            if (i === -1) list.push(rec); else list[i] = rec;
+            if (i === -1) list.push(clean); else list[i] = clean;
             notes = true;
           } else spaces = true;
         }

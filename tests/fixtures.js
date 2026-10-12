@@ -7,8 +7,8 @@ const path = require("path");
 // Libraries the app loads from a CDN the first time they're needed, served from
 // node_modules instead (tests run offline).
 const CDN = [
-  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])],
-  [/^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/jszip\/3\.10\.1\/jszip\.min\.js$/, () => path.join(__dirname, "..", "node_modules", "jszip", "dist", "jszip.min.js")]
+  [/^https:\/\/cdn\.jsdelivr\.net\/npm\/pdfjs-dist@3\.11\.174\/build\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])],
+  [/^https:\/\/cdn\.jsdelivr\.net\/npm\/jszip@3\.10\.1\/dist\/jszip\.min\.js$/, () => path.join(__dirname, "..", "node_modules", "jszip", "dist", "jszip.min.js")]
 ];
 async function routeCdn(page) {
   await page.route(/^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//, (route) => {
@@ -31,6 +31,9 @@ function samplePdf(text = "Hello Stash") {
 const test = base.test.extend({
   page: async ({ page }, use) => {
     await routeCdn(page);
+    // The text reader: a stand-in that "reads" whatever the test sets in window.__ocrText.
+    // Set up before the page loads, since the real download is integrity-checked.
+    await page.addInitScript(() => { window.Tesseract = { createWorker: async () => ({ recognize: async () => ({ data: { text: window.__ocrText || "TOTAL 450" } }) }) }; });
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
     const errors = [];

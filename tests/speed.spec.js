@@ -49,3 +49,4 @@ test("a Word file in the Inbox says Word document, not its long technical type",
   await expect(page.locator(".cx-file small").last()).toHaveText(/^Word document · 1[78](\.\d)? KB$/);
 });
 
+

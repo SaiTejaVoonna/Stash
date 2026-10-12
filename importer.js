@@ -7,7 +7,9 @@
 (function () {
   "use strict";
 
-  const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+  const JSZIP = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+  // The exact file, checked by the browser before it runs (Subresource Integrity).
+  const JSZIP_SRI = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
   const KEEP_COLORS = { RED: "#ff453a", ORANGE: "#ff9f0a", YELLOW: "#ffd60a", GREEN: "#30d158", TEAL: "#64d2ff", BLUE: "#0a84ff", CERULEAN: "#0a84ff", PURPLE: "#bf5af2", PINK: "#bf5af2", BROWN: "#8e8e93", GRAY: "#8e8e93" };
 
   let zipLib = null;
@@ -16,6 +18,7 @@
     if (!zipLib) zipLib = new Promise((ok, fail) => {
       const s = document.createElement("script");
       s.src = JSZIP;
+      s.integrity = JSZIP_SRI; s.crossOrigin = "anonymous";
       s.onload = () => ok(window.JSZip);
       s.onerror = () => { zipLib = null; fail(new Error("Couldn't load the zip reader. Check your connection.")); };
       document.head.append(s);
@@ -130,10 +133,15 @@
         const text = (await f.text() || "").trim();
         if (text) { out.notes.push({ title: f.name.replace(/\.(txt|md)$/i, ""), content: text, tags: [], createdAt: Date.now(), updatedAt: Date.now() }); out.sources.text++; }
       } else if (/^text\/html$/.test(f.type)) {
-        const div = document.createElement("div");
-        div.innerHTML = (await f.text() || "").replace(/<(script|style)[\s\S]*?<\/\1>/gi, "");
-        const text = (div.innerText || div.textContent || "").trim();
-        if (text) { out.notes.push({ title: (div.querySelector("title,h1") || {}).textContent || f.name.replace(/\.html?$/i, ""), content: text, tags: [], createdAt: Date.now(), updatedAt: Date.now() }); out.sources.text++; }
+        // DOMParser makes an inert document: nothing in it runs or loads
+        // (unlike innerHTML, where <img onerror> would run).
+        const doc = new DOMParser().parseFromString(await f.text() || "", "text/html");
+        doc.querySelectorAll("script, style, noscript, template").forEach((x) => x.remove());
+        doc.querySelectorAll("br").forEach((x) => x.replaceWith("\n"));
+        doc.querySelectorAll("p, div, li, h1, h2, h3, h4, tr").forEach((x) => x.append("\n"));
+        const text = (doc.body ? doc.body.textContent : "").replace(/\n{3,}/g, "\n\n").trim();
+        const title = ((doc.querySelector("title") || doc.querySelector("h1") || {}).textContent || "").trim();
+        if (text) { out.notes.push({ title: title.slice(0, 200) || f.name.replace(/\.html?$/i, ""), content: text, tags: [], createdAt: Date.now(), updatedAt: Date.now() }); out.sources.text++; }
       } else if (/^(image|application\/pdf|audio|video)/.test(f.type) || /\.(docx?|xlsx?|pptx?)$/i.test(f.name)) {
         out.files.push(f); out.sources.files++;
       }
