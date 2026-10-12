@@ -254,7 +254,9 @@ test("two devices: a note and a collection made on one show up on the other, and
   await b.evaluate(() => document.getElementById("settings-btn").click());
   await b.click('.settings-nav-item[data-page="sync"]');
   await b.click("#sync-now");
-  await expect(b.locator("#toast")).toContainText("Synced");
+  // Wait for B's upload itself: the "Synced" toast from B's first sync can still be showing.
+  await expect.poll(() => driveFiles(b)).toContain("Scooter.md");
+  await expect(b.locator("#sync-now")).toBeEnabled();
   const drive2 = await dumpDrive(b);
   await ctxB.close();
 

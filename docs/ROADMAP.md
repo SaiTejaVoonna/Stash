@@ -104,7 +104,7 @@ to be built in.
 - [x] App lock (PIN; Face ID / fingerprint where the browser allows).
 - [x] Text size (small / normal / large). Reduced motion respected.
 - [x] Screen-reader labels, bigger tap targets, contrast check in light and dark.
-- [ ] Speed with thousands of items (lists draw only what's on screen).
+- [x] Speed with thousands of items (lists draw only what's on screen).
 - [ ] App language: English first; Telugu and Hindi drafted (checked by a native speaker later).
 
 ---

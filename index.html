@@ -509,6 +509,8 @@
   .swipe-action.right { right: 100%; background: var(--accent); }
 
   .row-select { margin: 10px 4px 0 2px; flex-shrink: 0; cursor: pointer; }
+  .list-more { display: block; width: calc(100% - 24px); margin: 8px 12px 16px; height: 38px; border-radius: var(--r-md); border: 1px dashed var(--line-strong); background: none; color: var(--text-2); font-size: var(--fs-sm); cursor: pointer; }
+  .list-more:hover { background: var(--surface-2); color: var(--text); }
   #select-all-row { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) 18px; font-size: var(--fs-sm); color: var(--text-2); }
   #select-all-label { cursor: pointer; }
   .drag-handle { cursor: grab; color: var(--text-3); font-size: 12px; padding-top: 10px; flex-shrink: 0; letter-spacing: -1px; }
@@ -4577,6 +4579,8 @@
     return d.toLocaleDateString(undefined, d.getFullYear() === new Date().getFullYear() ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "2-digit" });
   }
 
+  const LIST_PAGE = 150;
+  let listPaging = { key: null, limit: LIST_PAGE }, listObserver = null;
   function renderList() {
     document.getElementById("list-title").textContent = currentViewLabel();
     // The Me chat shows the same items; keep it current (a guess or a location arriving, an edit).
@@ -4632,270 +4636,297 @@
     const grouped = !folderMode && !remindersMode && !searchText() && /^(updated|created)-/.test(sortMode);
     const dateKey = sortMode.startsWith("created") ? "createdAt" : "updatedAt";
     let lastGroup = null;
-    for (const item of filtered) {
-      if (remindersMode) {
-        const g = item.remindAt <= Date.now() ? "Due" : "Upcoming";
-        if (g !== lastGroup) {
-          const hd = document.createElement("div");
-          hd.className = "list-group";
-          hd.textContent = g;
-          itemsEl.appendChild(hd);
-          lastGroup = g;
+    // Long lists draw a page at a time; more is drawn as you scroll near the end.
+    // The open or highlighted item is always drawn.
+    const listKey = [currentViewLabel(), searchQuery, kindFilter, sortMode].join("\u0001");
+    if (listKey !== listPaging.key) listPaging = { key: listKey, limit: LIST_PAGE };
+    const mustShow = Math.max(filtered.findIndex((i) => i.id === currentId), filtered.findIndex((i) => i.id === keyboardHighlightId));
+    if (mustShow >= listPaging.limit) listPaging.limit = Math.ceil((mustShow + 1) / LIST_PAGE) * LIST_PAGE;
+    let drawn = 0;
+    const drawUpTo = (limit) => {
+      for (const item of filtered.slice(drawn, limit)) {
+        if (remindersMode) {
+          const g = item.remindAt <= Date.now() ? "Due" : "Upcoming";
+          if (g !== lastGroup) {
+            const hd = document.createElement("div");
+            hd.className = "list-group";
+            hd.textContent = g;
+            itemsEl.appendChild(hd);
+            lastGroup = g;
+          }
         }
-      }
-      if (grouped) {
-        const g = item.pinned && !item._locked ? "Pinned" : dateGroup(item[dateKey]);
-        if (g !== lastGroup) {
-          const h = document.createElement("div");
-          h.className = "list-group";
-          h.textContent = g;
-          itemsEl.appendChild(h);
-          lastGroup = g;
+        if (grouped) {
+          const g = item.pinned && !item._locked ? "Pinned" : dateGroup(item[dateKey]);
+          if (g !== lastGroup) {
+            const h = document.createElement("div");
+            h.className = "list-group";
+            h.textContent = g;
+            itemsEl.appendChild(h);
+            lastGroup = g;
+          }
         }
-      }
-      if (item._locked) { itemsEl.appendChild(lockedVaultRow(item)); continue; }
-      const row = document.createElement("div");
-      row.dataset.id = item.id;
-      row.className = "item-row" + (item.id === currentId ? " selected" : "") + (item.id === keyboardHighlightId ? " kbd-highlight" : "") + (item.unread ? " unread" : "");
-      if (item.color) { row.dataset.color = item.color; row.style.setProperty("--row-color", item.color); }
+        if (item._locked) { itemsEl.appendChild(lockedVaultRow(item)); continue; }
+        const row = document.createElement("div");
+        row.dataset.id = item.id;
+        row.className = "item-row" + (item.id === currentId ? " selected" : "") + (item.id === keyboardHighlightId ? " kbd-highlight" : "") + (item.unread ? " unread" : "");
+        if (item.color) { row.dataset.color = item.color; row.style.setProperty("--row-color", item.color); }
 
-      if (selectMode) {
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.className = "row-select";
-        cb.checked = selectedIds.has(item.id);
-        cb.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (cb.checked) selectedIds.add(item.id); else selectedIds.delete(item.id);
-          updateBulkBar();
-          updateSelectAllRow();
-        });
-        row.appendChild(cb);
-      }
-
-      if (!selectMode) attachSwipeActions(row, item);
-      row.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        // Android also fires this on long-press; our own timer already handled it.
-        if (Date.now() - lastLongPress < 1000 || selectMode) return;
-        if (e.pointerType === "touch" || window.matchMedia("(max-width: 720px)").matches) { openActionSheet(item, e.pointerType === "touch"); return; }
-        showContextMenu(e.clientX, e.clientY, itemQuickActions(item).map((a) => ({ label: a.label, danger: a.danger, onClick: a.run })));
-        const menu = document.querySelector(".context-menu");
-        if (menu) menu.style.width = "200px";
-      });
-
-      row.draggable = true;
-      row.addEventListener("dragstart", (e) => {
-        draggedId = item.id;
-        e.dataTransfer.effectAllowed = "move";
-      });
-
-      if (folderMode) {
-        const handle = document.createElement("div");
-        handle.className = "drag-handle";
-        handle.title = "Drag to reorder, or drag onto a folder in the sidebar to move it";
-        handle.textContent = "⠿";
-        row.appendChild(handle);
-
-        row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
-        row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-        row.addEventListener("drop", async (e) => {
-          e.preventDefault();
-          row.classList.remove("drag-over");
-          if (!draggedId || draggedId === item.id) return;
-          await reorderWithinFolder(currentView.folder, draggedId, item.id);
-          draggedId = null;
-        });
-      }
-
-      const kind = itemKind(item);
-      const previewImage = item.contentType === "image" ? item.content : (item.images && item.images[0]);
-      if (previewImage) {
-        const wrap = document.createElement("div");
-        wrap.className = "row-thumb-wrap";
-        const thumb = document.createElement("img");
-        thumb.src = previewImage;
-        thumb.className = "row-thumb";
-        thumb.alt = "";
-        thumb.loading = "lazy";
-        wrap.appendChild(thumb);
-        if (item.images && item.images.length > 1) {
-          const badge = document.createElement("span");
-          badge.className = "row-image-badge";
-          badge.textContent = item.images.length;
-          badge.title = item.images.length + " attached images";
-          wrap.appendChild(badge);
-        }
-        row.appendChild(wrap);
-      } else {
-        const dot = document.createElement("div");
-        dot.className = "type-dot " + kind;
-        dot.innerHTML = icon(KIND_ICONS[kind]);
-        dot.title = KIND_LABELS[kind];
-        row.appendChild(dot);
-      }
-
-      const preview = document.createElement("div");
-      preview.className = "item-preview";
-      const titleLine = document.createElement("div");
-      titleLine.className = "item-title-line";
-      const text = document.createElement("div");
-      text.className = "item-text";
-      const isLogin = item.type === "password";
-      const lines = (item.content || "").split("\n").map((l) => l.trim()).filter(Boolean);
-      const primaryText = isLogin ? (item.title || hostOf(item.login.url) || "Password")
-        : item.title ? item.title : (item.contentType === "image" ? "Image" : firstLine(item.content) || (item.checklist && item.checklist.length ? item.checklist[0].text : "") || (item.audio.length ? "Voice note" : ""));
-      if (!primaryText) {
-        text.textContent = item.captured ? "Snap" : item.images && item.images.length ? "Photo" : "Untitled";
-        if (!(item.images && item.images.length)) text.classList.add("untitled");
-      } else {
-        text.textContent = primaryText;
-      }
-      const time = document.createElement("span");
-      time.className = "item-time";
-      time.textContent = shortTime(item[grouped ? dateKey : "updatedAt"]);
-      time.title = formatFullDate(item.updatedAt);
-      titleLine.append(text, time);
-      preview.appendChild(titleLine);
-
-      // Second line: what's inside, so you can tell items apart at a glance.
-      let subText = "";
-      if (isLogin) subText = [item.login.username, hostOf(item.login.url)].filter(Boolean).join(" \u00b7 ");
-      else if (item.contentType === "image") subText = "";
-      else if (item.checklist && item.checklist.length && item.type === "note") {
-        // The first item is the title when there's no other: don't repeat it.
-        const rest = !item.title && !firstLine(item.content) ? item.checklist.slice(1) : item.checklist;
-        subText = rest.filter((c) => !c.done).map((c) => "\u2610 " + c.text).join("  ") || (rest.length ? "All done" : "");
-      }
-      else if (item.title) subText = lines[0] || "";
-      else if (kind === "link") subText = hostOf(lines[0]) || "";
-      else subText = lines.slice(1).join("  ");
-      // A snap waiting in Inbox: what it looks like and where it was taken.
-      if (!subText && item.captured && item.capture) {
-        const loc = item.capture.location;
-        subText = [item.suggest && window.CPSee ? window.CPSee.describe(item.suggest) : "", loc ? "\u{1F4CD} " + loc.lat.toFixed(4) + ", " + loc.lng.toFixed(4) : ""].filter(Boolean).join(" \u00b7 ");
-      }
-      if (!subText && item.images && item.images.length) subText = item.images.length === 1 ? "1 photo" : item.images.length + " photos";
-      if (subText) {
-        const sub = document.createElement("div");
-        sub.className = "item-subtext" + (kind === "command" ? " mono" : "");
-        sub.textContent = (item.type === "note" && window.CPFormat ? window.CPFormat.plain(subText) : subText).slice(0, 200);
-        preview.appendChild(sub);
-      }
-
-      const meta = document.createElement("div");
-      meta.className = "item-meta";
-      if (item.pinned && !grouped) {
-        const pinBadge = document.createElement("span");
-        pinBadge.className = "row-pin-badge";
-        pinBadge.innerHTML = icon("pin", "icon-sm");
-        pinBadge.title = "Pinned";
-        meta.appendChild(pinBadge);
-      }
-      const st = item.type === "note" && statusOf(item.status);
-      if (st) {
-        const pill = document.createElement("span");
-        pill.className = "status-pill";
-        pill.style.setProperty("--c", st.color);
-        pill.textContent = st.label;
-        meta.appendChild(pill);
-      }
-      if (item.checklist && item.checklist.length && item.type === "note") {
-        const done = item.checklist.filter((c) => c.done).length;
-        const cl = document.createElement("span");
-        cl.className = "row-checklist";
-        cl.innerHTML = icon("checklist", "icon-sm");
-        cl.appendChild(document.createTextNode(done + "/" + item.checklist.length));
-        cl.title = done + " of " + item.checklist.length + " done";
-        meta.appendChild(cl);
-      }
-      if (item.remindAt) {
-        const rm = document.createElement("span");
-        rm.className = "row-remind";
-        rm.innerHTML = icon("bell", "icon-sm");
-        rm.appendChild(document.createTextNode(item.remindAt <= Date.now() ? "Due" : shortWhen(item.remindAt)));
-        rm.title = "Reminder: " + formatExpiry(item.remindAt);
-        meta.appendChild(rm);
-      }
-      if (item.audio.length) {
-        const au = document.createElement("span");
-        au.className = "row-checklist";
-        au.innerHTML = icon("mic", "icon-sm");
-        au.appendChild(document.createTextNode(item.audio.length > 1 ? String(item.audio.length) : toolsClock(item.audio[0].duration)));
-        au.title = item.audio.length === 1 ? "Voice note" : item.audio.length + " voice notes";
-        meta.appendChild(au);
-      }
-      if (item.type === "command" && item.language) {
-        const langBadge = document.createElement("span");
-        langBadge.className = "row-lang-badge";
-        langBadge.textContent = item.language;
-        meta.appendChild(langBadge);
-      }
-      if (item.autoExpireAt && !item.deletedAt) {
-        const expireEl = document.createElement("span");
-        expireEl.className = "row-expire";
-        expireEl.innerHTML = icon("timer", "icon-sm");
-        expireEl.appendChild(document.createTextNode(timeLeft(item.autoExpireAt).replace(/^in /, "")));
-        expireEl.title = "Auto-deletes " + timeLeft(item.autoExpireAt) + " (" + formatExpiry(item.autoExpireAt) + ")";
-        meta.appendChild(expireEl);
-      }
-      const folder = item.folderId && !isFolderView() && folderById(item.folderId);
-      if (folder) {
-        const pill = document.createElement("span");
-        pill.className = "meta-pill";
-        pill.innerHTML = icon("folder");
-        pill.appendChild(document.createTextNode(folder.name));
-        meta.appendChild(pill);
-      }
-      for (const tid of item.tags.slice(0, 3)) {
-        const tg = tagById(tid);
-        if (!tg) continue;
-        const pill = document.createElement("span");
-        pill.className = "meta-pill";
-        pill.innerHTML = tg.emoji ? '<span class="tag-emoji">' + tg.emoji + "</span>" : '<span class="mini-tag" style="background:' + tg.color + '"></span>';
-        pill.appendChild(document.createTextNode(tg.name));
-        pill.title = tg.name;
-        meta.appendChild(pill);
-      }
-      preview.appendChild(meta);
-      if (!subText && !meta.childElementCount) row.classList.add("single");
-
-      const icons = document.createElement("div");
-      icons.className = "row-icons";
-      const starBtn = document.createElement("button");
-      starBtn.className = "row-icon-btn" + (item.starred ? " starred" : "");
-      starBtn.innerHTML = icon("star", "icon-sm");
-      starBtn.title = item.starred ? "Remove from Favorites" : "Add to Favorites";
-      starBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        await toggleFavorite(item);
-        renderAllViews();
-        // If this item is open, update its header and timer in place (the
-        // text being typed is left alone).
-        if (currentId === item.id) { redrawDetail("header"); redrawDetail("properties"); }
-      });
-      const copyBtn = document.createElement("button");
-      copyBtn.className = "row-icon-btn";
-      copyBtn.innerHTML = icon("copy", "icon-sm");
-      copyBtn.title = "Copy";
-      copyBtn.addEventListener("click", (e) => { e.stopPropagation(); copyItemSmart(item); });
-      icons.appendChild(copyBtn);
-      icons.appendChild(starBtn);
-
-      row.appendChild(preview);
-      row.appendChild(icons);
-      row.addEventListener("click", async () => {
         if (selectMode) {
-          if (selectedIds.has(item.id)) selectedIds.delete(item.id); else selectedIds.add(item.id);
-          renderList();
-          updateBulkBar();
-        } else {
-          if (currentId && currentId !== item.id) await saveOpenDraft();
-          openDetail(item.id);
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "row-select";
+          cb.checked = selectedIds.has(item.id);
+          cb.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (cb.checked) selectedIds.add(item.id); else selectedIds.delete(item.id);
+            updateBulkBar();
+            updateSelectAllRow();
+          });
+          row.appendChild(cb);
         }
-      });
-      itemsEl.appendChild(row);
-    }
+
+        if (!selectMode) attachSwipeActions(row, item);
+        row.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          // Android also fires this on long-press; our own timer already handled it.
+          if (Date.now() - lastLongPress < 1000 || selectMode) return;
+          if (e.pointerType === "touch" || window.matchMedia("(max-width: 720px)").matches) { openActionSheet(item, e.pointerType === "touch"); return; }
+          showContextMenu(e.clientX, e.clientY, itemQuickActions(item).map((a) => ({ label: a.label, danger: a.danger, onClick: a.run })));
+          const menu = document.querySelector(".context-menu");
+          if (menu) menu.style.width = "200px";
+        });
+
+        row.draggable = true;
+        row.addEventListener("dragstart", (e) => {
+          draggedId = item.id;
+          e.dataTransfer.effectAllowed = "move";
+        });
+
+        if (folderMode) {
+          const handle = document.createElement("div");
+          handle.className = "drag-handle";
+          handle.title = "Drag to reorder, or drag onto a folder in the sidebar to move it";
+          handle.textContent = "⠿";
+          row.appendChild(handle);
+
+          row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
+          row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+          row.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            row.classList.remove("drag-over");
+            if (!draggedId || draggedId === item.id) return;
+            await reorderWithinFolder(currentView.folder, draggedId, item.id);
+            draggedId = null;
+          });
+        }
+
+        const kind = itemKind(item);
+        const previewImage = item.contentType === "image" ? item.content : (item.images && item.images[0]);
+        if (previewImage) {
+          const wrap = document.createElement("div");
+          wrap.className = "row-thumb-wrap";
+          const thumb = document.createElement("img");
+          thumb.src = previewImage;
+          thumb.className = "row-thumb";
+          thumb.alt = "";
+          thumb.loading = "lazy";
+          wrap.appendChild(thumb);
+          if (item.images && item.images.length > 1) {
+            const badge = document.createElement("span");
+            badge.className = "row-image-badge";
+            badge.textContent = item.images.length;
+            badge.title = item.images.length + " attached images";
+            wrap.appendChild(badge);
+          }
+          row.appendChild(wrap);
+        } else {
+          const dot = document.createElement("div");
+          dot.className = "type-dot " + kind;
+          dot.innerHTML = icon(KIND_ICONS[kind]);
+          dot.title = KIND_LABELS[kind];
+          row.appendChild(dot);
+        }
+
+        const preview = document.createElement("div");
+        preview.className = "item-preview";
+        const titleLine = document.createElement("div");
+        titleLine.className = "item-title-line";
+        const text = document.createElement("div");
+        text.className = "item-text";
+        const isLogin = item.type === "password";
+        const lines = (item.content || "").split("\n").map((l) => l.trim()).filter(Boolean);
+        const primaryText = isLogin ? (item.title || hostOf(item.login.url) || "Password")
+          : item.title ? item.title : (item.contentType === "image" ? "Image" : firstLine(item.content) || (item.checklist && item.checklist.length ? item.checklist[0].text : "") || (item.audio.length ? "Voice note" : ""));
+        if (!primaryText) {
+          text.textContent = item.captured ? "Snap" : item.images && item.images.length ? "Photo" : "Untitled";
+          if (!(item.images && item.images.length)) text.classList.add("untitled");
+        } else {
+          text.textContent = primaryText;
+        }
+        const time = document.createElement("span");
+        time.className = "item-time";
+        time.textContent = shortTime(item[grouped ? dateKey : "updatedAt"]);
+        time.title = formatFullDate(item.updatedAt);
+        titleLine.append(text, time);
+        preview.appendChild(titleLine);
+
+        // Second line: what's inside, so you can tell items apart at a glance.
+        let subText = "";
+        if (isLogin) subText = [item.login.username, hostOf(item.login.url)].filter(Boolean).join(" \u00b7 ");
+        else if (item.contentType === "image") subText = "";
+        else if (item.checklist && item.checklist.length && item.type === "note") {
+          // The first item is the title when there's no other: don't repeat it.
+          const rest = !item.title && !firstLine(item.content) ? item.checklist.slice(1) : item.checklist;
+          subText = rest.filter((c) => !c.done).map((c) => "\u2610 " + c.text).join("  ") || (rest.length ? "All done" : "");
+        }
+        else if (item.title) subText = lines[0] || "";
+        else if (kind === "link") subText = hostOf(lines[0]) || "";
+        else subText = lines.slice(1).join("  ");
+        // A snap waiting in Inbox: what it looks like and where it was taken.
+        if (!subText && item.captured && item.capture) {
+          const loc = item.capture.location;
+          subText = [item.suggest && window.CPSee ? window.CPSee.describe(item.suggest) : "", loc ? "\u{1F4CD} " + loc.lat.toFixed(4) + ", " + loc.lng.toFixed(4) : ""].filter(Boolean).join(" \u00b7 ");
+        }
+        if (!subText && item.images && item.images.length) subText = item.images.length === 1 ? "1 photo" : item.images.length + " photos";
+        if (subText) {
+          const sub = document.createElement("div");
+          sub.className = "item-subtext" + (kind === "command" ? " mono" : "");
+          sub.textContent = (item.type === "note" && window.CPFormat ? window.CPFormat.plain(subText) : subText).slice(0, 200);
+          preview.appendChild(sub);
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "item-meta";
+        if (item.pinned && !grouped) {
+          const pinBadge = document.createElement("span");
+          pinBadge.className = "row-pin-badge";
+          pinBadge.innerHTML = icon("pin", "icon-sm");
+          pinBadge.title = "Pinned";
+          meta.appendChild(pinBadge);
+        }
+        const st = item.type === "note" && statusOf(item.status);
+        if (st) {
+          const pill = document.createElement("span");
+          pill.className = "status-pill";
+          pill.style.setProperty("--c", st.color);
+          pill.textContent = st.label;
+          meta.appendChild(pill);
+        }
+        if (item.checklist && item.checklist.length && item.type === "note") {
+          const done = item.checklist.filter((c) => c.done).length;
+          const cl = document.createElement("span");
+          cl.className = "row-checklist";
+          cl.innerHTML = icon("checklist", "icon-sm");
+          cl.appendChild(document.createTextNode(done + "/" + item.checklist.length));
+          cl.title = done + " of " + item.checklist.length + " done";
+          meta.appendChild(cl);
+        }
+        if (item.remindAt) {
+          const rm = document.createElement("span");
+          rm.className = "row-remind";
+          rm.innerHTML = icon("bell", "icon-sm");
+          rm.appendChild(document.createTextNode(item.remindAt <= Date.now() ? "Due" : shortWhen(item.remindAt)));
+          rm.title = "Reminder: " + formatExpiry(item.remindAt);
+          meta.appendChild(rm);
+        }
+        if (item.audio.length) {
+          const au = document.createElement("span");
+          au.className = "row-checklist";
+          au.innerHTML = icon("mic", "icon-sm");
+          au.appendChild(document.createTextNode(item.audio.length > 1 ? String(item.audio.length) : toolsClock(item.audio[0].duration)));
+          au.title = item.audio.length === 1 ? "Voice note" : item.audio.length + " voice notes";
+          meta.appendChild(au);
+        }
+        if (item.type === "command" && item.language) {
+          const langBadge = document.createElement("span");
+          langBadge.className = "row-lang-badge";
+          langBadge.textContent = item.language;
+          meta.appendChild(langBadge);
+        }
+        if (item.autoExpireAt && !item.deletedAt) {
+          const expireEl = document.createElement("span");
+          expireEl.className = "row-expire";
+          expireEl.innerHTML = icon("timer", "icon-sm");
+          expireEl.appendChild(document.createTextNode(timeLeft(item.autoExpireAt).replace(/^in /, "")));
+          expireEl.title = "Auto-deletes " + timeLeft(item.autoExpireAt) + " (" + formatExpiry(item.autoExpireAt) + ")";
+          meta.appendChild(expireEl);
+        }
+        const folder = item.folderId && !isFolderView() && folderById(item.folderId);
+        if (folder) {
+          const pill = document.createElement("span");
+          pill.className = "meta-pill";
+          pill.innerHTML = icon("folder");
+          pill.appendChild(document.createTextNode(folder.name));
+          meta.appendChild(pill);
+        }
+        for (const tid of item.tags.slice(0, 3)) {
+          const tg = tagById(tid);
+          if (!tg) continue;
+          const pill = document.createElement("span");
+          pill.className = "meta-pill";
+          pill.innerHTML = tg.emoji ? '<span class="tag-emoji">' + tg.emoji + "</span>" : '<span class="mini-tag" style="background:' + tg.color + '"></span>';
+          pill.appendChild(document.createTextNode(tg.name));
+          pill.title = tg.name;
+          meta.appendChild(pill);
+        }
+        preview.appendChild(meta);
+        if (!subText && !meta.childElementCount) row.classList.add("single");
+
+        const icons = document.createElement("div");
+        icons.className = "row-icons";
+        const starBtn = document.createElement("button");
+        starBtn.className = "row-icon-btn" + (item.starred ? " starred" : "");
+        starBtn.innerHTML = icon("star", "icon-sm");
+        starBtn.title = item.starred ? "Remove from Favorites" : "Add to Favorites";
+        starBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await toggleFavorite(item);
+          renderAllViews();
+          // If this item is open, update its header and timer in place (the
+          // text being typed is left alone).
+          if (currentId === item.id) { redrawDetail("header"); redrawDetail("properties"); }
+        });
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "row-icon-btn";
+        copyBtn.innerHTML = icon("copy", "icon-sm");
+        copyBtn.title = "Copy";
+        copyBtn.addEventListener("click", (e) => { e.stopPropagation(); copyItemSmart(item); });
+        icons.appendChild(copyBtn);
+        icons.appendChild(starBtn);
+
+        row.appendChild(preview);
+        row.appendChild(icons);
+        row.addEventListener("click", async () => {
+          if (selectMode) {
+            if (selectedIds.has(item.id)) selectedIds.delete(item.id); else selectedIds.add(item.id);
+            renderList();
+            updateBulkBar();
+          } else {
+            if (currentId && currentId !== item.id) await saveOpenDraft();
+            openDetail(item.id);
+          }
+        });
+        itemsEl.appendChild(row);
+      }
+      drawn = Math.min(limit, filtered.length);
+      const left = filtered.length - drawn;
+      if (left > 0) {
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "list-more";
+        more.id = "list-more";
+        more.textContent = "Show " + Math.min(LIST_PAGE, left) + " more (" + left + " left)";
+        const next = () => { if (!more.isConnected) return; if (listObserver) listObserver.disconnect(); more.remove(); listPaging.limit = drawn + LIST_PAGE; drawUpTo(listPaging.limit); };
+        more.addEventListener("click", next);
+        itemsEl.appendChild(more);
+        if (listObserver) listObserver.disconnect();
+        if ("IntersectionObserver" in window) {
+          listObserver = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) next(); }, { rootMargin: "600px" });
+          listObserver.observe(more);
+        }
+      }
+    };
+    drawUpTo(listPaging.limit);
   }
 
   async function reorderWithinFolder(folderId, draggedItemId, targetItemId) {

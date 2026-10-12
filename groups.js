@@ -654,6 +654,7 @@
     sortSel.value = sortOf(g);
     tools.append(sortSel);
     const jump = h("select", { class: "input gp-select", id: "gp-jump", "aria-label": "Jump to month", hidden: true, onchange: (e) => {
+      tlShowMonth(e.target.value);
       const target = document.getElementById("gp-m-" + e.target.value);
       if (target) target.scrollIntoView({ block: "start", behavior: api.motionOK() ? "smooth" : "auto" });
       e.target.value = "";
@@ -680,6 +681,8 @@
   function setTag(t) { ui.tag = t; render(); }
 
   // ---------- Timeline ----------
+  const TL_PAGE = 120;
+  let tlPaging = { key: null, limit: TL_PAGE }, tlShowMonth = () => {};
   function renderTimeline(g, list) {
     const cards = C.buildCards(list, g, ui.s);
     const sort = sortOf(g);
@@ -707,20 +710,45 @@
       return;
     }
     const jump = document.getElementById("gp-jump");
-    const months = [];
-    let lastMonth = null;
-    for (const c of cards) {
-      if (byDate && C.monthKey(c.anchor) !== lastMonth) {
-        lastMonth = C.monthKey(c.anchor);
-        const inMonth = cards.filter((x) => C.monthKey(x.anchor) === lastMonth);
-        const items = inMonth.flatMap((x) => x.items);
-        const t = C.totals(items, g);
-        months.push([lastMonth, c.anchor]);
-        timelineEl.append(h("div", { class: "gp-month", id: "gp-m-" + lastMonth }, h("span", null, fmtMonth(c.anchor)),
-          h("small", null, (g.fields.amount.on && Object.keys(t).length ? C.formatTotals(t, g) + " · " : "") + items.length + (items.length === 1 ? " entry" : " entries"))));
-      }
-      timelineEl.append(renderCard(c, g));
+    // Every month (for Jump to month), its cards counted once.
+    const months = [], byMonth = new Map();
+    if (byDate) for (const c of cards) {
+      const k = C.monthKey(c.anchor);
+      if (!byMonth.has(k)) { byMonth.set(k, []); months.push([k, c.anchor]); }
+      byMonth.get(k).push(c);
     }
+    // Long timelines draw a page of cards at a time, more as you scroll.
+    const key = [g.id, ui.s, ui.tag, ui.q, ui.spec, sort].join("\u0001");
+    if (key !== tlPaging.key) tlPaging = { key, limit: TL_PAGE };
+    const must = cards.findIndex((c) => c.items.some((e) => e.id === ui.selected || e.id === ui.flash));
+    if (must >= tlPaging.limit) tlPaging.limit = Math.ceil((must + 1) / TL_PAGE) * TL_PAGE;
+    let lastMonth = null, drawn = 0;
+    const drawUpTo = (limit) => {
+      timelineEl.querySelectorAll(".gp-more").forEach((x) => x.remove());
+      for (const c of cards.slice(drawn, limit)) {
+        if (byDate && C.monthKey(c.anchor) !== lastMonth) {
+          lastMonth = C.monthKey(c.anchor);
+          const items = byMonth.get(lastMonth).flatMap((x) => x.items);
+          const t = C.totals(items, g);
+          timelineEl.append(h("div", { class: "gp-month", id: "gp-m-" + lastMonth }, h("span", null, fmtMonth(c.anchor)),
+            h("small", null, (g.fields.amount.on && Object.keys(t).length ? C.formatTotals(t, g) + " · " : "") + items.length + (items.length === 1 ? " entry" : " entries"))));
+        }
+        timelineEl.append(renderCard(c, g));
+      }
+      drawn = Math.min(limit, cards.length);
+      tlPaging.limit = Math.max(tlPaging.limit, drawn);
+      const left = cards.length - drawn;
+      if (left <= 0) return;
+      const more = h("button", { class: "gp-more list-more", id: "gp-more", onclick: () => drawUpTo(drawn + TL_PAGE) }, "Show more (" + left + " left)");
+      timelineEl.append(more);
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && more.isConnected) { io.disconnect(); drawUpTo(drawn + TL_PAGE); } }, { root: timelineEl, rootMargin: "600px" });
+        io.observe(more);
+      }
+    };
+    drawUpTo(tlPaging.limit);
+    // Jump to a month that isn't drawn yet: draw down to it first.
+    tlShowMonth = (k) => { const i = cards.findIndex((c) => C.monthKey(c.anchor) === k); if (i >= drawn) drawUpTo(i + TL_PAGE); };
     if (jump && months.length > 1) {
       jump.hidden = false;
       jump.append(h("option", { value: "" }, "Jump to month"));

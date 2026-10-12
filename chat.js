@@ -563,13 +563,35 @@
         h("p", { class: "cx-tip" }, "Tip: write @name (like @fzv3) and Move picks it for you.")));
       return;
     }
+    // Long chats draw the latest messages; earlier ones come in as you scroll up.
+    const key = ui.filter + "\u0001" + (ui.q || "");
+    if (key !== paging.key) paging = { key, shown: PAGE };
+    const start = Math.max(0, items.length - paging.shown);
+    if (start > 0) {
+      const earlier = h("button", { class: "list-more cx-earlier", id: "cx-earlier", onclick: () => showEarlier() }, "Show earlier messages (" + start + ")");
+      bodyEl.append(earlier);
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && earlier.isConnected && render.done) { io.disconnect(); showEarlier(); } }, { root: bodyEl, rootMargin: "300px" });
+        setTimeout(() => { if (earlier.isConnected) io.observe(earlier); }, 400);
+      }
+    }
     let lastDay = "";
-    for (const n of items) {
+    for (const n of items.slice(start)) {
       const day = dayLabel(n.createdAt);
       if (day !== lastDay) { bodyEl.append(h("div", { class: "cx-day" }, h("span", null, day))); lastDay = day; }
       bodyEl.append(bubble(n));
     }
     if (atBottom || !render.done) { bodyEl.scrollTop = bodyEl.scrollHeight; render.done = true; }
+  }
+
+  const PAGE = 120;
+  let paging = { key: null, shown: PAGE };
+  // More history above, keeping what's on screen where it is.
+  function showEarlier() {
+    const fromBottom = bodyEl.scrollHeight - bodyEl.scrollTop;
+    paging.shown += PAGE;
+    render();
+    bodyEl.scrollTop = bodyEl.scrollHeight - fromBottom;
   }
 
   // ---------- Open / close ----------
