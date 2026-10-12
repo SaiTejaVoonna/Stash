@@ -122,6 +122,35 @@
     --primary-shadow: 0 4px 12px -4px rgba(10, 108, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     --glass: rgba(255, 255, 255, 0.8);
   }
+  /* Backgrounds: true black (dark, kind to OLED screens), warm paper (light),
+     and Aurora (a dark night sky; found, not shown). */
+  html[data-theme="dark"][data-surface="black"] {
+    --bg: #000000; --bg-sidebar: #050506; --surface-1: #0b0b0d; --surface-2: #141418; --surface-3: #1e1f24; --elevated: #121215;
+    --code-bg: #000000; --glass: rgba(10, 10, 12, 0.8);
+  }
+  html[data-theme="light"][data-surface="paper"] {
+    --bg: #fbf7ef; --bg-sidebar: #f3ecdf; --surface-1: #fffdf8; --surface-2: #f2eadb; --surface-3: #e8dfcd; --elevated: #fffdf8;
+    --line: rgba(80, 60, 20, 0.1); --line-strong: rgba(80, 60, 20, 0.17);
+    --text: #2a2419; --text-2: #5f5546; --text-3: #6d6352; --glass: rgba(251, 247, 239, 0.84);
+  }
+  html[data-theme="dark"][data-surface="aurora"] {
+    --bg: #0b0b1a; --bg-sidebar: #0e0d20; --surface-1: #14132a; --surface-2: #1b1a36; --surface-3: #252347; --elevated: #191833;
+    --line: rgba(190, 180, 255, 0.09); --line-strong: rgba(190, 180, 255, 0.16); --glass: rgba(20, 19, 42, 0.74);
+  }
+  html[data-surface="aurora"] body { background: radial-gradient(1200px 500px at 15% -10%, rgba(39, 213, 255, .14), transparent 60%), radial-gradient(900px 500px at 90% 0%, rgba(255, 93, 184, .13), transparent 60%), var(--bg); }
+  html[data-surface="aurora"] #app > * { background-color: transparent; }
+
+  /* Looks: one tap for icon, theme, colour and background together. */
+  #look-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; width: 100%; }
+  .look-opt { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 1.5px solid var(--line-strong); background: var(--look-bg); color: var(--look-text); cursor: pointer; text-align: left; font: inherit; transition: transform var(--t-fast), border-color var(--t-fast); }
+  .look-opt:hover { transform: translateY(-1px); }
+  .look-opt.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+  .look-opt img { width: 40px; height: 40px; border-radius: 10px; }
+  .look-opt .look-bar { height: 6px; border-radius: 3px; background: var(--look-accent); }
+  .look-opt b { font-size: var(--fs-sm); }
+  .look-opt small { font-size: 11px; opacity: .75; line-height: 1.3; }
+  .settings-line.look-line { flex-direction: column; align-items: stretch; gap: 10px; }
+
   /* Older names, still used by a few inline styles. */
   html { --panel: var(--surface-1); --panel-2: var(--surface-2); --border: var(--line-strong); --text-dim: var(--text-2); --shadow: rgba(0, 0, 0, 0.3); }
 
@@ -1726,6 +1755,9 @@
           <h2 class="settings-page-title">Appearance</h2>
           <div class="settings-section">
             <div class="settings-group">
+              <div class="settings-line look-line"><span>Looks<small>One tap sets the app icon, colours and background together. Change any of them below after.</small></span>
+                <div id="look-picker" role="radiogroup" aria-label="Looks"></div>
+              </div>
               <div class="settings-line"><span>Theme<small>Automatic follows your phone or computer.</small></span>
                 <div id="theme-picker" class="segmented" role="radiogroup" aria-label="Theme">
                   <button class="theme-opt" data-theme-pick="light" role="radio"><svg class="icon"><use href="#icon-sun"></use></svg>Light</button>
@@ -1741,6 +1773,13 @@
                   <button class="theme-opt" data-glass-pick="off" role="radio">Off</button>
                   <button class="theme-opt" data-glass-pick="subtle" role="radio">Subtle</button>
                   <button class="theme-opt" data-glass-pick="strong" role="radio">Strong</button>
+                </div>
+              </div>
+              <div class="settings-line"><span>Background<small>True black is for dark mode (kind to OLED screens); warm paper is for light mode.</small></span>
+                <div id="surface-picker" class="segmented" role="radiogroup" aria-label="Background">
+                  <button class="theme-opt" data-surface-pick="normal" role="radio">Normal</button>
+                  <button class="theme-opt" data-surface-pick="black" role="radio">True black</button>
+                  <button class="theme-opt" data-surface-pick="paper" role="radio">Warm paper</button>
                 </div>
               </div>
               <div class="settings-line"><span>Text size<small>For reading comfort. Your browser's zoom works too.</small></span>
@@ -2532,6 +2571,15 @@
     });
     // Colors the phone's status bar / browser bar to match the app.
     document.querySelector('meta[name="theme-color"]').content = resolved === "dark" ? "#0d0e11" : "#ffffff";
+    refreshLooks();
+  }
+  // Once Looks are set up (further down), keep their picker and the browser bar current.
+  function refreshLooks() {
+    if (!window.__cpLooks) return;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    if (meta && bg) meta.content = bg;
+    renderLookPicker();
   }
   function toggleTheme() {
     applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
@@ -2577,6 +2625,7 @@
     }
     try { localStorage.setItem(ACCENT_KEY, pick); } catch {}
     renderAccentPicker(pick);
+    refreshLooks();
   }
   function renderAccentPicker(pick) {
     const box = document.getElementById("accent-picker");
@@ -2637,6 +2686,7 @@
     const apple = document.getElementById("apple-icon-link");
     if (apple) apple.href = file ? file + "-apple.png" : "icons/apple-touch-icon.png";
     try { localStorage.setItem(ICON_STYLE_KEY, pick); } catch {}
+    refreshLooks();
     const box = document.getElementById("icon-style-picker");
     if (!box) return;
     box.replaceChildren();
@@ -2674,6 +2724,75 @@
   }
   document.querySelectorAll("[data-glass-pick]").forEach((b) => b.addEventListener("click", () => applyGlass(b.dataset.glassPick)));
   try { applyGlass(localStorage.getItem(GLASS_KEY)); } catch { applyGlass("subtle"); }
+
+  // Background: normal, true black (dark), warm paper (light), or Aurora (found, not shown).
+  const SURFACE_KEY = "copypaster-surface";
+  function applySurface(value) {
+    const pick = ["black", "paper", "aurora"].includes(value) ? value : "normal";
+    if (pick === "normal") delete document.documentElement.dataset.surface; else document.documentElement.dataset.surface = pick;
+    try { localStorage.setItem(SURFACE_KEY, pick); } catch {}
+    document.querySelectorAll("[data-surface-pick]").forEach((b) => {
+      const on = b.dataset.surfacePick === pick;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    refreshLooks();
+  }
+  document.querySelectorAll("[data-surface-pick]").forEach((b) => b.addEventListener("click", () => {
+    const v = b.dataset.surfacePick;
+    // True black needs dark, warm paper needs light: switch so it shows.
+    if (v === "black" && document.documentElement.dataset.theme !== "dark") applyTheme("dark");
+    if (v === "paper" && document.documentElement.dataset.theme !== "light") applyTheme("light");
+    applySurface(v);
+  }));
+
+  // Looks: an app icon with the colours made for it.
+  const LOOKS = [
+    { key: "stash", name: "Stash", hint: "The original", icon: "default", theme: "system", accent: "stash", surface: "normal", glass: "subtle", bg: "#ffffff", text: "#17181c", bar: STASH_GRAD },
+    { key: "midnight", name: "Midnight", hint: "True black, violet", icon: "dark", theme: "dark", accent: "violet", surface: "black", glass: "subtle", bg: "#000000", text: "#ececf0", bar: "#8b5cf6" },
+    { key: "paper", name: "Paper", hint: "Warm, easy reading", icon: "light", theme: "light", accent: "amber", surface: "paper", glass: "off", bg: "#fbf7ef", text: "#2a2419", bar: "#f59e0b" },
+    { key: "glass", name: "Glass", hint: "Clear and airy", icon: "glass", theme: "system", accent: "cyan", surface: "normal", glass: "strong", bg: "#eef7fb", text: "#17181c", bar: "#06b6d4" },
+    { key: "graphite", name: "Graphite", hint: "Quiet, no colour", icon: "mono", theme: "dark", accent: "mono", surface: "normal", glass: "subtle", bg: "#0d0e11", text: "#ececf0", bar: "#9ca3af" },
+    { key: "snow", name: "Snow", hint: "Light and plain", icon: "mono-light", theme: "light", accent: "mono", surface: "normal", glass: "off", bg: "#ffffff", text: "#17181c", bar: "#9ca3af" },
+    { key: "aurora", name: "Aurora", hint: "You found it", secret: true, icon: "glass", theme: "dark", accent: "stash", surface: "aurora", glass: "strong", bg: "#0b0b1a", text: "#ececf0", bar: STASH_GRAD }
+  ];
+  const LOOK_SECRET_KEY = "copypaster-aurora";
+  function auroraFound() { try { return localStorage.getItem(LOOK_SECRET_KEY) === "1"; } catch { return false; } }
+  function currentLook() {
+    let st = {};
+    try { st = { icon: localStorage.getItem(ICON_STYLE_KEY) || "default", theme: localStorage.getItem(THEME_KEY) || "system", accent: localStorage.getItem(ACCENT_KEY) || "stash", surface: localStorage.getItem(SURFACE_KEY) || "normal" }; } catch {}
+    const l = LOOKS.find((x) => x.icon === st.icon && x.theme === st.theme && x.accent === st.accent && x.surface === st.surface);
+    return l ? l.key : null;
+  }
+  function applyLook(key, quiet) {
+    const l = LOOKS.find((x) => x.key === key);
+    if (!l) return;
+    applyIconStyle(l.icon); applyTheme(l.theme); markAccentPicked(); applyAccent(l.accent); applyGlass(l.glass); applySurface(l.surface);
+    if (!quiet) showToast(l.name + (l.secret ? ". Nice find." : ""));
+  }
+  function renderLookPicker() {
+    const box = document.getElementById("look-picker");
+    if (!box) return;
+    const cur = currentLook();
+    box.replaceChildren();
+    for (const l of LOOKS) {
+      if (l.secret && !auroraFound()) continue;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "look-opt" + (cur === l.key ? " active" : "");
+      b.dataset.look = l.key;
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", cur === l.key ? "true" : "false");
+      b.style.setProperty("--look-bg", l.bg); b.style.setProperty("--look-text", l.text); b.style.setProperty("--look-accent", l.bar);
+      b.innerHTML = '<img alt="" src="' + (l.icon === "default" ? "icons/icon-192.png" : "icons/styles/style-" + l.icon + ".png") + '"><span class="look-bar"></span><b></b><small></small>';
+      b.querySelector("b").textContent = l.name;
+      b.querySelector("small").textContent = l.hint;
+      b.addEventListener("click", () => applyLook(l.key));
+      box.appendChild(b);
+    }
+  }
+  window.__cpLooks = true;
+  try { applySurface(localStorage.getItem(SURFACE_KEY)); } catch { applySurface("normal"); }
 
   // ---------- Collapsible sidebar sections ----------
 

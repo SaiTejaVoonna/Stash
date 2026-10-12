@@ -114,3 +114,22 @@ test("notes as cards, and a note's background colour tints its page and its card
   await page.click("#view-mode-btn");
   await expect(page.locator("#items")).not.toHaveClass(/as-cards/);
 });
+
+test("Looks: one tap sets the icon, theme, colour and background; true black and warm paper", async ({ page }) => {
+  await page.click("#settings-btn");
+  await page.click('.settings-nav-item[data-page="appearance"]');
+  await expect(page.locator('#look-picker [data-look="stash"]')).toHaveClass(/active/);
+  await expect(page.locator('#look-picker [data-look="aurora"]')).toHaveCount(0); // not found yet
+  await page.click('#look-picker [data-look="midnight"]');
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-surface", "black");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(0, 0, 0)");
+  await expect(page.locator("#brand-dot img")).toHaveAttribute("src", /style-dark/);
+  await expect(page.locator('#look-picker [data-look="midnight"]')).toHaveClass(/active/);
+  await page.click('[data-surface-pick="paper"]'); // switches to light so it shows
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(251, 247, 239)");
+  await expect(page.locator("#look-picker .look-opt.active")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-surface", "paper");
+});
