@@ -114,6 +114,9 @@ to be built in.
 - [ ] Google: Stash's client ID built in; Google app published (Audience → Publish).
 - [ ] Sync providers: Offline only (default) · Google Drive · Microsoft OneDrive · Dropbox · Nextcloud / WebDAV. One at a time; easy switching; optional weekly backup elsewhere; large files only on Wi-Fi. (Owner registers the Microsoft and Dropbox apps.) iCloud has no way in from a web page; it comes with the iPhone app (Phase 4).
 - [ ] Hosting: Cloudflare Pages from the repo, owner's domain (or free `.pages.dev`), domains added to each provider's settings, test, then make the GitHub repo private.
+- [ ] **Before anyone stores real data: its own address.** The test link (raw.githack.com) is shared with every other project served there, and browsers keep data per address, so another page there could read Stash's data. Real use starts only on Stash's own domain (or `.pages.dev`). Test link: fake data only.
+- [ ] Security headers on the real domain: a Content Security Policy (only Stash's own files and the named CDNs may run), no framing, strict referrer. Checked on real devices, since a wrong policy silently breaks features.
+- [ ] Before inviting users: test on real iPhone and Android, a small beta with fake data, then an independent security review (OWASP testing guide).
 - [ ] Updates that always arrive: a clear "New version, tap to update" on every device, so no one is stuck on an old saved copy (the "cache issue").
 - [ ] Trademark check for the name.
 
@@ -153,6 +156,14 @@ Useful, and now in the plan above:
 - Built-in AI → Phase 5.
 - Notes outside the Vault aren't encrypted on the device → Phase 6.
 - Data can be lost if the browser clears it → already asks the browser to keep it (`navigator.storage.persist()`); on iPhone in a Safari tab that isn't enough, so Stash now reminds people to add it to the Home Screen (at most weekly), and the backup reminder stays.
+
+Security review (ChatGPT, October 2026), checked and fixed:
+- Imported tag emoji / colour could become HTML (stored XSS): fixed, tags are checked and escaped; regression test.
+- HTML file import used innerHTML (an `<img onerror>` would run): fixed with DOMParser; regression test.
+- Print view put image sources into HTML unchecked: fixed; regression test.
+- CDN libraries had no integrity check: JSZip, jsQR, Tesseract and pdf.js now do (highlight.js already did). The on-device photo guesser (MediaPipe) loads as a module, which browsers can't integrity-check; self-hosting it is the fix, with hosting.
+- Shared test-link address: correct and serious; Phase 3 item above.
+- The failing phone test: a test that reloaded before a save finished; fixed. CI now also tests the minified build.
 
 Not quite right:
 - "App Lock is only a screen": true, and Stash says so in Settings. The Vault is the encrypted part.
