@@ -116,6 +116,42 @@
 
   // A minus in front hides matches: -#chai, -space:bike, -type:photo, -is:done, -in:notes.
   // (A plain -word stays text, so "ls -la" still searches for "-la".)
+  // Everyday time words inside the text: "hospital bill last week",
+  // "petrol yesterday", "puc in march", "rent march 2026", "last 10 days".
+  const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const monthIndex = (w) => MONTHS.findIndex((m) => m === w || (w.length >= 3 && m.startsWith(w)));
+  function naturalDate(plain, now = Date.now()) {
+    const ws = plain.map((w) => String(w).toLowerCase());
+    const today = startOfDay(now), d0 = new Date(today);
+    const weekStart = today - ((d0.getDay() + 6) % 7) * DAY; // Monday
+    const span = (i, n, range) => ({ i, n, range });
+    for (let i = 0; i < ws.length; i++) {
+      const a = ws[i], b = ws[i + 1], c = ws[i + 2];
+      if (a === "today") return span(i, 1, { from: today, to: today + DAY, label: "Today" });
+      if (a === "yesterday") return span(i, 1, { from: today - DAY, to: today, label: "Yesterday" });
+      if ((a === "this" || a === "last" || a === "past") && b === "week") return a === "this" ? span(i, 2, { from: weekStart, to: today + DAY, label: "This week" }) : span(i, 2, { from: weekStart - 7 * DAY, to: weekStart, label: "Last week" });
+      if ((a === "this" || a === "last") && b === "month") {
+        const y = d0.getFullYear(), m = d0.getMonth();
+        return a === "this" ? span(i, 2, { from: new Date(y, m, 1).getTime(), to: today + DAY, label: "This month" }) : span(i, 2, { from: new Date(y, m - 1, 1).getTime(), to: new Date(y, m, 1).getTime(), label: "Last month" });
+      }
+      if ((a === "this" || a === "last") && b === "year") {
+        const y = d0.getFullYear() - (a === "last" ? 1 : 0);
+        return span(i, 2, { from: new Date(y, 0, 1).getTime(), to: new Date(y + 1, 0, 1).getTime(), label: a === "this" ? "This year" : String(y) });
+      }
+      if ((a === "last" || a === "past") && /^\d{1,3}$/.test(b || "") && /^days?$/.test(c || "")) return span(i, 3, { from: today - (+b - 1) * DAY, to: today + DAY, label: "Last " + b + " days" });
+      // A month needs "in" before it or a year after it, so "march past" stays text.
+      const mi = b !== undefined ? monthIndex(b) : -1;
+      if ((a === "in" || a === "during") && mi !== -1) {
+        const yr = /^\d{4}$/.test(c || "") ? +c : (mi > d0.getMonth() ? d0.getFullYear() - 1 : d0.getFullYear());
+        const from = new Date(yr, mi, 1).getTime();
+        return span(i, /^\d{4}$/.test(c || "") ? 3 : 2, { from, to: new Date(yr, mi + 1, 1).getTime(), label: fmt(from, { month: "long", year: "numeric" }) });
+      }
+      const ma = monthIndex(a);
+      if (ma !== -1 && /^\d{4}$/.test(b || "")) { const from = new Date(+b, ma, 1).getTime(); return span(i, 2, { from, to: new Date(+b, ma + 1, 1).getTime(), label: fmt(from, { month: "long", year: "numeric" }) }); }
+    }
+    return null;
+  }
+
   function parse(q, ctx = {}) {
     const groups = ctx.groups || [];
     const out = { text: "", tags: [], groups: [], notesOnly: false, date: null, types: [], is: [], tokens: [],
@@ -153,6 +189,16 @@
       }
       out.tokens.push({ kind: tok.kind, value: tok.value, raw, label: tok.label });
     }
+    // "last week", "in March" and the like, when no date: word was used.
+    if (!out.date) {
+      const nd = naturalDate(plain);
+      if (nd) {
+        const raw = plain.slice(nd.i, nd.i + nd.n).join(" ");
+        plain.splice(nd.i, nd.n);
+        out.date = nd.range;
+        out.tokens.push({ kind: "date", value: nd.range, raw, label: nd.range.label, natural: true });
+      }
+    }
     out.text = plain.join(" ").trim();
     return out;
   }
@@ -172,6 +218,11 @@
 
   // Rebuilds the query text without one token (for the ✕ on a chip).
   function without(q, raw) {
+    // A phrase ("last week") comes out as a whole.
+    if (/\s/.test(raw) && !/^"/.test(raw)) {
+      const i = String(q).toLowerCase().indexOf(raw.toLowerCase());
+      if (i !== -1) return (String(q).slice(0, i) + String(q).slice(i + raw.length)).replace(/\s+/g, " ").trim();
+    }
     const list = words(q);
     const i = list.indexOf(raw);
     if (i !== -1) list.splice(i, 1);

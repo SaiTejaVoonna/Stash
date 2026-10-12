@@ -115,8 +115,21 @@
     if (p.types.length && !p.types.some((t) => r.types.includes(t))) return false;
     if (!p.is.includes("archived") && r.flags.archived) return false;
     for (const f of p.is) if (!r.flags[f]) return false;
-    if (p.text && !S.textMatches(r.text, p.text)) return false;
+    r._why = null;
+    if (p.text) {
+      // Your own words count too ("PUC" also finds "pollution certificate").
+      const alts = window.CPWords ? window.CPWords.alternatives(p.text) : [p.text];
+      const hit = alts.find((q) => S.textMatches(r.text, q));
+      if (!hit) return false;
+      r._why = whyFor(r, hit, hit !== alts[0]);
+    }
     return S.passesNot(p, r);
+  }
+  // Says why a result matched, only when it isn't plain to see.
+  function whyFor(r, q, viaWords) {
+    if (viaWords) return "Matched one of your words";
+    if (S.textMatches((r.title || "") + " " + (r.sub || ""), q)) return null;
+    return "Matched words inside it (photo, file or full text)";
   }
   function sortRows(rows) {
     const by = {
@@ -160,6 +173,13 @@
     sortBtn.classList.add("tl-sort");
     barEl.append(sortBtn);
     renderActive(p);
+    // Find by memory: one tap for the time you remember.
+    if (!p.date) {
+      const when = h("div", { class: "tl-when", id: "tl-when", "aria-label": "When" });
+      ["Today", "Yesterday", "This week", "Last week", "This month", "Last month"].forEach((w) =>
+        when.append(h("button", { class: "tl-when-chip", type: "button", onclick: () => setQ((ui.q + " " + w.toLowerCase()).trim()) }, w)));
+      activeEl.append(when);
+    }
   }
 
   function renderActive(p) {
@@ -214,7 +234,8 @@
       r.amountText ? h("span", { class: "gp-amount" }, r.amountText) : null);
     return h("button", { class: "tl-row" + (i === ui.kbd ? " kbd" : ""), "data-kind": r.kind, "data-id": r.id, onclick: () => openRow(r) },
       iconBox,
-      h("span", { class: "tl-main" }, h("span", { class: "tl-t" }, r.title || "Untitled"), r.sub ? h("span", { class: "tl-sub" }, r.sub) : null, meta.childNodes.length ? meta : null),
+      h("span", { class: "tl-main" }, h("span", { class: "tl-t" }, r.title || "Untitled"), r.sub ? h("span", { class: "tl-sub" }, r.sub) : null, meta.childNodes.length ? meta : null,
+        r._why ? h("span", { class: "tl-why" }, r._why) : null),
       side);
   }
   function openRow(r) {

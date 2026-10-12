@@ -94,3 +94,21 @@ test("your words: PUC finds pollution certificate; Stash's learning can be seen 
   await page.click('.settings-nav-item[data-page="learning"]');
   await expect(page.locator("#learned-list")).toContainText("Nothing yet");
 });
+
+test("find by memory: 'hospital bill this week' understands the time; words inside a note say why they matched", async ({ page }) => {
+  const { newNote } = require("./fixtures");
+  await newNote(page, "City Clinic, paid in cash\nReceipt kept from the pharmacy counter", { title: "Hospital bill" });
+  await page.locator('#main-nav [data-nav="timeline"]').click();
+  await page.fill("#tl-search", "hospital bill this week");
+  await expect(page.locator(".tl-active")).toContainText("This week");
+  await expect(page.locator(".tl-row", { hasText: "Hospital bill" })).toHaveCount(1);
+  // The time chip comes off as one piece.
+  await page.locator(".tl-active .gp-filtered", { hasText: "This week" }).getByRole("button").click();
+  await expect(page.locator("#tl-search")).toHaveValue("hospital bill");
+  // Last week: nothing.
+  await page.locator(".tl-when-chip", { hasText: "Last week" }).click();
+  await expect(page.locator(".tl-row")).toHaveCount(0);
+  // A word only inside the note: it says why it matched.
+  await page.fill("#tl-search", "pharmacy");
+  await expect(page.locator(".tl-row", { hasText: "Hospital bill" }).locator(".tl-why")).toContainText("Matched words inside it");
+});

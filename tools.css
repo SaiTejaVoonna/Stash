@@ -701,3 +701,11 @@ body.cx-previewing #tab-bar { display: none !important; }
 .cx-not { background: none; border: none; padding: 2px 4px; margin-left: 2px; color: var(--text-3); font: inherit; font-size: 11.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .cx-not:hover { color: var(--text); }
 @media (pointer: coarse) { .cx-not { padding: 8px 6px; margin: -6px -2px -6px 0; } }
+
+/* Find by memory: time chips, and why a result matched */
+.tl-when { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex-basis: 100%; padding: 2px 0; }
+.tl-when::-webkit-scrollbar { display: none; }
+.tl-when-chip { flex: none; height: 30px; padding: 0 12px; border-radius: var(--r-full); border: 1px solid var(--line); background: var(--surface-1); color: var(--text-2); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.tl-when-chip:hover { color: var(--text); background: var(--surface-2); }
+.tl-why { display: block; font-size: var(--fs-xs); color: var(--accent); margin-top: 2px; }
+@media (pointer: coarse) { .tl-when-chip { height: 36px; } }
