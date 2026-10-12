@@ -2822,6 +2822,7 @@
   // showToast("Saved") for a quick message. Options:
   //   action: { label, onClick }  adds a button (e.g. Undo) and stays 5 s
   //   sticky: true                stays until handle.close() (e.g. progress)
+  //   ms: 12000                   stays this long (longer messages)
   // Returns a handle: { update(msg), progress(0..1), close() }.
   // A tiny buzz for confirmations. Android browsers support it; iPhone
   // Safari doesn't let websites vibrate, so there it silently does nothing.
@@ -2853,7 +2854,7 @@
     toastEl.appendChild(el);
     while (toastEl.children.length > MAX_TOASTS) toastEl.firstChild.remove();
     requestAnimationFrame(() => el.classList.add("show"));
-    if (!opts.sticky) timer = setTimeout(close, opts.action ? 5000 : 1800);
+    if (!opts.sticky) timer = setTimeout(close, opts.ms || (opts.action ? 5000 : 1800));
     return {
       update(newMsg) { text.textContent = newMsg; },
       progress(fraction) {
@@ -9916,8 +9917,23 @@
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persisted()
       .then((already) => already || navigator.storage.persist())
-      .then((granted) => console.log("[Stash] persistent storage:", granted))
+      .then((granted) => { console.log("[Stash] persistent storage:", granted); if (!granted) homeScreenNudge(); })
       .catch(() => {});
+  }
+  // iPhone and iPad in a Safari tab: Safari may clear a site you haven't opened
+  // for 7 days. On the Home Screen it doesn't. Say so gently, at most weekly,
+  // once there's something to lose.
+  function homeScreenNudge() {
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const installed = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+    if (!ios || installed || cache.filter((i) => !i.deletedAt).length < 3) return;
+    const KEY = "copypaster-homescreen-nudge";
+    let last = 0;
+    try { last = Number(localStorage.getItem(KEY)) || 0; } catch {}
+    if (Date.now() - last < 7 * 864e5) return;
+    try { localStorage.setItem(KEY, String(Date.now())); } catch {}
+    setTimeout(() => showToast("Keep your notes safe: add Stash to your Home Screen. Safari can clear sites you don't open for 7 days.",
+      { ms: 12000, action: { label: "How", onClick: () => openSettings("about") } }), 2500);
   }
 
   // ---------- Shared tags ----------

@@ -112,11 +112,10 @@ to be built in.
 ## Phase 3: Cloud and hosting (needs the owner)
 
 - [ ] Google: Stash's client ID built in; Google app published (Audience → Publish).
-- [ ] Sync providers: Offline only (default) · Google Drive · Microsoft OneDrive · Dropbox · Nextcloud / WebDAV. One at a time; easy switching; optional weekly backup elsewhere; large files only on Wi-Fi. (Owner registers the Microsoft and Dropbox apps.)
+- [ ] Sync providers: Offline only (default) · Google Drive · Microsoft OneDrive · Dropbox · Nextcloud / WebDAV. One at a time; easy switching; optional weekly backup elsewhere; large files only on Wi-Fi. (Owner registers the Microsoft and Dropbox apps.) iCloud has no way in from a web page; it comes with the iPhone app (Phase 4).
 - [ ] Hosting: Cloudflare Pages from the repo, owner's domain (or free `.pages.dev`), domains added to each provider's settings, test, then make the GitHub repo private.
+- [ ] Updates that always arrive: a clear "New version, tap to update" on every device, so no one is stuck on an old saved copy (the "cache issue").
 - [ ] Trademark check for the name.
-- [ ] Optional: AI with the person's own key (Analyse, Sort all with AI, ask across collections). Only selected items are sent; nothing moves without confirmation.
-- [ ] Optional, much later and only if decided: Stash Cloud (end-to-end encrypted, paid).
 
 ## Phase 4: Apps (needs the owner)
 
@@ -124,3 +123,38 @@ to be built in.
 - [ ] Android first (Google Play, $25 once; builds without a Mac).
 - [ ] iPhone: Apple Developer account ($99 / year), cloud Mac build (Codemagic or GitHub Actions), TestFlight.
 - [ ] Native powers on phones: Apple's document scanner and text recognition, Face ID, safe file storage, share into Stash from any app, reliable reminder notifications; later iCloud sync and widgets.
+- [ ] Computers (Windows, Mac, Linux) with Tauri: a small real app. This is what closes the biggest gap the assessments found: **clipboard history that catches every copy in any app, and a global shortcut** (e.g. Ctrl+Shift+V) that opens Stash from anywhere. A web page can never do either.
+- [ ] Optional browser extension: "Save to Stash" from any page or selection.
+
+## Phase 5: Stash AI (optional, off by default, one switch turns it all off)
+
+- [ ] Three ways, the person picks: **On this device** (a free local model, downloaded once, works offline; needs a recent phone or computer), **Your own key** (Claude, ChatGPT, Gemini), or later **Stash AI** (paid, because it costs us).
+- [ ] What it does: ask across all your notes and collections ("when was the scooter last serviced?"), summarise, rewrite, Sort all with AI, read a bill or prescription into fields.
+- [ ] Rules: only what you select is sent (nothing for the local model); nothing moves without your OK; the Vault is never sent; no medical advice.
+- [ ] Settings → AI: Off · On this device · Your key. Off removes every AI button.
+
+## Phase 6: Stronger privacy
+
+- [ ] Encrypt everything, not just the Vault: an option where a passphrase (not the 4-digit PIN, which is too short to be real encryption) locks the whole database on the device.
+- [ ] Encrypted sync: files in Drive / OneDrive readable only by Stash, as an option (the readable files stay the default, because AI tools can use them).
+
+## Always going on
+
+- [ ] Smoother: subtle motion everywhere (started in the Inbox), faster start, fewer taps.
+- [ ] Sketching: more pens, layers, handwriting to text (later with AI).
+- [ ] Bugs from real use, every round.
+
+---
+
+## What the outside assessments said, checked against the code
+
+Useful, and now in the plan above:
+- Clipboard history and a global shortcut need a real app → Phase 4 (computers).
+- Built-in AI → Phase 5.
+- Notes outside the Vault aren't encrypted on the device → Phase 6.
+- Data can be lost if the browser clears it → already asks the browser to keep it (`navigator.storage.persist()`); on iPhone in a Safari tab that isn't enough, so Stash now reminds people to add it to the Home Screen (at most weekly), and the backup reminder stays.
+
+Not quite right:
+- "App Lock is only a screen": true, and Stash says so in Settings. The Vault is the encrypted part.
+- The dollar "valuation" and hour estimates are guesses, not something to plan by.
+- "No persistent storage request": it was already there.

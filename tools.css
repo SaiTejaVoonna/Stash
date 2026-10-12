@@ -681,3 +681,16 @@ body.cx-previewing #tab-bar { display: none !important; }
 .cp-peek small { color: var(--text-3); font-size: var(--fs-xs); }
 @keyframes cp-tip-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cp-tip, .cp-peek { animation: none; } }
+
+/* Subtle motion in the Inbox: new messages rise in, the caption bar slides up,
+   a caption being typed shows under its photo. Off with "reduce motion". */
+.cx-live { opacity: .72; }
+@media (prefers-reduced-motion: no-preference) {
+  .cx-msg.cx-in { animation: cx-rise .26s cubic-bezier(.2, .8, .2, 1); transform-origin: 100% 100%; }
+  @keyframes cx-rise { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+  .cx-capbar:not([hidden]) { animation: cx-slide-up .22s cubic-bezier(.2, .8, .2, 1); }
+  @keyframes cx-slide-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .cx-live { animation: cx-fade .18s ease-out; }
+  @keyframes cx-fade { from { opacity: 0; } to { opacity: .72; } }
+  .cx-msg .cx-text { transition: opacity .18s; }
+}

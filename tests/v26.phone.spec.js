@@ -79,7 +79,10 @@ test("Snap is the dock's middle button; holding it opens New; Settings can put N
   // Saved at once; the box below now adds its caption.
   await expect(page.locator("#cx-capbar")).toContainText("Saved");
   await page.fill("#cx-input", "Matcha boba");
+  // Shown under the photo while typing, before it's sent.
+  await expect(page.locator("#chat-pane .cx-msg .cx-live")).toHaveText("Matcha boba");
   await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-live")).toHaveCount(0);
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("Matcha boba");
   await expect(page.locator("#cx-capbar")).toBeHidden();

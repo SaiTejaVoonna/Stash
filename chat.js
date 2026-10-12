@@ -63,7 +63,7 @@
       h("button", { role: "menuitem", id: "cx-contact", "data-extra": "1", onclick: () => { toggleMenu(false); api.contact(); } }, ic("user"), h("span", null, "Contact", h("small", null, "A name and number, call in one tap"))),
       h("button", { role: "menuitem", id: "cx-qr", "data-extra": "1", onclick: () => { toggleMenu(false); api.qr(); } }, ic("grid"), h("span", null, "Scan QR code", h("small", null, "Links, Wi-Fi passwords, anything"))));
     input = h("textarea", { id: "cx-input", rows: "1", placeholder: "Add to Inbox…", "aria-label": "Message",
-      oninput: () => { grow(); suggest(); spots(); },
+      oninput: () => { grow(); suggest(); spots(); liveCaption(); },
       onclick: () => suggest(),
       onkeydown: (e) => {
         // The @ / # list: arrows move, Enter or Tab picks.
@@ -245,8 +245,27 @@
     renderPreview(true);
   }
   // After a snap: the box below becomes its caption (a small bar shows which photo).
+  // While you type a caption, it shows under the photo as it will look (like WhatsApp).
+  function liveCaption() {
+    document.querySelectorAll(".cx-live").forEach((x) => { if (!ui.captionFor || !x.closest('[data-id="' + ui.captionFor + '"]')) x.remove(); });
+    if (!ui.captionFor) return;
+    const msg = bodyEl.querySelector('.cx-msg[data-id="' + CSS.escape(ui.captionFor) + '"]');
+    if (!msg) return;
+    const text = input.value.trim();
+    let live = msg.querySelector(".cx-live");
+    if (!text) { if (live) live.remove(); return; }
+    if (!live) {
+      live = h("div", { class: "cx-text cx-live", "aria-hidden": "true" });
+      const meta = msg.querySelector(".cx-meta");
+      msg.insertBefore(live, meta || null);
+      const atBottom = bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight < 120;
+      if (atBottom) requestAnimationFrame(() => { bodyEl.scrollTop = bodyEl.scrollHeight; });
+    }
+    live.textContent = text;
+  }
   function captionMode(id) {
     ui.captionFor = id;
+    liveCaption();
     const n = id && api.items().find((x) => x.id === id);
     capBar.hidden = !n;
     input.placeholder = n ? "Add a caption to this photo…" : "Add to Inbox…";
@@ -446,7 +465,10 @@
   // ---------- Messages ----------
   function bubble(n) {
     const picked = ui.picked.has(n.id);
-    const b = h("div", { class: "cx-msg" + (picked ? " picked" : ""), "data-id": n.id, role: "button", tabindex: "0" });
+    // Only messages that just arrived slide in; redraws stay still.
+    const fresh = render.done && !seen.has(n.id);
+    seen.add(n.id);
+    const b = h("div", { class: "cx-msg" + (picked ? " picked" : "") + (fresh ? " cx-in" : ""), "data-id": n.id, role: "button", tabindex: "0" });
     const photos = n.images || [];
     if (photos.length === 1) b.append(h("img", { class: "cx-photo", src: photos[0], alt: "", loading: "lazy" }));
     else if (photos.length > 1) {
@@ -600,6 +622,7 @@
     if (atBottom || !render.done) { bodyEl.scrollTop = bodyEl.scrollHeight; render.done = true; }
   }
 
+  const seen = new Set();
   const PAGE = 120;
   let paging = { key: null, shown: PAGE };
   // More history above, keeping what's on screen where it is.
