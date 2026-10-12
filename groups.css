@@ -496,3 +496,30 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
   .gp-twisty::after { content: ""; position: absolute; inset: -11px; }
 }
 .gp-ready { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; flex-basis: 100%; }
+
+/* ---------- Timeline / Photos / Table ---------- */
+.gp-views { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-full); background: var(--surface-2); flex: none; }
+.gp-view { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border: none; border-radius: var(--r-full); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.gp-view.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+@media (max-width: 720px) { .gp-view span { display: none; } .gp-view { padding: 0 9px; } }
+.gp-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; padding: 8px 12px 16px; }
+.gp-wall-tile { position: relative; aspect-ratio: 1; padding: 0; border: none; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
+.gp-wall-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
+.gp-wall-tile:hover img { transform: scale(1.03); }
+.gp-wall-tile.sel { box-shadow: 0 0 0 3px var(--accent); }
+.gp-wall-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; background: linear-gradient(transparent, rgba(0,0,0,.62)); color: #fff; text-align: left; display: flex; flex-direction: column; gap: 1px; }
+.gp-wall-cap b { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-wall-cap small { font-size: 11px; opacity: .85; }
+.gp-table-wrap { overflow-x: auto; padding: 4px 12px 0; }
+.gp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.gp-table th { text-align: left; font-weight: 600; color: var(--text-3); font-size: var(--fs-xs); padding: 8px; border-bottom: 1px solid var(--line-strong); position: sticky; top: 0; background: var(--bg); }
+.gp-table td { padding: 9px 8px; border-bottom: 1px solid var(--line); color: var(--text); vertical-align: top; }
+.gp-table td:first-child { white-space: nowrap; color: var(--text-2); }
+.gp-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gp-table tbody tr { cursor: pointer; }
+.gp-table tbody tr:hover, .gp-table tbody tr.sel { background: var(--surface-2); }
+.gp-table tfoot td { font-weight: 700; border-bottom: none; padding-top: 12px; }
+.gp-table-foot { display: flex; justify-content: flex-end; padding: 8px 12px 16px; }
+.gp-tab-more { color: var(--accent); }
+/* A soft wash of the collection's colour at the top. */
+.gp-main { background-image: linear-gradient(color-mix(in srgb, var(--gp-tint, transparent) 9%, transparent), transparent 220px); }

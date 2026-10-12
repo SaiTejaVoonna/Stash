@@ -27,6 +27,9 @@
   const TRASH_DAYS = 30;
   // Each group remembers its own sort; a new group starts at Newest first.
   const sortOf = (g) => (prefs.sort && prefs.sort[g.id]) || "newest";
+  // How a collection is shown: its timeline, a wall of photos, or a table.
+  const viewOf = (g) => (prefs.view && prefs.view[g.id]) || "timeline";
+  function setView(g, v) { prefs.view = prefs.view || {}; if (v === "timeline") delete prefs.view[g.id]; else prefs.view[g.id] = v; savePrefs(); }
   function setSort(g, v) { prefs.sort = prefs.sort || {}; if (v === "newest") delete prefs.sort[g.id]; else prefs.sort[g.id] = v; savePrefs(); }
   let pane, mainEl, headEl, filtersEl, timelineEl, dropEl, detailEl;
 
@@ -534,8 +537,67 @@
     const list = listFor(g);
     renderHead(g, list);
     renderFilters(g);
-    renderTimeline(g, list);
+    const view = viewOf(g);
+    if (view === "photos") renderPhotoWall(g, list);
+    else if (view === "table") renderTable(g, list);
+    else renderTimeline(g, list);
     renderComposer(g);
+    // Each collection keeps its own colour, softly, so Health and Bike look different.
+    mainEl.style.setProperty("--gp-tint", g.color || "transparent");
+  }
+
+  // ---------- Photos and Table views ----------
+  function viewSwitch(g) {
+    const cur = viewOf(g);
+    const sw = h("div", { class: "gp-views", role: "tablist", "aria-label": "Show as", id: "gp-views" });
+    [["timeline", "timeline", "Timeline"], ["photos", "image", "Photos"], ["table", "list-ul", "Table"]].forEach(([k, iconName, label]) =>
+      sw.append(h("button", { class: "gp-view" + (cur === k ? " active" : ""), role: "tab", "aria-selected": String(cur === k), "data-view": k, title: label, onclick: () => { setView(g, k); render(); } }, ic(iconName, "icon-sm"), h("span", null, label))));
+    return sw;
+  }
+  function renderPhotoWall(g, list) {
+    const shots = [];
+    for (const e of [...list].sort((a, b) => b.happenedOn - a.happenedOn)) e.photos.forEach((p, i) => shots.push({ e, p, i }));
+    if (!shots.length) {
+      timelineEl.append(h("div", { class: "gp-empty" }, groupTile(g, "big"), h("h3", null, "No photos yet"),
+        h("p", null, "Bills, prescriptions and pictures you add here show up as a wall of photos.")));
+      return;
+    }
+    const wall = h("div", { class: "gp-wall", id: "gp-wall" });
+    shots.slice(0, 600).forEach(({ e, p, i }) => wall.append(h("button", { class: "gp-wall-tile" + (ui.selected === e.id ? " sel" : ""), "data-entry": e.id, title: (e.title || "Entry") + " · " + fmtDay(e.happenedOn),
+      "aria-label": (e.title || "Entry") + ", " + fmtDay(e.happenedOn) + (e.photos.length > 1 ? ", photo " + (i + 1) : ""), onclick: () => selectEntry(e.id) },
+      h("img", { src: p, alt: "", loading: "lazy" }),
+      h("span", { class: "gp-wall-cap" }, h("b", null, e.title || ""), h("small", null, fmtDay(e.happenedOn) + (e.amount ? " · " + money(e, g) : ""))))));
+    timelineEl.append(wall);
+  }
+  function renderTable(g, list) {
+    if (!list.length) { renderTimeline(g, list); return; }
+    const rows = [...list].sort((a, b) => b.happenedOn - a.happenedOn);
+    const showAmount = g.fields.amount.on;
+    // Columns only when something fills them.
+    const anySub = g.subs.length && rows.some((e) => (C.refIn(e, g.id) || {}).s);
+    const anyTag = g.mainLabel && rows.some((e) => (C.refIn(e, g.id) || {}).tag);
+    const cols = ["Date", "What", anySub ? "Section" : null, anyTag ? g.mainLabel : null, showAmount ? "Amount" : null].filter(Boolean);
+    const table = h("table", { class: "gp-table", id: "gp-table" });
+    table.append(h("thead", null, h("tr", null, ...cols.map((c) => h("th", { class: c === "Amount" ? "num" : null, scope: "col" }, c)))));
+    const body = h("tbody");
+    const cells = (e) => {
+      const r = C.refIn(e, g.id) || {};
+      const sub = C.subOf(g, r.s), tag = C.tagOf(g, r.tag);
+      return [fmtDate(e.happenedOn), e.title || (sub ? sub.label : "Entry"), anySub ? (sub ? sub.name : "") : null, anyTag ? (tag ? tag.name : "") : null, showAmount ? (e.amount ? money(e, g) : "") : null].filter((x) => x !== null);
+    };
+    rows.slice(0, 2000).forEach((e) => body.append(h("tr", { class: ui.selected === e.id ? "sel" : null, "data-entry": e.id, tabindex: "0", onclick: () => selectEntry(e.id), onkeydown: (ev) => { if (ev.key === "Enter") selectEntry(e.id); } },
+      ...cells(e).map((v, i) => h("td", { class: cols[i] === "Amount" ? "num" : null }, v)))));
+    table.append(body);
+    if (showAmount) {
+      const t = C.totals(rows, g);
+      table.append(h("tfoot", null, h("tr", null, h("td", { colspan: String(cols.length - 1) }, rows.length + (rows.length === 1 ? " entry" : " entries")), h("td", { class: "num" }, C.formatTotals(t, g)))));
+    }
+    // Paste straight into a spreadsheet.
+    const copy = h("button", { class: "btn ghost gp-small", id: "gp-table-copy", onclick: () => {
+      const tsv = [cols.join("\t"), ...rows.map((e) => cells(e).join("\t"))].join("\n");
+      api.copy(tsv, "Copied " + rows.length + " rows. Paste into any spreadsheet");
+    } }, ic("copy", "icon-sm"), "Copy table");
+    timelineEl.append(h("div", { class: "gp-table-wrap" }, table), h("div", { class: "gp-table-foot" }, copy));
   }
 
   function renderHome() {
@@ -606,7 +668,14 @@
     if (g.subs.length) {
       const tabs = h("div", { class: "gp-tabs", role: "tablist" });
       tabs.append(h("button", { class: "gp-tab" + (ui.s === "all" ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, "all") }, "All", h("span", { class: "num" }, cnt.all)));
-      g.subs.forEach((s) => tabs.append(h("button", { class: "gp-tab" + (ui.s === s.id ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, s.id) }, s.name, h("span", { class: "num" }, cnt.bySub[s.id] || 0))));
+      // Sections you haven't used yet wait behind "+N more", so the row stays short.
+      const used = g.subs.filter((s) => cnt.bySub[s.id] || ui.s === s.id);
+      const idle = g.subs.filter((s) => !used.includes(s));
+      const shown = ui.allTabs || g.subs.length <= 5 ? g.subs : [...used, ...idle.slice(0, Math.max(0, 4 - used.length))];
+      shown.forEach((s) => tabs.append(h("button", { class: "gp-tab" + (ui.s === s.id ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, s.id) }, s.name, h("span", { class: "num" }, cnt.bySub[s.id] || 0))));
+      const hiddenN = g.subs.length - shown.length;
+      if (hiddenN > 0) tabs.append(h("button", { class: "gp-tab gp-tab-more", id: "gp-tabs-more", onclick: () => { ui.allTabs = true; render(); } }, "+" + hiddenN + " more"));
+      else if (ui.allTabs && g.subs.length > 5 && idle.length) tabs.append(h("button", { class: "gp-tab gp-tab-more", onclick: () => { ui.allTabs = false; render(); } }, "Fewer"));
       filtersEl.append(tabs);
     }
     const line = h("div", { class: "gp-filter-line" });
@@ -641,9 +710,10 @@
         line.append(chips);
       }
     }
+    line.append(viewSwitch(g));
     const tools = h("div", { class: "gp-tools" });
     const search = h("input", { class: "input gp-search", id: "gp-search", type: "search", placeholder: "Search " + g.name, "aria-label": "Search in " + g.name, value: ui.q,
-      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderTimeline(g, list); }, 150); } });
+      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); const v = viewOf(g); if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list); }, 150); } });
     tools.append(search);
     const sortSel = h("select", { class: "input gp-select", "aria-label": "Sort", onchange: (e) => { setSort(g, e.target.value); render(); } });
     const sorts = [["newest", "Newest first"], ["oldest", "Oldest first"]];
@@ -1438,7 +1508,12 @@
     if (!id) return;
     // Re-render rows so the selected one is highlighted.
     const g = curGroup();
-    if (g) { const st = timelineEl.scrollTop; timelineEl.replaceChildren(); renderTimeline(g, listFor(g)); timelineEl.scrollTop = st; }
+    if (g) {
+      const st = timelineEl.scrollTop, v = viewOf(g), list = listFor(g);
+      timelineEl.replaceChildren();
+      if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list);
+      timelineEl.scrollTop = st;
+    }
   }
 
   let saveTimer = null;
