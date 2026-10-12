@@ -607,6 +607,7 @@
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),
       api.understand ? h("button", { class: "btn gp-small", id: "cx-sort", disabled: !n, onclick: () => openSort(list()) }, ic("sparkle"), "Sort") : null,
+      api.copyForAI ? h("button", { class: "btn ghost gp-small", id: "cx-ai", disabled: !n, title: "Copy as text to paste into any AI chat", onclick: () => { api.copyForAI(list()); setSelecting(false); } }, ic("copy"), "Copy for AI") : null,
       h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Move to…"));
   }
   function render() {

@@ -1,7 +1,7 @@
 // Stash Sync, the part with no network: turns your data into readable files
 // for a "Stash" folder in your own Google Drive. window.CPSyncCore
 //
-// One Markdown file per space, one for notes and one for the Me chat, plus a
+// One Markdown file per space, one for notes and one for the Inbox, plus a
 // README. Photos and files aren't copied into these (only counted); the full
 // backup file carries everything. Vault items are never written.
 (function () {
@@ -17,7 +17,9 @@
 
   // File names Drive and phones are happy with. Same name twice → "Name (2)".
   function fileNames(names) {
-    const used = new Map();
+    // Notes.md, Inbox.md and README.md are Stash's own; a collection with
+    // one of those names gets " (2)".
+    const used = new Map([["notes", 1], ["inbox", 1], ["readme", 1]]);
     return names.map((n) => {
       const base = oneLine(n).replace(/[\\/:*?"<>|#]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Untitled";
       const k = base.toLowerCase();
@@ -103,7 +105,7 @@
     return line;
   }
 
-  // Notes (or Me chat messages) as Markdown, newest first.
+  // Notes (or Inbox messages) as Markdown, newest first.
   function notesMarkdown(title, items, { tagName = (id) => id, folderName = () => "" } = {}) {
     const out = ["# " + title, ""];
     const list = items.slice().sort((a, b) => b.createdAt - a.createdAt);
@@ -147,7 +149,7 @@
     const readable = (data.items || []).filter((n) => !n.vaulted && !n.deletedAt && n.type !== "password" && !n._locked);
     const opt = { tagName: data.tagName, folderName: data.folderName };
     if (o.notes !== false) files.push({ name: "Notes.md", type: "text/markdown", text: notesMarkdown("Notes", readable.filter((n) => !n.chat), opt) });
-    if (o.chat !== false) files.push({ name: "Me.md", type: "text/markdown", text: notesMarkdown("Me", readable.filter((n) => n.chat), opt) });
+    if (o.chat !== false) files.push({ name: "Inbox.md", type: "text/markdown", text: notesMarkdown("Inbox", readable.filter((n) => n.chat), opt) });
     files.push({ name: "README.md", type: "text/markdown", text: README() });
     return files;
   }

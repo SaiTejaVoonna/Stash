@@ -91,7 +91,7 @@ test("connect writes a readable file per collection, notes, Me and a backup; unc
   // The dot beside the list title says it's synced.
   await expect(page.locator("#sync-dot")).toHaveAttribute("data-state", "ok");
   await expect(page.locator("#sync-dot")).toHaveAttribute("title", /^Synced/);
-  expect(await driveFiles(page)).toEqual(["Me.md", "Notes.md", "README.md"]);
+  expect(await driveFiles(page)).toEqual(["Inbox.md", "Notes.md", "README.md"]);
   const notes = await driveText(page, "Notes.md");
   expect(notes).toContain("**Flat**");
   expect(notes).toContain("Gate code is 4521");

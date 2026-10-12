@@ -1681,6 +1681,7 @@
       <button id="bulk-fav-btn">★ Favorite</button>
       <button id="bulk-read-btn">Mark read</button>
       <button id="bulk-archive-btn">Archive</button>
+      <button id="bulk-ai-btn" title="Copy as text to paste into any AI chat">Copy for AI</button>
       <button id="bulk-delete-btn">Delete</button>
       <button id="bulk-cancel-btn">Cancel</button>
     </div>
@@ -1898,6 +1899,7 @@
 <script src="extras.js"></script>
 <script src="brain.js"></script>
 <script src="words.js"></script>
+<script src="ai.js"></script>
 <script src="importer.js"></script>
 <script src="hints.js"></script>
 <script src="applock.js"></script>
@@ -7285,6 +7287,26 @@
     const makeUnread = !selectedItems().some((i) => i.unread);
     bulkApply((i) => { i.unread = makeUnread; }, (n) => n + " marked " + (makeUnread ? "unread" : "read"));
   });
+  // ---------- Copy for AI (ai.js) ----------
+  // A note as a labelled record. Vault items are never included.
+  function noteForAI(i) {
+    const folder = i.folderId && folderById(i.folderId);
+    const list = i.checklist && i.checklist.length ? "\n" + checklistAsText(i.checklist) : "";
+    return { vaulted: !!i.vaulted || i._locked, title: i.title || firstLine(i.content) || (i.images.length ? "Photo" : "Note"), at: i.createdAt,
+      where: folder ? "Folder: " + folder.name : "", tags: i.tags.map((id) => tagById(id)).filter(Boolean).map((t) => t.name),
+      text: ((i.title ? i.content : (i.content || "").split("\n").slice(1).join("\n")) || "") + list,
+      photos: (i.images || []).length, files: (i.files || []).map((f) => f.name), ocr: i.ocr || "" };
+  }
+  function copyForAI(items, source) {
+    const safe = items.filter((i) => !i.vaulted && !i._locked);
+    if (!safe.length) { showToast(items.length ? "Vault items are never copied for AI" : "Nothing to copy"); return; }
+    copyToClipboard(window.CPAI.format(safe.map(noteForAI), { source }), "Copied " + safe.length + (safe.length === 1 ? " item" : " items") + " for AI" + (safe.length < items.length ? " (Vault items left out)" : ""));
+  }
+  document.getElementById("bulk-ai-btn").addEventListener("click", () => {
+    if (!window.CPAI) return;
+    copyForAI(selectedItems(), currentViewLabel());
+  });
+
   document.getElementById("bulk-archive-btn").addEventListener("click", () => {
     const unarchive = selectedItems().every((i) => i.archivedAt);
     const before = new Map(selectedItems().map((i) => [i.id, i.archivedAt]));
@@ -10509,6 +10531,7 @@
         },
         camera: () => snapNow(),
         tryExample: () => { if (groupsApi && groupsApi.tryExample) groupsApi.tryExample(); },
+        copyForAI: window.CPAI ? (list) => copyForAI(list, "Inbox") : null,
         open: async (id) => { if (currentId && currentId !== id) await saveOpenDraft(); openDetail(id); },
         openFile: (f) => openChatFile(f),
         describeGuess: (g) => (window.CPSee ? window.CPSee.describe(g) : ""),

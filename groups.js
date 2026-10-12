@@ -660,6 +660,12 @@
       e.target.value = "";
     } });
     tools.append(jump);
+    // What's shown now (search and filters applied), as text for any AI.
+    if (window.CPAI) tools.append(h("button", { class: "btn ghost gp-small", id: "gp-ai", title: "Copy what's shown, as text to paste into any AI chat", onclick: () => {
+      const list = listFor(g);
+      if (!list.length) { api.showToast("Nothing to copy"); return; }
+      api.copy(window.CPAI.format(list.map(entryForAI), { source: g.name }), "Copied " + list.length + (list.length === 1 ? " entry" : " entries") + " for AI");
+    } }, ic("copy", "icon-sm"), "Copy for AI"));
     line.append(tools);
     filtersEl.append(line);
     filtersEl.classList.toggle("tools-open", ui.tools);
@@ -1635,6 +1641,21 @@
     });
   }
 
+  // One entry for Copy for AI: where it's filed, amount, fields, tags, text.
+  function entryForAI(e) {
+    const where = [], extra = [];
+    let amount = "";
+    for (const r of e.refs) {
+      const g = groupById(r.g); if (!g) continue;
+      const s = C.subOf(g, r.s), t = C.tagOf(g, r.tag);
+      where.push(g.name + (s ? " › " + s.name : "") + (t ? " · " + t.name : ""));
+      if (e.amount && !amount) amount = money(e, g);
+      g.fields.custom.forEach((f) => { if (e.fields[f.id] !== undefined && e.fields[f.id] !== "") extra.push(f.name + ": " + fieldText(f, e.fields[f.id])); });
+    }
+    if (e.rating) extra.push("Rating: " + e.rating + "/5");
+    return { title: e.title, at: e.happenedOn, where: where.join("; "), amount, tags: e.tags.map(tagLabel), extra,
+      text: [e.note, e.link].filter(Boolean).join("\n"), photos: e.photos.length, files: (e.files || []).map((f) => f.name), ocr: e.ocr || "" };
+  }
   function entryAsNoteText(e) {
     const lines = [];
     if (e.note) lines.push(e.note);
