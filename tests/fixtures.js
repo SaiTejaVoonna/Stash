@@ -41,7 +41,7 @@ const test = base.test.extend({
     // Tests type into the plain-text editor; the rich editor has its own tests.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && !localStorage.getItem("copypaster-editor")) localStorage.setItem("copypaster-editor", "plain"); } catch {} });
     // Older tests expect Organise open on computers (it now starts folded; rich.spec checks that).
-    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && innerWidth > 720 && localStorage.getItem("copypaster-details-open") === null) localStorage.setItem("copypaster-details-open", "1"); } catch {} });
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && screen.width > 720 && localStorage.getItem("copypaster-details-open") === null) localStorage.setItem("copypaster-details-open", "1"); } catch {} });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.stack || e.message));
     page.on("dialog", (d) => d.accept()); // confirm() prompts: say OK
