@@ -33,7 +33,7 @@ Visual preview of this plan: the "Stash Vision" page (shared separately).
 
 ---
 
-## Phase 1: Features (no support needed)
+## Done earlier: Features
 
 ### 1.1 Capture
 - [x] Caption preview for everything: camera, Snap, gallery, files, paste, drag and drop, share. Snap still saves the instant it's taken; the caption is added after.
@@ -100,7 +100,7 @@ Visual preview of this plan: the "Stash Vision" page (shared separately).
 
 ---
 
-## Phase 2: UI and UX (no support needed)
+## Done earlier: UI and UX
 
 ### 2.1 One way to do each thing
 - [x] One picker everywhere (based on "Sort this snap"): search at the top, Collection → Section → Who / Where, **+ New** at the end of every row (collection, section, person, place, tag).
@@ -128,65 +128,53 @@ Visual preview of this plan: the "Stash Vision" page (shared separately).
 
 ---
 
-Below, **[you]** marks where the owner is needed; everything else needs no one.
+Earlier work (above) is done. From here, **four phases**.
+**[you]** marks where the owner is needed; everything else needs no one.
 
-## Phase 3: A safe home [you · about ₹1,000 a year]
+## Phase 1: Calm, clear, smart [no one needed · ₹0]
 
-- [ ] **[you]** Buy a domain, make a free Cloudflare account, create the Google client ID (about 30 minutes, guided).
-- [ ] Hosting: Cloudflare Pages from the repo, the domain (or free `.pages.dev`), domains added to each provider's settings; then the GitHub repo can go private.
-- [ ] **Before anyone stores real data: its own address.** The test link (raw.githack.com) is shared with every other project served there, and browsers keep data per address, so another page there could read Stash's data. Test link: fake data only.
-- [ ] Security headers: a Content Security Policy (only Stash's own files and the named CDNs may run), no framing, strict referrer; checked on real devices.
-- [ ] Self-host the on-device libraries (photo guesser, text reader) so nothing runs from a CDN.
-- [ ] Updates that always arrive: a clear "New version, tap to update", so no one is stuck on an old saved copy.
-- [ ] Free code scanning: CodeQL and Dependabot on GitHub.
-- [ ] Google: Stash's client ID built in; Google app published (Audience → Publish).
+What exists, made the best it can be: clean and consistent like Apple, Google
+and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 
-## Phase 3½: Stronger foundations [no one needed · ₹0]
+- [x] Suggestions say why in plain words ("Because it mentions Nimrah Cafe…"); **Not this** teaches Stash and is never suggested again for that message.
+- [x] Your words: a personal dictionary (PUC = pollution certificate, Amma = Mother) used by search and suggestions.
+- [x] What Stash has learned: visible, and forgettable with one tap (with Undo).
+- [x] Find by memory: "hospital bill last week", "in March", "last 10 days"; When chips; why a result matched.
+- [x] Calm first run: a short menu (empty views appear when used), a friendly empty Inbox with one action, phones start in the Inbox.
+- [x] Copy for AI from notes, the Inbox and collections (never the Vault); the data format written down (`docs/DATA_FORMAT.md`).
+- [x] Earlier in this phase: one picker, calm composer, sidebar states, hints, app lock, text size, accessibility, speed, security fixes.
+- [ ] Split `index.html` into modules; type checking through JSDoc comments.
+- [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things.
+- [ ] Search by meaning on the device (a small model, about 25 MB): "doctor" finds "Dr Asha".
 
-- [ ] Split `index.html` (10,500 lines) into modules; type checking through JSDoc comments.
-- [ ] Suggestions that say why ("because your last 4 service bills went here") and learn from every correction.
-- [ ] Personal dictionary v1: learns your words (nicknames, abbreviations like PUC, shop names, Telugu and Hindi written in English letters).
-- [ ] "What Stash has learned" page: everything personalised, readable, one tap to wipe.
-- [ ] Progressive disclosure: a new person sees only the Inbox; collections appear once there's something to sort.
-- [ ] "Copy for AI": selected items as clean context for any chatbot. Stash's open data format written down.
-- [ ] SQLite on the device (WASM + OPFS) with full-text search; heavy work in Web Workers.
-- [ ] Find by memory: search by when, where, who and what, with the reason each result matched.
+## Phase 2: Connected [you · about 30 minutes · free (domain optional)]
 
-## Phase 4: Closed beta [you · ₹0 to small thank-yous]
+- [ ] **[you]** Pick hosting: Firebase (Google) or Cloudflare Pages, both free, each gives Stash its own safe address. Optional own domain (about ₹1,000 a year).
+- [ ] **[you]** Create the Google client ID for Drive sync (guided).
+- [ ] Hosting set up; the test link becomes "fake data only" history.
+- [ ] Security headers (Content Security Policy, no framing, strict referrer), checked on real devices.
+- [ ] Self-host the on-device libraries (photo guesser, text reader), so nothing runs from a CDN.
+- [ ] Updates that always arrive ("New version, tap to update").
+- [ ] Free code scanning (CodeQL, Dependabot).
+- [ ] More sync choices: OneDrive, Dropbox, WebDAV (**[you]** register those apps when wanted).
+- [ ] Sync that never loses an edit, even offline on two phones (CRDTs).
 
-- [ ] **[you]** Invite 10–20 friends or family (fake data first); watch 5 of them do set tasks without helping.
-- [ ] Tasks, questions and a feedback form written for you; measure task success, time to find, and the System Usability Scale (SUS).
-- [ ] Three rounds of fix → test with 5 people (Nielsen: about 5 people find most problems).
-
-## Phase 5: Apps [you · $25 once + $99 a year]
+## Phase 3: Final build [you · $25 once + $99 a year]
 
 - [ ] **[you]** Google Play account first; Apple Developer account when ready for iPhone.
-- [ ] Android and iPhone with Capacitor (iPhone builds on a cloud Mac: Codemagic or GitHub Actions), TestFlight.
-- [ ] Native powers: the phone's own document scanner and text recognition (handwriting too), Face ID, safe file storage, share into Stash from any app, reliable reminders; later iCloud and widgets.
-- [ ] Computers (Windows, Mac, Linux) with Tauri: **clipboard history from any app and a global shortcut** (e.g. Ctrl+Shift+V). A web page can never do either.
-- [ ] Optional browser extension: "Save to Stash" from any page or selection.
-
-## Phase 6: Open to any AI [mostly no one · ₹0 for us]
-
-- [ ] An MCP connector, running on the person's own device: search, read, summarise, suggest into the Inbox.
-- [ ] Permissions per collection (read-only by default; the Vault never), and a log of every read.
-- [ ] On the device: search by meaning with a small model (about 25 MB), automatic connections between related items, a knowledge graph of people, places, things, dates and amounts.
-- [ ] Autonomy levels the person picks: suggest → one tap → automatic with Undo → routines (monthly totals, expiry radar).
+- [ ] Android and iPhone apps (Capacitor): the phone's own scanner and text recognition, Face ID, share into Stash from any app, reliable reminders.
+- [ ] Computer apps (Tauri): **clipboard history from any app and a global shortcut**.
+- [ ] Open to any AI: an MCP connector on the device with per-collection permissions and a read log (tools listed in `docs/DATA_FORMAT.md`); autonomy levels the person picks (suggest → one tap → automatic with Undo → routines).
+- [ ] Encrypt everything with a passphrase; optional encrypted sync; end-to-end encrypted family sharing.
 - [ ] Reflections from your own data only ("fuel up 20% this month", "passport expires in 3 months"); never medical or financial advice.
-- [ ] Settings → AI: Off (default) · On this device · Connected apps. Off removes every AI button.
-- [ ] **[you]** Try it with your own Claude or ChatGPT.
 
-## Phase 7: Privacy plus [you once · about ₹0.5–3 lakh]
+## Phase 4: Testing and launch [you · about ₹0.5–3 lakh once]
 
-- [ ] Encrypt everything with a passphrase (not the 4-digit PIN, which is too short to be real encryption).
-- [ ] Sync that never loses an edit (CRDTs) and, as an option, encrypted sync; end-to-end encrypted family sharing.
-- [ ] Free checks first: OWASP ZAP, Mozilla Observatory, securityheaders.com.
-- [ ] **[you]** An independent security test before public launch.
-
-## Phase 8: Launch and keep crafting [you]
-
-- [ ] **[you]** Name check and trademark, store listings, a simple website.
-- [ ] Monthly rounds from real use: smoother motion, faster start, fewer taps; sketching with layers and handwriting to text; more sync providers (OneDrive, Dropbox, WebDAV; iCloud through the iPhone app).
+- [ ] Real phones: iPhone and Android, camera, files, passkeys, offline, updates, storage limits.
+- [ ] **[you]** Closed beta: 10–20 people, fake data first; watch 5 of them do set tasks (tasks and questions written for you). Measure task success, time to find, and the System Usability Scale.
+- [ ] Free security checks (OWASP ZAP, Mozilla Observatory, securityheaders.com), then **[you]** an independent security test.
+- [ ] **[you]** Name check and trademark, store listings, a simple website. Launch.
+- [ ] Then monthly rounds of polish from real use.
 
 ## Research the plan stands on
 

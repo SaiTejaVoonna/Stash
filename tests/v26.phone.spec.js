@@ -124,7 +124,7 @@ test("What's new shows once after an update, never on a brand-new install", asyn
   await page.evaluate(() => localStorage.removeItem("copypaster-seen-version"));
   await page.reload();
   await expect(page.locator("#whats-new")).toBeVisible();
-  await expect(page.locator("#whats-new")).toContainText("Spaces are now Collections");
+  await expect(page.locator("#whats-new")).toContainText("Suggestions that say why");
   await page.tap("#whats-new-ok");
   await expect(page.locator("#whats-new")).toHaveCount(0);
   await page.reload();

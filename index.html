@@ -1910,7 +1910,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2.9";
+  const APP_VERSION = "3.0";
 
   // ---------- Profiles ----------
   // Each profile is its own IndexedDB database, so notes, folders, tags and
@@ -8473,6 +8473,9 @@
   // ---------- What's new: shown once after an update ----------
   const SEEN_VERSION_KEY = "copypaster-seen-version";
   const WHATS_NEW = [
+    ["sparkle", "Suggestions that say why", "Each suggestion tells you why, in plain words. Tap Not this and Stash learns. Settings \u2192 Your words shows what it has learned, and forgets it if you like."],
+    ["search", "Find it the way you remember it", "Search \u201chospital bill last week\u201d or \u201crent in March\u201d. Teach Stash your own words, like PUC or Amma, and search finds either."],
+    ["copy", "Copy for AI", "Select notes, messages or a collection and copy them as clean text for any AI chat. The Vault is never included."],
     ["layers", "One way to file anything", "Move to\u2026 is the same picker everywhere, with search and + New for a collection, section, person, place or tag. The send bar is one calm line of chips."],
     ["lock-closed", "App lock and text size", "Settings \u2192 App lock: a PIN, and Face ID or fingerprint where your device allows. Appearance \u2192 Text size."],
     ["sidebar", "Your layout", "Sidebar full, icons only or hidden (Ctrl+\\), folded sections remembered. Rest on a note to peek at it; hold an icon on your phone to see its name."],
@@ -8512,7 +8515,7 @@
     head.append(h, p);
     const list = document.createElement("ul");
     list.className = "wn-list";
-    for (const [ic, title, text] of WHATS_NEW) {
+    for (const [ic, title, text] of WHATS_NEW.slice(0, 8)) { // the newest few; more is noise
       const li = document.createElement("li");
       const tile = document.createElement("span");
       tile.className = "wn-icon";
