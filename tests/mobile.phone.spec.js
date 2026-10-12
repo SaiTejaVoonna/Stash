@@ -74,8 +74,9 @@ test("long-press opens the action sheet; pin and move to folder work from it", a
 test("side menu opens, picks a view and closes; new folder box is on top", async ({ page }) => {
   await menuBtn(page).tap();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator("#sidebar .nav-item", { hasText: "Commands" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Commands");
+  // (Empty views like Commands stay out of the menu until they have something.)
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator("#sidebar")).not.toHaveClass(/open/);
 
   await menuBtn(page).tap();
@@ -151,8 +152,9 @@ test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no
   await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator("#sidebar .nav-item", { hasText: "Commands" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Commands");
+  // (Empty views like Commands stay out of the menu until they have something.)
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await page.tap("#settings-btn");

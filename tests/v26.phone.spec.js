@@ -162,7 +162,7 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
 
   await page.tap("#tab-bar [data-tab='chat']");
   await expect(page.locator("#chat-pane")).toBeVisible();
-  await expect(page.locator(".cx-empty")).toContainText("Your own chat");
+  await expect(page.locator(".cx-empty")).toContainText("Drop anything here");
   await page.fill("#cx-input", "Tyre pressure 32 psi @fzv3");
   await page.tap("#cx-send");
   await page.tap("#cx-plus");

@@ -3230,17 +3230,18 @@
     { key: "all", label: "All notes", icon: "note" },
     // Everything (notes and group entries) by date; opens its own pane.
     { key: "timeline", label: "Timeline", icon: "timeline" },
-    { key: "docs", label: "Documents", icon: "file", addon: "documents" },
-    // Only listed while something is unread (or while you're looking at it).
+    { key: "docs", label: "Documents", icon: "file", addon: "documents", hideWhenEmpty: true },
+    // Most views only show once something is in them (or while you're looking
+    // at one), so a new person sees a short, calm list.
     { key: "unread", label: "Unread", icon: "unread", hideWhenEmpty: true },
     { key: "reminders", label: "Reminders", icon: "bell", hideWhenEmpty: true },
-    { key: "saved", label: "Favorites", icon: "star" },
-    { key: "pinned", label: "Pinned", icon: "pin" },
-    { key: "notes", label: "Notes", icon: "note" },
-    { key: "commands", label: "Commands", icon: "command" },
+    { key: "saved", label: "Favorites", icon: "star", hideWhenEmpty: true },
+    { key: "pinned", label: "Pinned", icon: "pin", hideWhenEmpty: true },
+    { key: "notes", label: "Notes", icon: "note", hideWhenEmpty: true },
+    { key: "commands", label: "Commands", icon: "command", hideWhenEmpty: true },
     { key: "vault", label: "Vault", icon: "vault" },
-    { key: "archive", label: "Archive", icon: "archive" },
-    { key: "trash", label: "Trash", icon: "trash" }
+    { key: "archive", label: "Archive", icon: "archive", hideWhenEmpty: true },
+    { key: "trash", label: "Trash", icon: "trash", hideWhenEmpty: true }
   ];
 
   function countForNav(key) {
@@ -3279,7 +3280,7 @@
       el.className = "nav-item" + (isActive ? " active" : "");
       el.title = item.label + " (" + countForNav(item.key) + ")";
       el.innerHTML = '<span class="nav-label"><span class="nav-icon">' + icon(item.icon) + '</span><span class="nav-text">' + item.label + '</span></span>' +
-        '<span class="count">' + countForNav(item.key) + '</span>';
+        '<span class="count">' + (countForNav(item.key) || "") + '</span>';
       el.dataset.nav = item.key;
       el.addEventListener("click", () => {
         if (item.key === "timeline") { openTimeline(); return; }
@@ -3473,12 +3474,7 @@
     const topLevel = folderCache.filter((f) => !f.parentId);
 
     if (topLevel.length === 0) {
-      const hint = document.createElement("div");
-      hint.style.fontSize = "12px";
-      hint.style.color = "var(--text-dim)";
-      hint.style.padding = "4px 10px";
-      hint.textContent = "No folders yet.";
-      el.appendChild(hint);
+      // Empty: just the heading and its +, no extra line.
       return;
     }
 
@@ -3653,12 +3649,7 @@
     const el = document.getElementById("tags-list");
     el.innerHTML = "";
     if (tagCache.length === 0) {
-      const hint = document.createElement("div");
-      hint.style.fontSize = "12px";
-      hint.style.color = "var(--text-dim)";
-      hint.style.padding = "4px 10px";
-      hint.textContent = "No tags yet.";
-      el.appendChild(hint);
+      // Empty: just the heading and its +, no extra line.
       return;
     }
     const inGroups = groupsApi ? groupsApi.tagCounts() : new Map();
@@ -8005,7 +7996,8 @@
       { label: "Password generator", icon: "dice", run: () => openPasswordGenerator() },
       { label: "Open Timeline", icon: "timeline", run: () => openTimeline({ focus: true }) },
       { label: "Manage tags", icon: "tag", run: () => openSettings("tags") },
-      ...NAV_ITEMS.filter((n) => n.key !== "timeline" && (!n.hideWhenEmpty || countForNav(n.key) > 0))
+      // Typed on purpose, so every view is here, even empty ones the menu hides.
+      ...NAV_ITEMS.filter((n) => n.key !== "timeline" && (!["unread", "reminders"].includes(n.key) || countForNav(n.key) > 0))
         .map((n) => ({ label: "Go to " + n.label, icon: n.icon, run: () => switchView(n.key) })),
       ...(isVaultSetUp() ? [isVaultUnlocked()
         ? { label: "Lock Vault", icon: "vault", run: () => lockVault("Vault locked") }
@@ -8317,6 +8309,15 @@
 
   // Opened from a home-screen shortcut (long-press the app icon) or from
   // another app's Share menu (Android): act on it, then tidy the address.
+  // The very first time on a phone, start where Stash starts: the Inbox.
+  function firstRun() {
+    const KEY = "copypaster-started";
+    let seen = true;
+    try { seen = !!localStorage.getItem(KEY); localStorage.setItem(KEY, "1"); } catch {}
+    if (seen || cache.length || !window.matchMedia("(max-width: 720px)").matches || !chatApi) return;
+    openChat();
+  }
+
   async function handleLaunchParams() {
     const params = new URLSearchParams(location.search);
     if (![...params.keys()].length) return;
@@ -10507,6 +10508,7 @@
           } } });
         },
         camera: () => snapNow(),
+        tryExample: () => { if (groupsApi && groupsApi.tryExample) groupsApi.tryExample(); },
         open: async (id) => { if (currentId && currentId !== id) await saveOpenDraft(); openDetail(id); },
         openFile: (f) => openChatFile(f),
         describeGuess: (g) => (window.CPSee ? window.CPSee.describe(g) : ""),
@@ -10654,6 +10656,7 @@
       await sweepExpired();
       setInterval(sweepExpired, 60 * 1000);
       await handleLaunchParams();
+      firstRun();
       startUpdateChecks();
       showWhatsNew();
     })

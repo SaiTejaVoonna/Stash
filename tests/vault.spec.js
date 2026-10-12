@@ -61,7 +61,7 @@ test("items made in the Vault are stored encrypted; locking hides them, the pass
   // Not in any other view.
   await nav(page, "All notes").click();
   await expect(page.locator(".item-row")).toHaveCount(0);
-  await expect(nav(page, "All notes").locator(".count")).toHaveText("0");
+  await expect(nav(page, "All notes").locator(".count")).toHaveText("");
   await expect(nav(page, "Vault").locator(".count")).toHaveText("1");
 
   await nav(page, "Vault").click();

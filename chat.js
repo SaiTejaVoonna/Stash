@@ -381,6 +381,10 @@
   }
   function renderFilters() {
     const all = api.items();
+    // Nothing yet: no tools to look at either.
+    const empty = !all.length;
+    filterEl.hidden = empty;
+    ["cx-search-btn", "cx-cleanup", "cx-select"].forEach((id) => { const b = document.getElementById(id); if (b) b.hidden = empty && !(id === "cx-select" && ui.selecting); });
     const count = (k) => { const keep = ui.filter; ui.filter = k; const q = ui.q; ui.q = ""; const n = all.filter(passes).length; ui.filter = keep; ui.q = q; return n; };
     filterEl.replaceChildren(...FILTERS.filter(([k]) => k === "all" || k === ui.filter || count(k)).map(([k, label]) =>
       h("button", { class: "cx-filter" + (ui.filter === k ? " on" : ""), role: "tab", "data-filter": k, "aria-selected": ui.filter === k ? "true" : "false",
@@ -620,9 +624,12 @@
       return;
     }
     if (!items.length) {
-      bodyEl.append(h("div", { class: "cx-empty" }, ic("chat"), h("b", null, "Your own chat"),
-        h("p", null, "Drop a thought, a photo, a bill or a PDF here, like messaging yourself. It's saved at once with when and where. Later, select messages and Move them into a collection."),
-        h("p", { class: "cx-tip" }, "Tip: write @name (like @fzv3) and Move picks it for you.")));
+      // A first look: one thing to do, one to explore.
+      bodyEl.append(h("div", { class: "cx-empty cx-start" }, ic("chat"), h("b", null, "Drop anything here"),
+        h("p", null, "A bill, a photo, a thought, a PDF. It's saved at once, with when and where. Sort it later, or let Stash suggest where it goes."),
+        h("div", { class: "cx-start-acts" },
+          h("button", { class: "btn primary", id: "cx-start-snap", onclick: () => api.camera() }, ic("camera"), "Take a photo"),
+          api.tryExample ? h("button", { class: "btn ghost", id: "cx-start-example", onclick: () => api.tryExample() }, ic("sparkle"), "See an example") : null)));
       return;
     }
     // Long chats draw the latest messages; earlier ones come in as you scroll up.

@@ -709,3 +709,10 @@ body.cx-previewing #tab-bar { display: none !important; }
 .tl-when-chip:hover { color: var(--text); background: var(--surface-2); }
 .tl-why { display: block; font-size: var(--fs-xs); color: var(--accent); margin-top: 2px; }
 @media (pointer: coarse) { .tl-when-chip { height: 36px; } }
+
+/* Empty Inbox: one thing to do, one to explore */
+.cx-start { gap: 10px; }
+.cx-start p { max-width: 34ch; }
+.cx-start-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.cx-start-acts .btn { display: inline-flex; align-items: center; gap: 6px; }
+.cx-filters[hidden], .cx-head .btn[hidden] { display: none; }

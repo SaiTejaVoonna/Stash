@@ -36,6 +36,8 @@ const test = base.test.extend({
     await page.addInitScript(() => { window.Tesseract = { createWorker: async () => ({ recognize: async () => ({ data: { text: window.__ocrText || "TOTAL 450" } }) }) }; });
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
+    // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.stack || e.message));
     page.on("dialog", (d) => d.accept()); // confirm() prompts: say OK
