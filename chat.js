@@ -221,6 +221,21 @@
   const HD_KEY = "copypaster-hd";
   const hdOn = () => { try { return localStorage.getItem(HD_KEY) !== "0"; } catch { return true; } };
   const isPhoto = (f) => /^image\//.test(f.type) && f.type !== "image/svg+xml";
+  // "Word document", not "VND.OPENXMLFORMATS-OFFICEDOCUMENT...".
+  function kindName(f) {
+    const t = String(f.type || "").toLowerCase(), ext = (String(f.name || "").match(/\.([a-z0-9]{1,5})$/i) || [])[1] || "";
+    const e = ext.toLowerCase();
+    if (/pdf/.test(t) || e === "pdf") return "PDF";
+    if (/wordprocessing|msword/.test(t) || /^docx?$/.test(e)) return "Word document";
+    if (/spreadsheet|ms-excel/.test(t) || /^(xlsx?|csv)$/.test(e)) return e === "csv" ? "CSV sheet" : "Excel sheet";
+    if (/presentation|powerpoint/.test(t) || /^pptx?$/.test(e)) return "PowerPoint";
+    if (/zip|compressed/.test(t) || /^(zip|rar|7z)$/.test(e)) return "Zip file";
+    if (/^audio\//.test(t)) return "Audio";
+    if (/^video\//.test(t)) return "Video";
+    if (/^image\//.test(t)) return "Image";
+    if (/^text\//.test(t) || /^(txt|md)$/.test(e)) return "Text";
+    return e ? e.toUpperCase() + " file" : "File";
+  }
   function openPreview(files, origin) {
     if (!files.length) return;
     toggleMenu(false);
@@ -277,7 +292,7 @@
     const cur = list[pv.at];
     const big = !cur ? h("div", { class: "cx-pv-empty" }, "Nothing left to send")
       : cur.photo ? h("img", { class: "cx-pv-big", src: cur.photo, alt: "" })
-      : h("div", { class: "cx-pv-filebig" }, ic("file"), h("b", null, cur.name), h("small", null, ((cur.type.split("/")[1] || "file").toUpperCase()) + (cur.size ? " · " + sizeOf(cur.size) : "")));
+      : h("div", { class: "cx-pv-filebig" }, ic("file"), h("b", null, cur.name), h("small", null, kindName(cur) + (cur.size ? " · " + sizeOf(cur.size) : "")));
     const strip = h("div", { class: "cx-pv-strip" }, list.map((x, i) => h("div", { class: "cx-pv-thumb" + (i === pv.at ? " on" : "") },
       h("button", { class: "cx-pv-pick", "aria-label": "Show " + (x.name || "photo " + (i + 1)), onclick: () => { pv.at = i; renderPreview(); } },
         x.photo ? h("img", { src: x.photo, alt: "" }) : ic("file")),
@@ -444,7 +459,7 @@
       if (media) { b.append(media); continue; }
       const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name);
       b.append(h("div", { class: "cx-file" + (isPdf ? " pdf" : ""), "data-file": f.name }, isPdf && api.pdfThumb ? api.pdfThumb(f) : ic("file"),
-        h("span", null, h("b", null, f.name), h("small", null, (f.type.split("/")[1] || "file").toUpperCase() + " · " + sizeOf(f.size))),
+        h("span", null, h("b", null, f.name), h("small", null, kindName(f) + (f.size ? " · " + sizeOf(f.size) : ""))),
         h("button", { class: "btn gp-small", "aria-label": "Open " + f.name, onclick: (e) => { e.stopPropagation(); api.openFile(f); } }, "Open")));
     }
     const X = window.CPExtras;
@@ -459,7 +474,8 @@
     if (text && !n.contact) b.append(h("div", { class: "cx-text" }, text));
     if (link) b.append(h("a", { class: "cx-card cx-link", href: link, target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, ic("link"), h("span", null, h("b", null, X.hostOf(link)), h("small", null, link))));
     const meta = [];
-    if (n.suggest) meta.push(api.describeGuess(n.suggest));
+    // The photo guess helps only until you've written what it is.
+    if (n.suggest && (n.suggest.confirmed || !(n.title || n.content || "").trim())) meta.push(api.describeGuess(n.suggest));
     if (n.capture && n.capture.location && !n.pin) meta.push("\u{1F4CD} " + n.capture.location.lat.toFixed(3) + ", " + n.capture.location.lng.toFixed(3));
     meta.push(timeOf((n.capture && n.capture.at) || n.createdAt));
     b.append(h("div", { class: "cx-meta" }, meta.join(" · ")));

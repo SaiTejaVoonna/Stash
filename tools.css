@@ -411,7 +411,8 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 .cx-file > .icon { width: 28px; height: 28px; color: var(--accent); flex: none; }
 .cx-file span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .cx-file b { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cx-file small { font-size: 11px; color: var(--text-3); }
+.cx-file small { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-file { max-width: 100%; }
 .cx-check { position: absolute; left: -30px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; }
 .cx-check.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 .cx-check .icon { width: 14px; height: 14px; }

@@ -37,3 +37,14 @@ test("a long Inbox shows the latest messages and loads earlier ones on request",
   await expect(page.getByText("message 0", { exact: true })).toHaveCount(1);
   await expect(page.locator("#cx-earlier")).toHaveCount(0);
 });
+
+test("a Word file in the Inbox says Word document, not its long technical type", async ({ page }) => {
+  await page.locator('#main-nav [data-nav="chat"]').click();
+  await page.click("#cx-plus");
+  const ch = page.waitForEvent("filechooser");
+  await page.click("#cx-files");
+  await (await ch).setFiles([{ name: "My_CV.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer: Buffer.alloc(18000, 120) }]);
+  await expect(page.locator(".cx-pv-filebig small")).toContainText("Word document");
+  await page.click("#cx-preview-send");
+  await expect(page.locator(".cx-file small").last()).toHaveText(/^Word document · 1[78](\.\d)? KB$/);
+});
