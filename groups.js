@@ -2567,7 +2567,8 @@
   function brainUnderstand(n, picks = [], tags = []) {
     const ix = brainIndex();
     if (!ix) return { dests: [], spots: [] };
-    const text = [n.title, n.content, ...(n.files || []).map((f) => f.name), n.ocr || ""].filter(Boolean).join(" ");
+    let text = [n.title, n.content, ...(n.files || []).map((f) => f.name), n.ocr || ""].filter(Boolean).join(" ");
+    if (window.CPWords) text = window.CPWords.expand(text); // "Amma" is also "Mother"
     const dests = window.CPBrain.understand(ix, { text, picks, tags, files: n.files || [], guess: n.suggest, location: n.capture && n.capture.location }, SNAP_MATCH);
     return { dests: dests.map((d) => ({ ...d, label: window.CPBrain.label(ix, d) })), spots: window.CPBrain.spot(text) };
   }
@@ -2599,7 +2600,7 @@
     onHome: () => ui.screen === "home",
     stepBack, exit, showHome, snapContext, snapHere, openNewGroup, paletteItems, exportData, importData, moveNoteToGroup, focusComposer,
     timelineRows, openEntry, tagCounts, renameTag, removeTag, openComposer, groupList, setEnabled,
-    dueRows, takeDue, sortSnap, reload, tryExample, brainComplete, brainUnderstand, fileInto, unfile,
+    dueRows, takeDue, sortSnap, reload, tryExample, brainLabel: (d) => { const ix = brainIndex(); return ix ? window.CPBrain.label(ix, d) : ""; }, brainComplete, brainUnderstand, fileInto, unfile,
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.

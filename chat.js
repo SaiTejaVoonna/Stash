@@ -372,7 +372,11 @@
     if (f === "links" && !LINK_RE.test((n.content || "") + " " + (n.title || ""))) return false;
     if (f === "text" && ((n.images || []).length || (n.files || []).length)) return false;
     if (f === "week" && Date.now() - n.createdAt > 7 * 864e5) return false;
-    if (ui.q.trim() && !ui.q.toLowerCase().trim().split(/\s+/).every((w) => textOf(n).includes(w))) return false;
+    if (ui.q.trim()) {
+      // Your own words count too ("PUC" also finds "pollution certificate").
+      const alts = window.CPWords ? window.CPWords.alternatives(ui.q) : [ui.q.toLowerCase().trim()];
+      if (!alts.some((q) => q.split(/\s+/).every((w) => textOf(n).includes(w)))) return false;
+    }
     return true;
   }
   function renderFilters() {

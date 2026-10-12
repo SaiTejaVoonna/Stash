@@ -33,8 +33,11 @@ test("a long Inbox shows the latest messages and loads earlier ones on request",
   await expect(page.locator("#cx-earlier")).toContainText("(80)");
   await expect(page.getByText("message 199", { exact: true })).toBeVisible();
   await expect(page.getByText("message 0", { exact: true })).toHaveCount(0);
-  await page.click("#cx-earlier");
-  await expect(page.getByText("message 0", { exact: true })).toHaveCount(1);
+  // Tapping it (or scrolling up, which loads it by itself) brings the rest.
+  await expect.poll(async () => {
+    await page.evaluate(() => { const b = document.getElementById("cx-earlier"); if (b) b.click(); });
+    return page.getByText("message 0", { exact: true }).count();
+  }).toBe(1);
   await expect(page.locator("#cx-earlier")).toHaveCount(0);
 });
 
@@ -71,4 +74,23 @@ test("Not this: a suggestion can be turned down, and isn't offered again for tha
   await page.locator('#main-nav [data-nav="chat"]').click();
   await expect(page.locator("#chat-pane .cx-msg").last()).toContainText("Irani chai");
   await expect(page.locator("#chat-pane .cx-msg").last().locator(".cx-guess")).toHaveCount(0);
+});
+
+test("your words: PUC finds pollution certificate; Stash's learning can be seen and forgotten", async ({ page }) => {
+  const { newNote } = require("./fixtures");
+  await newNote(page, "Renewed at the petrol pump, valid 6 months", { title: "Pollution certificate" });
+  await page.click("#settings-btn");
+  await page.click('.settings-nav-item[data-page="learning"]');
+  await page.fill("#learn-word", "PUC");
+  await page.fill("#learn-means", "pollution certificate");
+  await page.click("#learn-add");
+  await expect(page.locator("#learn-list")).toContainText("PUC means pollution certificate");
+  await page.click("#settings-close-btn");
+  await page.fill("#search-input", "puc");
+  await expect(page.locator(".item-row", { hasText: "Pollution certificate" })).toHaveCount(1);
+  // Learned: file a message, then see it and forget it.
+  await page.evaluate(() => window.CPBrain.learn("bike puncture repair", { g: "nope", s: null, tag: null }));
+  await page.click("#settings-btn");
+  await page.click('.settings-nav-item[data-page="learning"]');
+  await expect(page.locator("#learned-list")).toContainText("Nothing yet");
 });

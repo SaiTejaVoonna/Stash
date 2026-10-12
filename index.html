@@ -211,7 +211,7 @@
   #mark-read-btn { color: var(--accent); }
 
   /* ---------- Inputs ---------- */
-  .input, #search-input, .dialog-field input, .login-input input, .placeholder-field-row input, .placeholder-field-row select,
+  .input, .settings-input, #search-input, .dialog-field input, .login-input input, .placeholder-field-row input, .placeholder-field-row select,
   .popover-input, .popover-select, .cleanup-rule input, .field-row select, .settings-select-row select, #sort-select,
   #bulk-bar select, #expire-row input[type="datetime-local"] {
     height: var(--h-md); padding: 0 var(--s-3); border-radius: var(--r-md);
@@ -220,11 +220,11 @@
   }
   #search-input { border-color: transparent; }
   .popover input, .popover select, #dialog input, #placeholder-modal input, #placeholder-modal select { background: var(--bg); }
-  .input:hover, #search-input:hover, .dialog-field input:hover, .login-input input:hover, .popover-input:hover,
+  .input:hover, .settings-input:hover, #search-input:hover, .dialog-field input:hover, .login-input input:hover, .popover-input:hover,
   .cleanup-rule input:hover, .field-row select:hover, .settings-select-row select:hover, #sort-select:hover {
     border-color: var(--text-3);
   }
-  .input:focus, #search-input:focus, .dialog-field input:focus, .login-input input:focus, .placeholder-field-row input:focus,
+  .input:focus, .settings-input:focus, #search-input:focus, .dialog-field input:focus, .login-input input:focus, .placeholder-field-row input:focus,
   .placeholder-field-row select:focus, .popover-input:focus, .popover-select:focus, .cleanup-rule input:focus, .field-row select:focus,
   .settings-select-row select:focus, #sort-select:focus, #expire-row input:focus {
     outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-ring);
@@ -536,6 +536,18 @@
   #empty-state .empty-title { color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: 4px; }
   #empty-state .empty-hint { max-width: 280px; margin: 0 auto; }
   #empty-state button { margin-top: var(--s-4); }
+  /* Your words / What Stash has learned */
+  .learn-sec { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+  .learn-sec + .learn-sec { border-top: 1px solid var(--line); }
+  .learn-h { margin: 0; font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+  .learn-form { display: flex; gap: 8px; flex-wrap: wrap; }
+  .learn-form .settings-input { flex: 1 1 140px; min-width: 0; }
+  .learn-list { display: flex; flex-direction: column; }
+  .learn-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+  .learn-row:last-child { border-bottom: none; }
+  .learn-row span { min-width: 0; overflow-wrap: anywhere; }
+  .learn-n { color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #learn-wipe { align-self: flex-start; }
   /* App lock (applock.js) */
   #lock-screen { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
     background: var(--bg); color: var(--text); }
@@ -1699,6 +1711,7 @@
         <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="addons"><span class="sn-icon" style="background:#10b981"><svg class="icon"><use href="#icon-grid"></use></svg></span>Add-ons<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        <button class="settings-nav-item" data-page="learning"><span class="sn-icon" style="background:#7b61ff"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Your words<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="sync"><span class="sn-icon" style="background:#0ea5e9"><svg class="icon"><use href="#icon-cloud"></use></svg></span>Sync<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="shortcuts"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-keyboard"></use></svg></span>Shortcuts<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         <button class="settings-nav-item" data-page="about"><span class="sn-icon" style="background:#8e8e93"><svg class="icon"><use href="#icon-info"></use></svg></span>About<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
@@ -1817,6 +1830,12 @@
           <input id="import-file" type="file" accept=".cps,.json" hidden>
         </section>
 
+        <section class="settings-page" data-page="learning" id="learning-settings">
+          <h2 class="settings-page-title">Your words</h2>
+          <p class="settings-page-lead">Teach Stash your words, and see what it has learned. Everything here stays on this device.</p>
+          <div class="settings-group" id="learning-body"></div>
+        </section>
+
         <section class="settings-page" data-page="addons" id="addons-settings">
           <h2 class="settings-page-title">Add-ons</h2>
           <p class="settings-page-lead">Turn on what you use. What's off is hidden from menus and isn't loaded, so Stash stays light. Nothing you saved is removed.</p>
@@ -1878,6 +1897,7 @@
 <script src="ocr.js"></script>
 <script src="extras.js"></script>
 <script src="brain.js"></script>
+<script src="words.js"></script>
 <script src="importer.js"></script>
 <script src="hints.js"></script>
 <script src="applock.js"></script>
@@ -2718,6 +2738,7 @@
     if (page === "appearance") renderDockSettings();
     if (page === "sync" && syncApi) syncApi.render();
     if (page === "lock") renderLockSettings();
+    if (page === "learning") renderLearningSettings();
     if (page === "addons") renderAddons();
     if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
     try { localStorage.setItem(SETTINGS_PAGE_KEY, page); } catch {}
@@ -3940,9 +3961,15 @@
   }
   const searchText = () => searchParts().text;
 
+  // Your own words count too: "PUC" also finds "pollution certificate".
   function itemSearchScore(item) {
-    const q = searchText();
-    if (!q) return 0;
+    const q0 = searchText();
+    if (!q0) return 0;
+    const alts = window.CPWords ? window.CPWords.alternatives(q0) : [q0];
+    if (alts.length > 1) return Math.max(...alts.map((q) => scoreFor(item, q)));
+    return scoreFor(item, q0);
+  }
+  function scoreFor(item, q) {
     const checklistText = item.checklist ? " " + item.checklist.map((c) => c.text).join(" ") : "";
     // Also the words read from its photos and files (OCR, PDF text) and file names.
     const fileText = (item.files || []).map((f) => " " + f.name + " " + (f.text || "")).join("");
@@ -9007,6 +9034,87 @@
 
   // ---- Settings ----
 
+  // ---------- Your words and what Stash has learned ----------
+  // The personal dictionary (words.js) and the brain's memory (brain.js), in
+  // plain view: add or remove your words; see and forget what was learned.
+  function renderLearningSettings() {
+    const body = document.getElementById("learning-body");
+    if (!body) return;
+    const W = window.CPWords, B = window.CPBrain;
+    body.replaceChildren();
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+    // 1. Your words
+    const sec1 = el("div", "learn-sec");
+    sec1.append(el("h3", "learn-h", "Your words"),
+      el("p", "settings-hint", "Short forms, nicknames, local names. Search finds either one, and suggestions understand both. Example: PUC means pollution certificate."));
+    const form = el("form", "learn-form");
+    const word = el("input", "settings-input"); word.id = "learn-word"; word.placeholder = "Word, e.g. Amma"; word.maxLength = 60; word.setAttribute("aria-label", "Your word");
+    const means = el("input", "settings-input"); means.id = "learn-means"; means.placeholder = "Means, e.g. Mother"; means.maxLength = 60; means.setAttribute("aria-label", "What it means");
+    const addBtn = el("button", "settings-primary", "Add"); addBtn.type = "submit"; addBtn.id = "learn-add";
+    form.append(word, means, addBtn);
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!W) return;
+      const added = W.add(word.value, means.value);
+      if (!added) { showToast("Type a word and what it means (different words)"); return; }
+      showToast("Added " + added.word);
+      renderLearningSettings();
+      setTimeout(() => { const w = document.getElementById("learn-word"); if (w) w.focus(); }, 0);
+    });
+    sec1.append(form);
+    const list = el("div", "learn-list"); list.id = "learn-list";
+    const mine = W ? W.list() : [];
+    if (!mine.length) list.append(el("p", "settings-hint", "No words yet."));
+    for (const x of mine.slice().reverse()) {
+      const row = el("div", "learn-row");
+      const t = el("span", null); t.append(el("b", null, x.word), document.createTextNode(" means " + x.means));
+      const del = el("button", "btn ghost", "Remove"); del.type = "button"; del.setAttribute("aria-label", "Remove " + x.word);
+      del.addEventListener("click", () => {
+        W.remove(x.word); renderLearningSettings();
+        showToast("Removed " + x.word, { action: { label: "Undo", onClick: () => { W.add(x.word, x.means); renderLearningSettings(); } } });
+      });
+      row.append(t, del);
+      list.append(row);
+    }
+    sec1.append(list);
+
+    // 2. What Stash has learned (from where you file things)
+    const sec2 = el("div", "learn-sec");
+    sec2.append(el("h3", "learn-h", "What Stash has learned"),
+      el("p", "settings-hint", "From where you file things, so suggestions fit you. Only on this device, never sent anywhere."));
+    const mem = B && B.learned ? B.learned() : { words: {}, tags: {}, skips: 0 };
+    const rows = [];
+    for (const [w, dests] of Object.entries(mem.words)) {
+      const [k, n] = Object.entries(dests).sort((a, b) => b[1] - a[1])[0] || [];
+      if (!k) continue;
+      const [g, s, tag] = k.split("|");
+      const label = groupsApi && groupsApi.brainLabel ? groupsApi.brainLabel({ g, s: s || null, tag: tag || null }) : "";
+      if (label) rows.push({ w, label, n });
+    }
+    rows.sort((a, b) => b.n - a.n);
+    const learnedList = el("div", "learn-list"); learnedList.id = "learned-list";
+    if (!rows.length) learnedList.append(el("p", "settings-hint", "Nothing yet. As you file things, Stash learns which words go where."));
+    for (const r of rows.slice(0, 20)) {
+      const row = el("div", "learn-row");
+      const t = el("span", null); t.append(el("b", null, r.w), document.createTextNode(" → " + r.label));
+      row.append(t, el("small", "learn-n", r.n + (r.n === 1 ? " time" : " times")));
+      learnedList.append(row);
+    }
+    sec2.append(learnedList);
+    if (mem.skips) sec2.append(el("p", "settings-hint", "You turned down " + mem.skips + (mem.skips === 1 ? " suggestion" : " suggestions") + "; those aren't offered again."));
+    if (rows.length || mem.skips) {
+      const wipeBtn = el("button", "btn danger ghost", "Forget what Stash learned"); wipeBtn.type = "button"; wipeBtn.id = "learn-wipe";
+      wipeBtn.addEventListener("click", () => {
+        const before = B.learned();
+        B.wipe(); renderLearningSettings();
+        showToast("Stash forgot what it learned", { action: { label: "Undo", onClick: () => { B.restore({ words: before.words, tags: before.tags, skip: before.skip }); renderLearningSettings(); } } });
+      });
+      sec2.append(wipeBtn);
+    }
+    body.append(sec1, sec2);
+  }
+
   // ---------- App lock settings (applock.js does the locking) ----------
   function renderLockSettings() {
     const body = document.getElementById("lock-settings-body");
@@ -10048,6 +10156,7 @@
   }
   // Sync to your own Google Drive (sync.js).
   if (window.CPBrain) window.CPBrain.setStore(profileKey("copypaster-brain"));
+  if (window.CPWords) window.CPWords.setStore(profileKey("copypaster-words"));
   // The dot beside the list title: green synced, orange waiting or syncing,
   // red when the last sync failed. Hidden until Drive is connected.
   function showSyncDot(st) {

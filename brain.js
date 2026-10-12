@@ -80,8 +80,9 @@
   }
   const skipped = (id, dest) => { const m = memory(); return !!(m.skip && m.skip[id] && m.skip[id].includes(destKey(dest))); };
   // Everything learned, for the "What Stash has learned" page, and wiping it.
-  function learned() { const m = memory(); return { words: m.words, tags: m.tags, skips: Object.keys(m.skip || {}).length }; }
+  function learned() { const m = JSON.parse(JSON.stringify(memory())); return { words: m.words, tags: m.tags, skip: m.skip || {}, skips: Object.keys(m.skip || {}).length }; }
   function wipe() { mem = { words: {}, tags: {} }; try { localStorage.removeItem(storeKey); } catch {} }
+  function restore(m) { mem = m && typeof m === "object" ? m : { words: {}, tags: {} }; mem.words = mem.words || {}; mem.tags = mem.tags || {}; try { localStorage.setItem(storeKey, JSON.stringify(mem)); } catch {} }
 
   // ---------- What you have: collections, sections, people, places, tags ----------
   // data: { groups, entries, entities, tags: [names] }
@@ -262,5 +263,5 @@
     return g.name + (s ? " › " + s.name : "") + (t ? " · " + t.name : "");
   }
 
-  window.CPBrain = { build, complete, spot, understand, label, learn, setStore, fold, forget, skipped, learned, wipe };
+  window.CPBrain = { build, complete, spot, understand, label, learn, setStore, fold, forget, skipped, learned, wipe, restore };
 })();
