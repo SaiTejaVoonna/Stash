@@ -112,3 +112,26 @@ test("find by memory: 'hospital bill this week' understands the time; words insi
   await page.fill("#tl-search", "pharmacy");
   await expect(page.locator(".tl-row", { hasText: "Hospital bill" }).locator(".tl-why")).toContainText("Matched words inside it");
 });
+
+test("templates grow when needed: a discharge summary suggests Health's ready section; Edit shows the rest", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Health" }).first().click();
+  await expect(page.locator(".gp-tpl.active")).toContainText("more when needed");
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await expect(page.locator(".gp-id h1")).toHaveText("Health");
+  await page.locator('#main-nav [data-nav="chat"]').click();
+  await page.fill("#cx-input", "Discharge summary from City Clinic");
+  await page.click("#cx-send");
+  const msg = page.locator("#chat-pane .cx-msg").last();
+  await expect(msg.locator(".cx-guess")).toContainText("Health › Discharge summaries (new section)");
+  await expect(msg.locator(".cx-why")).toContainText("it mentions discharge");
+  await msg.locator(".cx-guess").click();
+  await expect(page.locator(".toast-item").last()).toContainText("Health");
+  // The section now exists; Edit collection offers the other ready ones.
+  await page.locator(".gp-nav-group", { hasText: "Health" }).click();
+  await page.getByRole("button", { name: "Edit collection" }).click();
+  await expect(page.locator("#gp-ready")).toContainText("Surgeries & procedures");
+  await expect(page.locator("#gp-ready")).not.toContainText("Discharge summaries");
+  await page.locator('#gp-ready [data-ready="Vaccinations"]').click();
+  await expect(page.locator("#gp-ready")).not.toContainText("Vaccinations");
+});

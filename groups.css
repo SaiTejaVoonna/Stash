@@ -495,3 +495,4 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
   .gp-twisty { position: relative; }
   .gp-twisty::after { content: ""; position: absolute; inset: -11px; }
 }
+.gp-ready { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; flex-basis: 100%; }

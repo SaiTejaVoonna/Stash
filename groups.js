@@ -1740,7 +1740,7 @@
         const card = (t) => h("button", { class: "gp-tpl" + (pick === t ? " active" : ""), onclick: () => {
           const wasDefault = !name.value.trim() || list.some((x) => x.name === name.value.trim());
           pick = t; if (wasDefault) name.value = t.key === "blank" ? "" : t.name; draw();
-        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ")) : h("small", { class: "gp-dim" }, "No sections yet"));
+        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ") + (C.moreCount(t) ? " · +" + C.moreCount(t) + " more when needed" : "")) : h("small", { class: "gp-dim" }, "No sections yet"));
         // Sections (Health, Money, Home & family…); typing filters across all of them.
         const drawList = () => {
           box.replaceChildren();
@@ -1835,6 +1835,7 @@
         h("div", { class: "gp-pv-head" }, tile(t.icon, t.color), h("span", null, h("b", null, t.name), h("small", null, t.desc))),
         t.subs.length ? h("div", { class: "gp-tabs gp-pv-tabs" }, h("span", { class: "gp-tab active" }, "All"), ...t.subs.map((s) => h("span", { class: "gp-tab" }, s.name))) : null,
         t.mainLabel ? h("p", { class: "gp-hint" }, "Each " + t.mainLabel.toLowerCase() + " gets a page with their visits and totals.") : null,
+        C.moreCount(t) ? h("p", { class: "gp-hint", id: "gp-pv-more" }, "Ready when you need them: " + C.MORE[t.key].map((x) => x.name).join(", ") + ". Stash offers each one the first time something needs it.") : null,
         h("div", { class: "gp-pv-list", id: "gp-pv-list" }, ex.map((e) => h("div", { class: "gp-pv-entry" },
           h("span", { class: "gp-pv-sec" }, e.section || "Entry"),
           h("b", null, e.title), e.page ? h("small", null, e.page) : null,
@@ -1969,6 +1970,14 @@
         const removed = g.subs.filter((s) => !w.subs.some((x) => x.id === s.id)).reduce((t, s) => t + (counts.bySub[s.id] || 0), 0);
         if (removed) subsBox.append(h("p", { class: "gp-warn" }, removed + (removed === 1 ? " entry" : " entries") + " in removed sections will stay in the collection, under All."));
         if (w.subs.length < C.MAX.subs) subsBox.append(h("button", { class: "btn ghost gp-small", onclick: () => { w.subs.push({ id: C.uid(), name: "", label: "", icon: "note", color: C.COLORS[w.subs.length % C.COLORS.length], _new: true }); draw(); focusLastSub(body); } }, ic("plus", "icon-sm"), "Add section"));
+        // Sections this kind of collection usually grows into, one tap each.
+        const ready = w.subs.length < C.MAX.subs ? C.moreSections(w) : [];
+        if (ready.length) subsBox.append(h("div", { class: "gp-ready", id: "gp-ready" }, h("span", { class: "gp-label" }, "Ready to add"),
+          h("div", { class: "gp-sort-row" }, ...ready.map((m) => h("button", { class: "gp-mini gp-mini-new", type: "button", "data-ready": m.name, onclick: () => {
+            if (w.subs.length >= C.MAX.subs) return;
+            w.subs.push({ id: C.uid(), name: m.name, label: m.label, icon: m.icon, color: m.color, late: !!m.late, noTag: !!m.noTag });
+            draw();
+          } }, ic("plus", "icon-sm"), m.name)))));
         body.append(subsBox);
 
         // Who or what the group is about: its pages (people, places, things).
@@ -2590,14 +2599,46 @@
     if (!ix) return { dests: [], spots: [] };
     let text = [n.title, n.content, ...(n.files || []).map((f) => f.name), n.ocr || ""].filter(Boolean).join(" ");
     if (window.CPWords) text = window.CPWords.expand(text); // "Amma" is also "Mother"
-    const dests = window.CPBrain.understand(ix, { text, picks, tags, files: n.files || [], guess: n.suggest, location: n.capture && n.capture.location }, SNAP_MATCH);
-    return { dests: dests.map((d) => ({ ...d, label: window.CPBrain.label(ix, d) })), spots: window.CPBrain.spot(text) };
+    const dests = window.CPBrain.understand(ix, { text, picks, tags, files: n.files || [], guess: n.suggest, location: n.capture && n.capture.location }, SNAP_MATCH)
+      .map((d) => ({ ...d, label: window.CPBrain.label(ix, d) }));
+    // "Discharge summary" and Health has no such section yet: suggest the
+    // ready one from its template, made on first use.
+    if (!picks.length) {
+      const more = [];
+      for (const g of groups) for (const m of C.moreSections(g)) {
+        const hit = m.hint && text.match(m.hint);
+        if (hit) more.push({ g, m, word: hit[0] });
+      }
+      if (more.length) {
+        const top = dests[0];
+        const pick = (top && more.find((x) => x.g.id === top.g)) || (!top || top.score < 40 ? more[0] : null);
+        if (pick && !(top && top.g === pick.g.id && top.s)) {
+          const d = { g: pick.g.id, s: null, tag: top && top.g === pick.g.id ? top.tag : null, newSub: pick.m, score: Math.max(30, top && top.g === pick.g.id ? top.score : 0),
+            why: ["it mentions " + pick.word.toLowerCase(), pick.g.name + " has a " + pick.m.name.toLowerCase() + " section ready"], sure: false };
+          d.label = pick.g.name + " › " + pick.m.name + " (new section)";
+          dests.unshift(d);
+          if (dests[1] && dests[1].g === d.g) dests.splice(1, 1);
+        }
+      }
+    }
+    return { dests, spots: window.CPBrain.spot(text) };
   }
   // Files a message where the brain (or you) said, with the amount, date and tags it spotted.
   async function fileInto(n, d, opts = {}) {
     const g = groupById(d.g);
     if (!g) return null;
     if (!enabled) setEnabled(true);
+    // A ready section from the template, added on first use.
+    if (d.newSub && !d.s) {
+      const have = g.subs.find((x) => x.name.toLowerCase() === d.newSub.name.toLowerCase());
+      if (have) d = { ...d, s: have.id };
+      else if (g.subs.length < C.MAX.subs) {
+        const sub = { id: C.uid(), name: d.newSub.name, label: d.newSub.label, icon: d.newSub.icon, color: d.newSub.color, late: !!d.newSub.late, noTag: !!d.newSub.noTag };
+        g.subs.push(sub);
+        await saveGroup(g);
+        d = { ...d, s: sub.id };
+      }
+    }
     const spots = window.CPBrain ? window.CPBrain.spot([n.title, n.content].join(" ")) : [];
     const amount = g.fields.amount.on ? (spots.find((x) => x.kind === "amount") || {}).value : undefined;
     const when = spots.find((x) => x.kind === "when");

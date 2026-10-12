@@ -533,6 +533,8 @@
     background: var(--surface-2); color: var(--text-2); font-size: 26px;
   }
   #empty-state .empty-icon .icon { width: 26px; height: 26px; }
+  #empty-state .empty-icon.brand, #placeholder .ph-icon.brand { background: none; padding: 0; overflow: hidden; border-radius: 22%; box-shadow: var(--shadow-sm); }
+  #empty-state .empty-icon.brand img, #placeholder .ph-icon.brand img { width: 100%; height: 100%; display: block; }
   #empty-state .empty-title { color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: 4px; }
   #empty-state .empty-hint { max-width: 280px; margin: 0 auto; }
   #empty-state button { margin-top: var(--s-4); }
@@ -2622,6 +2624,8 @@
   // Add to Home Screen.
   const ICON_STYLE_KEY = "copypaster-icon-style";
   const ICON_STYLES = [["default", "Default"], ["dark", "Dark"], ["light", "Light"], ["glass", "Glass"], ["mono", "Monochrome"], ["mono-light", "Mono light"]];
+  // The app icon in use (the style picked in Appearance), for showing Stash itself.
+  function brandIconSrc() { const b = document.querySelector("#brand-dot img"); return (b && b.getAttribute("src")) || "icons/icon-192.png"; }
   function applyIconStyle(value) {
     const pick = ICON_STYLES.some((x) => x[0] === value) ? value : "default";
     const file = pick === "default" ? null : "icons/styles/style-" + pick;
@@ -4073,7 +4077,9 @@
     el.id = "empty-state";
     const add = (cls, text) => { const d = document.createElement("div"); d.className = cls; d.textContent = text; el.appendChild(d); };
     add("empty-icon", "");
-    el.lastChild.innerHTML = icon(c.icon);
+    // Stash itself is shown as its real app icon (the one in the corner), not a drawing.
+    if (c.icon === "logo") { el.lastChild.classList.add("brand"); el.lastChild.innerHTML = '<img alt="" src="' + brandIconSrc() + '">'; }
+    else el.lastChild.innerHTML = icon(c.icon);
     add("empty-title", c.title);
     if (c.id) el.dataset.kind = c.id;
     if (c.steps) {
@@ -8462,7 +8468,7 @@
   function renderPlaceholder() {
     const ph = document.getElementById("placeholder");
     if (!ph) return;
-    ph.innerHTML = '<div class="ph-icon">' + icon("logo") + '</div><div class="ph-title">Nothing selected</div>' +
+    ph.innerHTML = '<div class="ph-icon brand"><img alt="" src="' + brandIconSrc() + '"></div><div class="ph-title">Nothing selected</div>' +
       '<div>Pick an item from the list, or make a new one.</div>' +
       '<div class="ph-keys"><span>' + kbdHtml([MOD, "K"]) + ' Search</span><span>' + kbdHtml([MOD, "N"]) + ' New</span><span>' + kbdHtml(["/"]) + ' Filter</span></div>';
   }
