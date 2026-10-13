@@ -63,3 +63,16 @@ test("desktop: Timeline shows tick boxes as words, PDFs with a file icon; openin
   await page.locator("#main-nav .nav-item", { hasText: "Inbox" }).click();
   await expect(page.locator("#title-input")).toHaveCount(0);
 });
+
+test("a plain test message gets no 'lab reports' suggestion; a real lab report still does", async ({ page }) => {
+  await openApp(page);
+  const r = await page.evaluate(() => {
+    const B = window.CPBrain;
+    const groups = [{ id: "h", name: "Health", subs: [{ id: "lab", name: "Lab Reports" }, { id: "bill", name: "Bills" }], mainTags: [] }];
+    const ix = B.build({ groups, entries: [], entities: [], tags: [] });
+    const one = (text) => B.understand(ix, { text }).map((d) => d.s);
+    return { plain: one("Round 1 test message - inbox text sample"), real: one("blood test report from the lab") };
+  });
+  expect(r.plain).toEqual([]);
+  expect(r.real).toContain("lab");
+});

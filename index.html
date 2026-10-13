@@ -5589,7 +5589,7 @@
             } },
             ...(addonOn("sketch") ? [{ label: "Drawing", icon: "pen", run: () => addSketch(item) }] : []),
             ...(addonOn("voice") ? [{ label: "Recording", icon: "mic", run: () => addVoiceNote(item) }] : []),
-            { label: item.checklist ? "Tick boxes back to text" : "Tick boxes", icon: "checklist", run: () => toggleChecklist(ed) }
+            { label: item.checklist ? "Checklist back to text" : "Make the whole note a checklist", icon: "checklist", run: () => toggleChecklist(ed) }
           ];
           if (isDrawerMode()) { openSheet("Add to this note", acts, false); return; }
           const r = addBtn.getBoundingClientRect();
@@ -5610,7 +5610,9 @@
           tb("fmt-heading", "<b>H</b>", "Heading", blk("heading", "heading")),
           tb("fmt-bullets", "\u2022\u2009\u2014", "Bullet list", blk("insertUnorderedList", "bullet")),
           tb("fmt-numbers", "1.\u2009\u2014", "Numbered list", blk("insertOrderedList", "number")),
-          tb("checklist-btn", icon("checklist"), item.checklist ? "Turn the tick boxes back into text" : "Turn the lines into tick boxes", () => toggleChecklist(ed)));
+          // Formatted: the line you're on (or the lines you picked) become tick boxes.
+          // Plain text: the whole note becomes a checklist, as before.
+          tb("checklist-btn", icon("checklist"), item.checklist ? "Turn the tick boxes back into text" : rich ? "Tick boxes for these lines" : "Turn the lines into tick boxes", () => (rich && !item.checklist ? richCommand(rich, "tasks") : toggleChecklist(ed))));
         if (item.checklist) editToolbar.querySelector("#checklist-btn").classList.add("on");
         if (!rich) {
           editToolbar.append(tb("fmt-preview", icon("eye"), "See it formatted", () => {
@@ -5951,9 +5953,14 @@
       document.execCommand("formatBlock", false, b && /^H\d$/.test(b.tagName) ? "p" : "h2");
     } else if (cmd === "tasks") {
       const b = blockOf();
-      if (!(b && b.closest("ul"))) document.execCommand("insertUnorderedList");
-      const ul = blockOf() && blockOf().closest("ul");
-      if (ul && rich.contains(ul)) ul.classList.add("fm-tasks");
+      const inTasks = b && b.closest("ul.fm-tasks");
+      if (inTasks) { document.execCommand("insertUnorderedList"); } // tick boxes off again
+      else {
+        if (b && /^H\d$/.test(b.tagName)) document.execCommand("formatBlock", false, "p");
+        if (!(b && b.closest("ul"))) document.execCommand("insertUnorderedList");
+        const ul = blockOf() && blockOf().closest("ul");
+        if (ul && rich.contains(ul)) ul.classList.add("fm-tasks");
+      }
     } else {
       if (cmd === "insertUnorderedList") { const b = blockOf(); const ul = b && b.closest("ul.fm-tasks"); if (ul) ul.classList.remove("fm-tasks"); }
       // A heading becomes a plain line first, so the list doesn't end up inside it.
@@ -6441,7 +6448,8 @@
     return (text || "").split("\n").map((l) => l.trim()).filter(Boolean).map((line) => {
       const m = line.match(CHECK_LINE);
       const done = (m[1] && m[1].toLowerCase() === "x") || (m[2] && m[2].trim() !== "☐");
-      return { id: uuid(), text: (m[3] || "").trim() || line, done: !!done };
+      const words = window.CPFormat ? window.CPFormat.plain(m[3] || "").replace(/^#+\s*/, "").trim() : (m[3] || "").trim(); // no ** or # marks in an item
+      return { id: uuid(), text: words || line, done: !!done };
     });
   }
   const checklistAsText = (list) => list.map((c) => (c.done ? "☑ " : "☐ ") + c.text).join("\n");

@@ -92,7 +92,7 @@ test("rich editor: one + menu, and Undo / Redo in the top bar", async ({ page })
   const rich = await newRichNote(page);
   await rich.type("hello");
   await page.click("#note-add-btn");
-  for (const label of ["Photo", "Take a photo", "Drawing", "Recording", "Tick boxes"]) await expect(page.locator(".context-menu").getByText(label, { exact: true })).toBeVisible();
+  for (const label of ["Photo", "Take a photo", "Drawing", "Recording", "Make the whole note a checklist"]) await expect(page.locator(".context-menu").getByText(label, { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await page.click("#undo-btn");
   await expect(rich).not.toContainText("hello");
@@ -160,4 +160,20 @@ test("rich editor: a heading or a list changes only the line it's on (also after
   await expect(rich.locator("h2")).toHaveCount(0);
   await expect(rich.locator("li")).toHaveText(["two"]);
   await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("one\n- two\nthree");
+});
+
+test("rich editor: the tick-box button changes only the line you're on, and again turns it back", async ({ page }) => {
+  const rich = await newRichNote(page);
+  await rich.type("Shopping for the week");
+  await page.keyboard.press("Enter");
+  await rich.type("Task one");
+  await page.keyboard.press("Enter");
+  await rich.type("Task two");
+  await page.keyboard.press("ArrowUp");
+  await page.click("#checklist-btn");
+  await expect(rich.locator("ul.fm-tasks li")).toHaveText(["Task one"]);
+  await expect(page.locator(".cl-row")).toHaveCount(0); // not the whole note
+  await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("Shopping for the week\n- [ ] Task one\nTask two");
+  await page.click("#checklist-btn");
+  await expect(rich.locator("ul.fm-tasks li")).toHaveCount(0);
 });
