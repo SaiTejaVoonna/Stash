@@ -1,0 +1,251 @@
+// Stash Sync, the part with no network: turns your data into readable files
+// for a "Stash" folder in your own Google Drive. window.CPSyncCore
+//
+// One Markdown file per space, one for notes and one for the Inbox, plus a
+// README. Photos and files aren't copied into these (only counted); the full
+// backup file carries everything. Vault items are never written.
+(function () {
+  "use strict";
+
+  const C = () => window.CPGroupsCore;
+  const E = () => window.CPEntities;
+
+  const day = (t) => new Date(t).toISOString().slice(0, 10);
+  const oneLine = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  // Text inside a list item: keep line breaks, indented under the bullet.
+  const block = (s) => String(s || "").trim().split("\n").map((l, i) => (i ? "  " + l : l)).join("\n");
+
+  // File names Drive and phones are happy with. Same name twice → "Name (2)".
+  function fileNames(names) {
+    // Notes.md, Inbox.md and README.md are Stash's own; a collection with
+    // one of those names gets " (2)".
+    const used = new Map([["notes", 1], ["inbox", 1], ["readme", 1]]);
+    return names.map((n) => {
+      const base = oneLine(n).replace(/[\\/:*?"<>|#]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Untitled";
+      const k = base.toLowerCase();
+      const count = (used.get(k) || 0) + 1;
+      used.set(k, count);
+      return count === 1 ? base : base + " (" + count + ")";
+    });
+  }
+
+  // Everything one space holds, as Markdown.
+  function spaceMarkdown(g, entries, entities, types) {
+    const core = C(), ents = E();
+    const byId = (id) => entities.find((x) => x.id === id) || null;
+    const out = ["# " + g.name, ""];
+    if (g.desc) out.push(g.desc, "");
+    // Pages: who or what this space is about.
+    if (g.mainTags.length) {
+      out.push("## " + (g.mainLabel ? g.mainLabel + "s" : "Pages"), "");
+      for (const t of g.mainTags) {
+        const ent = t.entity ? byId(t.entity) : null;
+        const bits = [];
+        if (ent) {
+          const type = ents.typeOf(types, ent.type);
+          bits.push(type.name);
+          for (const fd of ents.fieldsOf(ent, types)) {
+            const v = ents.showValue(fd, ent.fields[fd.id], byId);
+            if (v) bits.push(fd.name.replace(/\s*\(.*\)$/, "") + ": " + v);
+          }
+          if (ent.note) bits.push(oneLine(ent.note));
+        } else if (t.info) bits.push(oneLine(t.info));
+        out.push("- **" + t.name + "**" + (bits.length ? " — " + bits.join(" · ") : ""));
+      }
+      out.push("");
+    }
+    // Fill-ups, when it's a vehicle space with a Fuel sub-chat.
+    const fuel = core.fuelStats ? core.fuelStats(entries, g) : null;
+    if (fuel && fuel.dist) {
+      out.push("## Fuel", "", "- Odometer: " + fuel.lastKm + " km", "- Since the last fill-up: " + fuel.dist + " km");
+      if (fuel.perKm) out.push("- Cost per km: " + core.formatMoney(Math.round(fuel.perKm * 100), fuel.currency));
+      if (fuel.perUnit) out.push("- Last mileage: " + core.formatNumber(fuel.perUnit) + " km/" + fuel.unit);
+      if (fuel.avgPerUnit) out.push("- Average mileage: " + core.formatNumber(fuel.avgPerUnit) + " km/" + fuel.unit);
+      out.push("");
+    }
+    const live = entries.filter((e) => !e.deletedAt && e.refs.some((r) => r.g === g.id)).sort((a, b) => b.happenedOn - a.happenedOn);
+    const sections = [{ id: null, name: "Entries" }, ...g.subs];
+    for (const s of sections) {
+      const list = live.filter((e) => {
+        const r = e.refs.find((x) => x.g === g.id);
+        return s.id ? r.s === s.id : !r.s || !g.subs.some((x) => x.id === r.s);
+      });
+      if (!list.length) continue;
+      out.push("## " + s.name, "");
+      for (const e of list) out.push(entryLine(e, g, byId));
+      out.push("");
+    }
+    if (!live.length) out.push("_Nothing here yet._", "");
+    return out.join("\n");
+  }
+
+  function entryLine(e, g, byId) {
+    const core = C();
+    const r = e.refs.find((x) => x.g === g.id) || {};
+    const page = r.tag ? g.mainTags.find((t) => t.id === r.tag) : null;
+    const head = [day(e.happenedOn)];
+    if (page) head.push(page.name);
+    if (e.title) head.push("**" + oneLine(e.title) + "**");
+    if (Number.isInteger(e.amount)) head.push(core.formatMoney(e.amount, e.currency || g.fields.amount.currency));
+    if (e.rating) head.push("★".repeat(e.rating));
+    const extra = [];
+    for (const f of g.fields.custom) {
+      const v = e.fields[f.id];
+      if (v == null || v === "") continue;
+      extra.push(f.name + ": " + (f.type === "person" || f.type === "place" ? ((byId(v) || {}).name || "") : v) + (f.unit ? " " + f.unit : ""));
+    }
+    if (e.tags.length) extra.push(e.tags.map((t) => "#" + t).join(" "));
+    if (e.photos.length) extra.push(e.photos.length + " photo" + (e.photos.length > 1 ? "s" : ""));
+    if (e.files.length) extra.push(e.files.map((f) => "📎 " + f.name).join(", "));
+    if (e.link) extra.push(e.link);
+    if (e.capture && e.capture.location) extra.push("📍 " + e.capture.location.lat.toFixed(4) + ", " + e.capture.location.lng.toFixed(4));
+    let line = "- " + head.join(" · ");
+    if (extra.length) line += " · " + extra.join(" · ");
+    if (e.note && e.note.trim()) line += "\n  " + block(e.note);
+    return line;
+  }
+
+  // Notes (or Inbox messages) as Markdown, newest first.
+  function notesMarkdown(title, items, { tagName = (id) => id, folderName = () => "" } = {}) {
+    const out = ["# " + title, ""];
+    const list = items.slice().sort((a, b) => b.createdAt - a.createdAt);
+    if (!list.length) out.push("_Nothing here yet._", "");
+    for (const n of list) {
+      const head = [day(n.createdAt)];
+      if (n.title && n.title.trim()) head.push("**" + oneLine(n.title) + "**");
+      const folder = n.folderId ? folderName(n.folderId) : "";
+      if (folder) head.push("in " + folder);
+      const tags = (n.tags || []).map(tagName).filter(Boolean);
+      if (tags.length) head.push(tags.map((t) => "#" + t).join(" "));
+      if ((n.images || []).length) head.push(n.images.length + " photo" + (n.images.length > 1 ? "s" : ""));
+      if ((n.files || []).length) head.push(n.files.map((f) => "📎 " + f.name).join(", "));
+      if (n.suggest && n.suggest.label) head.push("(" + n.suggest.label + ")");
+      if (n.capture && n.capture.location) head.push("📍 " + n.capture.location.lat.toFixed(4) + ", " + n.capture.location.lng.toFixed(4));
+      let line = "- " + head.join(" · ");
+      let body = n.content || "";
+      if (Array.isArray(n.checklist) && n.checklist.length) body += (body ? "\n" : "") + n.checklist.map((c) => "[" + (c.done ? "x" : " ") + "] " + c.text).join("\n");
+      if (body.trim() && body.trim() !== (n.title || "").trim()) line += "\n  " + block(body);
+      out.push(line);
+    }
+    out.push("");
+    return out.join("\n");
+  }
+
+  const README = () => ["# Stash", "",
+    "A readable copy of your Stash, written by the Stash app. It's updated each time Stash syncs.", "",
+    "- One file per collection, plus Notes and Inbox.",
+    "- Photos and files are only counted here; the backup file has everything.",
+    "- Vault items are never written here.",
+    "- Changes made to these files don't go back into Stash: the app overwrites them on the next sync.", ""].join("\n");
+
+  // The files to write. data: { groups, entries, entities, entityTypes, items, tagName, folderName }
+  // opts: { spaces: "all" | [ids], notes: bool, chat: bool, at: ms }
+  function buildFiles(data, opts) {
+    const o = opts || {};
+    const types = E().mergeTypes(data.entityTypes);
+    const groups = data.groups.slice().sort((a, b) => a.order - b.order).filter((g) => o.spaces === "all" || !Array.isArray(o.spaces) || o.spaces.includes(g.id));
+    const names = fileNames(groups.map((g) => g.name));
+    const files = groups.map((g, i) => ({ name: names[i] + ".md", type: "text/markdown", text: spaceMarkdown(g, data.entries, data.entities, types) }));
+    const readable = (data.items || []).filter((n) => !n.vaulted && !n.deletedAt && n.type !== "password" && !n._locked);
+    const opt = { tagName: data.tagName, folderName: data.folderName };
+    if (o.notes !== false) files.push({ name: "Notes.md", type: "text/markdown", text: notesMarkdown("Notes", readable.filter((n) => !n.chat), opt) });
+    if (o.chat !== false) files.push({ name: "Inbox.md", type: "text/markdown", text: notesMarkdown("Inbox", readable.filter((n) => n.chat), opt) });
+    files.push({ name: "README.md", type: "text/markdown", text: README() });
+    return files;
+  }
+
+  // A short fingerprint, to skip uploading what hasn't changed.
+  function hash(s) {
+    let h1 = 0x811c9dc5, h2 = 0;
+    for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = (h2 * 31 + c) | 0; }
+    return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + ":" + s.length;
+  }
+
+  // What to upload and what to remove, given what was written last time.
+  // known: { fileName: { id, hash } }
+  function plan(files, known) {
+    const k = known || {};
+    const want = new Set(files.map((f) => f.name));
+    return {
+      upload: files.map((f) => ({ ...f, hash: f.hash || hash(f.text || "") })).filter((f) => !k[f.name] || k[f.name].hash !== f.hash),
+      remove: Object.keys(k).filter((n) => !want.has(n) && n !== BACKUP_NAME)
+    };
+  }
+  const BACKUP_NAME = "Stash backup.cps";
+
+  // ---------- Two-way sync between devices ----------
+  // Every record (note, tag, folder, space, entry, person/place/thing) is one
+  // key, "store:id". Drive holds the shared copy, split into SHARDS files so a
+  // small change only re-uploads one file. Each device remembers what it last
+  // agreed with Drive (the "base": a fingerprint per key). Comparing local,
+  // Drive and base tells who changed what:
+  //   only this device changed it  → send it up
+  //   only another device did      → take it here
+  //   both did                     → the newer edit wins
+  // A delete is written down as a "tombstone", so other devices delete it too.
+  // A key missing from Drive without a tombstone is never deleted here: it's
+  // sent up again (that's what protects against two devices saving at once).
+  const SHARDS = 16;
+  const TOMB_DAYS = 90;
+  function stable(v) {
+    if (Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+    if (v && typeof v === "object") return "{" + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ":" + stable(v[k])).join(",") + "}";
+    return JSON.stringify(v === undefined ? null : v);
+  }
+  const fingerprint = (rec) => hash(stable(rec));
+  function shardOf(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+    return (h >>> 0) % SHARDS;
+  }
+  const shardName = (i) => "stash-sync-" + i.toString(16) + ".json";
+  const when = (rec) => (rec && (rec.updatedAt || rec.createdAt)) || 0;
+
+  // local:  Map key → record (this device, as stored)
+  // remote: Map key → { h, at, d? } (Drive; d is the record when it was downloaded)
+  // tombs:  { key: time } (Drive's tombstones)
+  // base:   { key: h } (what this device and Drive last agreed on)
+  // hold:   Set of keys not to change here right now (the note open in the editor,
+  //         Vault items); they keep their old base, so they're picked up later.
+  // Returns what to change here, the merged Drive state, and the new base.
+  function merge({ local, remote, tombs = {}, base = {}, hold = new Set(), now = Date.now() }) {
+    const put = [], del = [];
+    const out = new Map(); // key → { h, at, d }
+    const outTombs = {};
+    const newBase = {};
+    const keys = new Set([...local.keys(), ...remote.keys(), ...Object.keys(tombs), ...Object.keys(base)]);
+    for (const key of keys) {
+      const L = local.get(key), R = remote.get(key), T = tombs[key], B = base[key];
+      const lh = L ? fingerprint(L) : null;
+      const takeLocal = () => { out.set(key, { h: lh, at: when(L), d: L }); newBase[key] = lh; };
+      const takeRemote = () => {
+        out.set(key, R);
+        if (hold.has(key)) { if (B) newBase[key] = B; return; } // later
+        put.push([key, R.d]); newBase[key] = R.h;
+      };
+      if (L && R) {
+        if (lh === R.h) { out.set(key, { ...R, d: R.d || L }); newBase[key] = lh; }
+        else if (lh === B) takeRemote();
+        else if (R.h === B) takeLocal();
+        else if (when(R.d) > when(L) && R.d) takeRemote();
+        else takeLocal();
+      } else if (L) {
+        if (T && lh === B) { outTombs[key] = T; if (hold.has(key)) newBase[key] = B; else del.push(key); }
+        else takeLocal(); // new here, or changed here after another device deleted it
+      } else if (R) {
+        if (B && R.h === B) outTombs[key] = now; // deleted here
+        else if (R.d) takeRemote(); // new from another device (or changed there after we deleted it)
+        else { out.set(key, R); if (B) newBase[key] = B; }
+      } else if (T) outTombs[key] = T;
+    }
+    for (const [k, t] of Object.entries(outTombs)) if (now - t > TOMB_DAYS * 864e5) delete outTombs[k];
+    return { put, del, out, tombs: outTombs, base: newBase };
+  }
+  // A shard's contents in a form that's the same whenever its data is.
+  function shardSummary(records, tombs) {
+    return Object.keys(records).sort().map((k) => k + "=" + records[k].h).join("|") + "#" + Object.keys(tombs).sort().join("|");
+  }
+
+  window.CPSyncCore = { fileNames, spaceMarkdown, notesMarkdown, buildFiles, hash, plan, BACKUP_NAME,
+    SHARDS, stable, fingerprint, shardOf, shardName, merge, shardSummary };
+})();

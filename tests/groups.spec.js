@@ -15,12 +15,13 @@ async function createGroup(page, template, name) {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: template }).click();
   if (name) await page.fill("#gp-new-name", name);
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText(name || template);
 }
 
 async function addMainTag(page, name, info) {
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", name);
   await page.click("#gp-page-create");
@@ -40,7 +41,7 @@ async function addMainTag(page, name, info) {
 async function send(page, text, opts = {}) {
   await page.click("#gp-text");
   if (opts.type) await page.locator(".gp-extras .gp-mini", { hasText: opts.type }).click();
-  if (opts.date) await page.fill("#gp-date", opts.date);
+  if (opts.date) { await page.click("#gp-c-date"); await page.fill("#gp-date", opts.date); }
   if (opts.amount) {
     if (!(await page.locator("#gp-amount").count())) await page.click("#gp-b-amount");
     await page.fill("#gp-amount", String(opts.amount));
@@ -55,7 +56,7 @@ const stat = (page, label) => page.locator(".gp-stat").filter({ has: page.locato
 
 test("Groups show by default, can be hidden, and notes look exactly the same", async ({ page }) => {
   await expect(page.locator("#groups-section")).toBeVisible();
-  await expect(page.locator("#groups-list")).toContainText("New space");
+  await expect(page.locator("#groups-list")).toContainText("New collection");
   await newNote(page, "plain note");
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="groups"]');
@@ -65,7 +66,7 @@ test("Groups show by default, can be hidden, and notes look exactly the same", a
   await page.reload();
   await expect(page.locator("#groups-section")).toBeHidden();
   await turnOnGroups(page);
-  await expect(nav(page, "Inbox")).toContainText("1");
+  await expect(nav(page, "All notes")).toContainText("1");
 });
 
 test("same day + same doctor becomes one visit; totals and counts add up", async ({ page }) => {
@@ -124,6 +125,7 @@ test("entries with no doctor are flagged once, and one tap assigns one", async (
   await createGroup(page, "Health");
   await addMainTag(page, "Dermatology");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('None')");
   await page.fill("#gp-text", "Blood test (CBC)");
   await page.click("#gp-send");
@@ -133,13 +135,13 @@ test("entries with no doctor are flagged once, and one tap assigns one", async (
   await expect(page.locator(".gp-banner")).toHaveCount(0);
 });
 
-test("Edit group: rename, add a sub-chat and a number field; it all stays after a reload", async ({ page }) => {
+test("Edit group: rename, add a section and a number field; it all stays after a reload", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Blank", "Bike");
-  await page.click("button[aria-label='Edit space']");
+  await page.click("button[aria-label='Edit collection']");
   await page.fill("#gp-ed-name", "My bike");
-  await page.click(".gp-sheet button:has-text('Add sub-chat')");
-  await page.locator(".gp-edit-row input[aria-label='Sub-chat name']").last().fill("Petrol");
+  await page.click(".gp-sheet button:has-text('Add section')");
+  await page.locator(".gp-edit-row input[aria-label='Section name']").last().fill("Petrol");
   await page.click(".gp-sheet button:has-text('Add field')");
   await page.locator("input[aria-label='Field name']").last().fill("Litres");
   await page.locator("input[aria-label='Unit']").last().fill("L");
@@ -166,7 +168,7 @@ test("a shared template carries the setup only, never entries or doctor names", 
   await createGroup(page, "Health");
   await addMainTag(page, "Dermatology", "Dr. Private Name");
   await send(page, "Secret prescription", { type: "Prescription" });
-  await page.click("button[aria-label='Edit space']");
+  await page.click("button[aria-label='Edit collection']");
   await page.click(".gp-sheet button:has-text('Share as template')");
   const link = await page.inputValue("input[aria-label='Template link']");
   const payload = Buffer.from(link.split("#template=")[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString();
@@ -178,7 +180,7 @@ test("a shared template carries the setup only, never entries or doctor names", 
   await friend.goto(link.replace(/^https?:\/\/[^/]+\//, "./"));
   await expect(friend.locator(".gp-sheet")).toContainText("Add template?");
   await expect(friend.locator(".gp-tpl-summary")).toContainText("Prescriptions, Lab Reports, Medicines, Bills");
-  await friend.click(".gp-sheet button:has-text('Add space')");
+  await friend.click(".gp-sheet button:has-text('Add collection')");
   await expect(friend.locator(".gp-id h1")).toHaveText("Health");
   await expect(friend.locator(".gp-stat", { hasText: "Visits" }).locator("b")).toHaveText("0");
   await friend.close();
@@ -215,7 +217,7 @@ test("backups carry groups; old backups without groups still import", async ({ p
   await fresh.click("#settings-btn");
   await fresh.click('.settings-nav-item[data-page="data"]');
   await fresh.setInputFiles("#import-file", file);
-  await expect(fresh.locator(".toast-item").last()).toContainText("1 spaces, 1 space entries");
+  await expect(fresh.locator(".toast-item").last()).toContainText("1 collections, 1 collection entries");
   await fresh.click("#settings-close-btn");
   await fresh.locator(".gp-nav-group", { hasText: "Food" }).click();
   await expect(fresh.locator(".gp-card", { hasText: "Irani Chai" })).toHaveCount(1);
@@ -232,11 +234,12 @@ test("backups carry groups; old backups without groups still import", async ({ p
 test("a note moves into a group and back to Notes without losing its text", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Blank", "Ideas");
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await newNote(page, "Line one\nLine two", { title: "Gift ideas" });
   await page.click(".item-row", { button: "right" });
-  await page.locator(".context-menu .popover-list-item", { hasText: "Move to space" }).click();
-  await page.locator(".gp-choice", { hasText: "Ideas" }).click();
+  await page.locator(".context-menu .popover-list-item", { hasText: "Move to collection" }).click();
+  await page.locator("#gp-sort-spaces .gp-mini", { hasText: "Ideas" }).click();
+  await page.click("#gp-sort-save");
   await expect(page.locator(".gp-id h1")).toHaveText("Ideas");
   await expect(page.locator(".gp-d-title")).toHaveValue("Gift ideas");
   await expect(page.locator(".gp-d-note")).toHaveValue("Line one\nLine two");
@@ -250,13 +253,41 @@ test("a note moves into a group and back to Notes without losing its text", asyn
   expect(items[0].content).toContain("Line one\nLine two");
 });
 
+test("the move picker makes a new collection, section, person and tag on the spot", async ({ page }) => {
+  await turnOnGroups(page);
+  await nav(page, "All notes").click();
+  await newNote(page, "Knee check-up notes", { title: "Check-up" });
+  await page.click(".item-row", { button: "right" });
+  await page.locator(".context-menu .popover-list-item", { hasText: "Move to collection" }).click();
+  await page.click("#gp-sort-add-space");
+  await page.fill("#gp-sort-space-name", "Family Health");
+  await page.press("#gp-sort-space-name", "Enter");
+  await expect(page.locator("#gp-sort-spaces .gp-mini.active")).toContainText("Family Health");
+  await page.click("#gp-sort-add-sub");
+  await page.fill("#gp-sort-sub-name", "Visits");
+  await page.click("#gp-sort-sub-name-add");
+  await expect(page.locator("#gp-sort-subs .gp-mini.active")).toContainText("Visits");
+  await page.click("#gp-sort-add-page");
+  await page.fill("#gp-page-name", "Dr Asha Verma");
+  await page.click("#gp-page-create");
+  await expect(page.locator("#gp-sort-pages .gp-mini.active")).toContainText("Dr Asha Verma");
+  await page.click("#gp-sort-add-tag");
+  await page.fill("#gp-sort-tag-name", "knee");
+  await page.press("#gp-sort-tag-name", "Enter");
+  await expect(page.locator("#gp-sort-tags .gp-mini.active")).toContainText("#knee");
+  await page.click("#gp-sort-save");
+  await expect(page.locator(".gp-id h1")).toHaveText("Family Health / Visits");
+  await expect(page.locator(".gp-d-title")).toHaveValue("Check-up");
+  expect(await storedItems(page)).toHaveLength(0);
+});
+
 test("an entry linked into two groups: remove from one keeps it in the other", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Blank", "Visited Places");
   await createGroup(page, "Food");
   await send(page, "Irani Chai", { type: "Dish" });
   await page.locator(".gp-entry", { hasText: "Irani Chai" }).click();
-  await page.click(".gp-also button:has-text('Also add to another space')");
+  await page.click(".gp-also button:has-text('Also add to another collection')");
   await page.locator(".gp-choice", { hasText: "Visited Places" }).click();
   await expect(page.locator(".gp-entry", { hasText: "Irani Chai" })).toContainText("Also in Visited Places");
   await page.locator(".gp-entry", { hasText: "Irani Chai" }).click();
@@ -271,7 +302,7 @@ test("search (Ctrl K) finds group entries and opens them", async ({ page }) => {
   await turnOnGroups(page);
   await createGroup(page, "Food");
   await send(page, "Osmania biscuit", { type: "Dish" });
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await page.keyboard.press("Control+k");
   await page.fill("#palette-input", "osmania");
   await page.locator(".palette-row", { hasText: "Osmania biscuit" }).click();
@@ -341,4 +372,29 @@ test("a pharmacy bill alone is not a visit; it joins the visit before it", async
   await send(page, "Pharmacy", { type: "Medicine", date: day(1, "19:00"), amount: 799 });
   await expect(stat(page, "Visits")).toHaveText("1");
   await expect(page.locator(".gp-card", { hasText: "Visit · 2 items" })).toHaveCount(1);
+});
+
+test("template store: popular first, Browse all with categories, Preview with examples, Try it then Keep or Remove", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  // Popular first: 12 + Blank, then Browse all.
+  await expect(page.locator(".gp-tpl")).toHaveCount(13);
+  await page.click("#gp-tpl-store");
+  await expect(page.locator("#gp-tpl-cats")).toBeVisible();
+  await page.locator('#gp-tpl-cats [data-cat="Hobbies & games"]').click();
+  await expect(page.locator(".gp-tpl", { hasText: "Board & indoor games" })).toBeVisible();
+  await expect(page.locator(".gp-tpl", { hasText: "Health" })).toHaveCount(0);
+  await page.locator(".gp-tpl", { hasText: "Board & indoor games" }).click();
+  await page.click("#gp-tpl-preview");
+  await expect(page.locator("#gp-pv-list .gp-pv-entry").first()).toBeVisible();
+  await page.click("#gp-tpl-try");
+  await expect(page.locator("#gp-trial")).toContainText("Trying Board & indoor games");
+  await page.click("#gp-trial-remove");
+  await expect(page.locator(".toast-item").last()).toContainText("Removed Board & indoor games");
+  // Try another and keep it.
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Fitness" }).click();
+  await page.click("#gp-tpl-preview");
+  await page.click("#gp-tpl-try");
+  await page.click("#gp-trial-keep");
+  await expect(page.locator("#gp-trial")).toHaveCount(0);
 });

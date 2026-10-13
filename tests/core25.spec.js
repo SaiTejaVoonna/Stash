@@ -19,7 +19,7 @@ async function setUpVault(page) {
 async function newGroup(page, template) {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: template }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText(template);
 }
 async function sendEntry(page, text) {
@@ -163,8 +163,9 @@ test("2FA in a Vault login: the code shows, copies, and the key is stored encryp
   await page.click("#otp-save");
   await expect(lastToast(page)).toContainText("2FA added");
   const shown = (await page.textContent("#login-otp .otp-code")).replace(" ", "");
-  const expected = await page.evaluate(async () => (await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" })).code);
-  expect(shown).toBe(expected);
+  // The code may have just rolled over to the next 30-second window.
+  const expected = await page.evaluate(async () => { const now = Date.now(); return [(await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" }, now)).code, (await window.CPTotp.code({ secret: "JBSWY3DPEHPK3PXP" }, now - 30000)).code]; });
+  expect(expected).toContain(shown);
   await page.click("#login-otp .otp");
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/^\d{6}$/);
   await page.waitForTimeout(900);
@@ -334,7 +335,7 @@ test("Timeline: notes and group entries together, one tag across both, filters a
 test("renaming a tag renames it on group entries; Tags page merges look-alikes and clears unused", async ({ page }) => {
   await newGroup(page, "Food");
   await sendEntry(page, "Dosa #breakfast");
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await newNote(page, "Idli");
   await tagOpenNote(page, "Breakfasts");
   await page.click("#settings-btn");
@@ -344,7 +345,7 @@ test("renaming a tag renames it on group entries; Tags page merges look-alikes a
   await page.locator(".tagm-dupe button", { hasText: "Merge" }).click();
   await expect(lastToast(page)).toContainText("Merged");
   await expect(page.locator(".tagm-row")).toHaveCount(1);
-  await expect(page.locator(".tagm-row")).toContainText("1 note · 1 space entry");
+  await expect(page.locator(".tagm-row")).toContainText("1 note · 1 collection entry");
 
   // Rename it: the group entry follows.
   await page.locator(".tagm-row button", { hasText: "Edit" }).click();
@@ -413,6 +414,88 @@ test("backup reminder after a month; Back up now clears it; storage use is shown
   await expect(page.locator("#last-backup")).toContainText("Last backup today");
   await expect(page.locator("#storage-box")).toContainText("Using");
   await page.click('.settings-nav-item[data-page="about"]');
-  await expect(page.locator("#app-version")).toHaveText("Version 2.6");
+  await expect(page.locator("#app-version")).toHaveText("Version 3.1");
   await expect(page.locator("#rights-notice")).toContainText("All rights reserved");
+});
+
+test("sketch pad: pens, a rough circle held still snaps neat, lasso moves it, text, whole-stroke eraser, redo", async ({ page }) => {
+  // The shape guesser on its own.
+  const kinds = await page.evaluate(() => {
+    const S = window.CPSketch;
+    const circle = Array.from({ length: 40 }, (_, i) => [0.5 + 0.2 * Math.cos(i / 39 * Math.PI * 2) + (i % 3) * 0.003, 0.5 + 0.2 * Math.sin(i / 39 * Math.PI * 2)]);
+    const line = Array.from({ length: 20 }, (_, i) => [0.1 + i * 0.03, 0.2 + (i % 2) * 0.004]);
+    const box = [[0.2, 0.2], [0.5, 0.2], [0.8, 0.2], [0.8, 0.5], [0.8, 0.8], [0.5, 0.8], [0.2, 0.8], [0.2, 0.5], [0.21, 0.21]].flatMap((p, i, a) => i ? Array.from({ length: 5 }, (_, k) => [a[i - 1][0] + (p[0] - a[i - 1][0]) * k / 5, a[i - 1][1] + (p[1] - a[i - 1][1]) * k / 5]) : [p]);
+    return [S.recognise(circle, 1).kind, S.recognise(line, 1).kind, S.recognise(box, 1).kind];
+  });
+  expect(kinds).toEqual(["ellipse", "line", "rect"]);
+
+  await page.click("#new-btn");
+  await page.click('#new-menu [data-new="sketch"]');
+  const c = page.locator("#sk-canvas");
+  const b = await c.boundingBox();
+  const at = (x, y) => [b.x + b.width * x, b.y + b.height * y];
+  // A rough circle, then hold still: it snaps.
+  await page.mouse.move(...at(0.5 + 0.2, 0.5));
+  await page.mouse.down();
+  for (let i = 1; i <= 40; i++) { const t = (i / 40) * Math.PI * 2; await page.mouse.move(...at(0.5 + 0.2 * Math.cos(t) + (i % 2) * 0.004, 0.5 + 0.2 * Math.sin(t))); }
+  await page.waitForTimeout(800);
+  await page.mouse.up();
+  // Highlighter stroke.
+  await page.click("[data-tool='pen-highlighter']");
+  await page.mouse.move(...at(0.1, 0.9)); await page.mouse.down(); await page.mouse.move(...at(0.6, 0.9), { steps: 5 }); await page.mouse.up();
+  // Text.
+  await page.click("[data-tool='text']");
+  await page.mouse.click(...at(0.1, 0.1));
+  await page.keyboard.type("Plan");
+  // Lasso around the circle and make it bigger.
+  await page.click("[data-tool='lasso']");
+  await page.mouse.move(...at(0.2, 0.2)); await page.mouse.down();
+  for (const [x, y] of [[0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.21]]) await page.mouse.move(...at(x, y), { steps: 4 });
+  await page.mouse.up();
+  await expect(page.locator("#sk-sub")).toContainText("1 selected");
+  await page.click("#sk-bigger");
+  // Whole-stroke eraser removes the highlighter line in one tap; Undo and Redo.
+  await page.click("[data-tool='eraser']");
+  await page.click("[data-erase='whole']");
+  await page.mouse.click(...at(0.35, 0.9));
+  await page.click("#sk-undo");
+  await page.click("#sk-redo");
+  await expect(page.locator("#sk-redo")).toBeDisabled();
+  await page.click("#sk-done");
+  await expect(lastToast(page)).toContainText("Sketch saved");
+});
+
+test("note formatting: Bold and Italic buttons, Ctrl+B, lists that continue on Enter, Preview shows it formatted, list rows hide the marks", async ({ page }) => {
+  await newNote(page, "Trip plan");
+  const ta = page.locator("#content-input");
+  await ta.press("End");
+  await ta.press("Shift+Home");
+  await page.click("#fmt-heading");
+  await expect(ta).toHaveValue("# Trip plan");
+  await ta.press("End");
+  await ta.press("Enter");
+  await ta.type("pack ");
+  await ta.type("socks");
+  await ta.press("Shift+Home");
+  await page.click("#fmt-bullets");
+  await ta.press("End");
+  await ta.press("Enter");
+  await ta.type("tickets");
+  await ta.press("Enter");
+  await ta.press("Enter"); // an empty item ends the list
+  await ta.type("very important");
+  await ta.press("Control+Shift+ArrowLeft");
+  await ta.press("Control+b");
+  await expect(ta).toHaveValue("# Trip plan\n- pack socks\n- tickets\n**important**".replace("**important**", "very **important**"));
+  await page.click("#fmt-preview");
+  const pv = page.locator("#note-preview");
+  await expect(pv.locator("h2")).toHaveText("Trip plan");
+  await expect(pv.locator("li")).toHaveText(["pack socks", "tickets"]);
+  await expect(pv.locator("strong")).toHaveText("important");
+  await expect(ta).toBeHidden();
+  await page.click("#fmt-preview");
+  await expect(ta).toBeVisible();
+  // Nothing is lost: it's plain text underneath, and the list row shows it without marks.
+  const row = page.locator(".item-row").first();
+  await expect(row.locator(".item-subtext")).not.toContainText("**");
 });

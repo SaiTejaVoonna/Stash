@@ -8,7 +8,7 @@ async function createGroup(page, template, name) {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: template }).click();
   if (name) await page.fill("#gp-new-name", name);
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toContainText(name || template);
 }
 
@@ -60,17 +60,20 @@ test("group message bar: pick tags and a rating, new names get capitals, a photo
   await createGroup(page, "Food");
   await page.click("#gp-text");
   // New place typed in small letters.
+  await page.click("#gp-c-page");
   await page.locator(".gp-extras .gp-mini", { hasText: "New" }).first().click();
   await page.fill("#gp-page-name", "roadside bbq");
   await page.click("#gp-page-create");
   await expect(page.locator(".gp-extras .gp-mini.active", { hasText: "Roadside Bbq" })).toBeVisible();
   // Tags: create one from the Tag sheet.
+  await page.click("#gp-c-tags");
   await page.click("#gp-tag-more");
   await page.fill("#gp-tag-find", "Street food");
   await page.click("#gp-tag-create");
   await page.locator(".gp-sheet .gp-sheet-head button[aria-label='Close']").last().click();
   await expect(page.locator("#gp-tags-row .gp-mini.active")).toContainText("#Street food");
   // Rating has its own row, all five stars visible.
+  await page.click("#gp-c-rate");
   const stars = page.locator(".gp-extras .gp-rate button");
   await expect(stars).toHaveCount(5);
   await expect(stars.nth(4)).toBeInViewport();
@@ -161,7 +164,7 @@ test("2.5 doctors move to shared records; a doctor in two groups is one person; 
 test("adding someone you already have suggests them instead of making a copy; merge folds duplicates", async ({ page }) => {
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Food" }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-page-new");
   await page.fill("#gp-page-name", "nimrah cafe");
   await page.click("#gp-page-create");
@@ -171,7 +174,7 @@ test("adding someone you already have suggests them instead of making a copy; me
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Food" }).click();
   await page.fill("#gp-new-name", "Hyderabad trip");
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-page-new");
   await page.fill("#gp-page-name", "Nimrah");
   await expect(page.locator(".gp-match")).toContainText("In Food");
@@ -198,8 +201,8 @@ test("a detail added for all of a type shows on every one; an expiry date shows 
   await page.click("#groups-add-btn");
   await page.locator(".gp-tpl", { hasText: "Blank" }).click();
   await page.fill("#gp-new-name", "Vehicles");
-  await page.click(".gp-sheet button:has-text('Create space')");
-  await page.click("button[aria-label='Edit space']");
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await page.click("button[aria-label='Edit collection']");
   await page.fill("#gp-edit-main-label", "Vehicle");
   await page.selectOption("#gp-edit-main-type", "vehicle");
   await page.click(".gp-sheet button:text-is('Save')");
@@ -242,7 +245,7 @@ async function pickFile(page, click, name = "IMG_0042.png") {
   await (await chooser).setFiles({ name, mimeType: "image/png", buffer: PNG });
 }
 
-test("Snap saves into the Me chat at once, keeps the original and when and where it was taken", async ({ page, context }) => {
+test("Snap saves into the Inbox at once, keeps the original and when and where it was taken", async ({ page, context }) => {
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 17.385, longitude: 78.4867, accuracy: 12 });
   await page.click("#new-btn");
@@ -261,7 +264,7 @@ test("Snap saves into the Me chat at once, keeps the original and when and where
   // Shown with the message, with the original one tap away.
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("17.385");
   await page.locator("#chat-pane .cx-msg").last().click();
-  await page.locator("#detail-properties .props-head").click().catch(() => {});
+  await openOrganiseIfFolded(page);
   await expect(page.locator("#capture-meta")).toContainText("Camera · IMG_0042.png");
   await expect(page.locator("#capture-meta")).toContainText("17.3850, 78.4867 (±12 m)");
   await expect(page.locator("#open-original")).toBeVisible();
@@ -282,7 +285,7 @@ test("Snap says when the location was added, and says why when it wasn't", async
   await expect(page.locator(".toast-item", { hasText: "Location added to the snap" })).toBeVisible();
 });
 
-test("Snap inside a group saves straight to that page and sub-chat; From Inbox moves an earlier snap in", async ({ page }) => {
+test("Snap inside a group saves straight to that page and section; From Inbox moves an earlier snap in", async ({ page }) => {
   await page.click("#new-btn");
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'), "earlier.png");
   await expect(lastToast(page)).toContainText("Saved");
@@ -320,13 +323,13 @@ test("Snap inside a group saves straight to that page and sub-chat; From Inbox m
   await expect(page.locator("#gp-capture")).toContainText("Camera");
 });
 
-test("search: space:name picks a space, group:name is not a search word, and chips write space:", async ({ page }) => {
+test("search: space:name picks a collection, group:name is not a search word, and chips write in:", async ({ page }) => {
   const r = await page.evaluate(() => {
     const ctx = { groups: [{ id: "g1", name: "Food trips" }, { id: "g2", name: "Health" }] };
     const a = window.CPSearch.parse("space:hea", ctx), b = window.CPSearch.parse("group:hea", ctx), c = window.CPSearch.parse("-space:food", ctx);
     return { a: a.groups, b: b.groups, bText: b.text, c: c.not.groups, tok: window.CPSearch.tokenFor("group", "Food trips") };
   });
-  expect(r).toEqual({ a: ["g2"], b: [], bText: "group:hea", c: ["g1"], tok: 'space:"Food trips"' });
+  expect(r).toEqual({ a: ["g2"], b: [], bText: "group:hea", c: ["g1"], tok: 'in:"Food trips"' });
 });
 
 test("a snap gets a guess made on the device; it's only a suggestion and can be turned off", async ({ page }) => {
@@ -338,7 +341,7 @@ test("a snap gets a guess made on the device; it's only a suggestion and can be 
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'));
   await expect(page.locator("#chat-pane .cx-msg").last()).toContainText("Looks like food (trifle)");
   await page.locator("#chat-pane .cx-msg").last().click();
-  await page.locator("#detail-properties .props-head").click().catch(() => {});
+  await openOrganiseIfFolded(page);
   await expect(page.locator("#see-text")).toContainText("a guess made on this phone");
   // Nothing was filed or renamed because of it.
   const stored = await page.evaluate(async () => {
@@ -376,13 +379,19 @@ test("guesses: kinds come from the model's labels, and an unsure answer gives no
   expect(r).toEqual({ food: "Food", dog: "Dog", screen: "screen", unsure: null, weak: null });
 });
 
+// Opens Organise only when it's folded (clicking an open one would close it).
+async function openOrganiseIfFolded(page) {
+  const head = page.locator("#detail-properties .props-head");
+  await expect(page.locator("#detail-properties")).toBeAttached();
+  if (await head.isVisible() && (await head.getAttribute("aria-expanded")) !== "true") await head.click();
+}
 async function openOrganise(page) {
   const head = page.locator("#detail-properties .props-head");
   await expect(head).toBeVisible();
   if ((await head.getAttribute("aria-expanded")) !== "true") await head.click();
 }
 
-test("Sort this snap: the guess picks the space and sub-chat, the title is filled in, one tap files it", async ({ page }) => {
+test("Sort this snap: the guess picks the collection and section, the title is filled in, one tap files it", async ({ page }) => {
   await createGroup(page, "Food");
   await page.locator('#main-nav [data-nav="all"]').click();
   await page.evaluate(() => { window.CPSee.engine = async () => ({ classify: () => ({ classifications: [{ categories: [{ categoryName: "trifle", index: 927, score: 0.5 }] }] }) }); });
@@ -403,7 +412,7 @@ test("Sort this snap: the guess picks the space and sub-chat, the title is fille
   expect(e.capture && e.capture.fileName).toBe("IMG_0042.png");
 });
 
-test("Sort this snap with no matching space offers to make one from the right template", async ({ page }) => {
+test("Sort this snap with no matching collection offers to make one from the right template", async ({ page }) => {
   await page.evaluate(() => { window.CPSee.engine = async () => ({ classify: () => ({ classifications: [{ categories: [{ categoryName: "pill bottle", index: 720, score: 0.6 }] }] }) }); });
   await page.click("#new-btn");
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'));
@@ -420,6 +429,8 @@ test("Sort this snap with no matching space offers to make one from the right te
 
 test("45 templates in sections with search, and a color you pick in Appearance", async ({ page }) => {
   await page.click("#groups-add-btn");
+  await expect(page.locator(".gp-tpl")).toHaveCount(13);
+  await page.click("#gp-tpl-store");
   await expect(page.locator(".gp-tpl")).toHaveCount(45);
   await expect(page.locator(".gp-tpl-sec")).toHaveText(["Start", "Health", "Food", "Money", "Home & family", "Travel & vehicles", "Work & study", "Documents & gadgets", "Hobbies & games"]);
   await page.fill("#gp-tpl-search", "emi");
@@ -502,6 +513,7 @@ test("Color: only the picked swatch is ticked, any color works, and Glass can be
 test("a vehicle page works out the last fill-up: km since, cost per km and mileage; services don't count", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
@@ -532,8 +544,9 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
   await expect(page.locator(".gp-tpl", { hasText: /^Car/ })).toHaveCount(0);
   await expect(page.locator(".gp-tpl", { hasText: "Vehicles" })).toContainText("Fuel · Service");
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
@@ -549,17 +562,19 @@ test("Vehicles is one template for bikes and cars; a vehicle has kind, fuel and 
   await expect(page.locator(".gp-page .gp-ava img")).toBeVisible();
 });
 
-test("the space's + menu closes with a tap outside; an open page is picked for the next entry", async ({ page }) => {
+test("the collection's + menu closes with a tap outside; an open page is picked for the next entry", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
   // Draft picks None, then the Fz V3 page is opened: Fz V3 is picked again.
+  await page.click("#gp-c-page");
   await page.locator(".gp-extras .gp-xrow", { hasText: "Vehicle" }).locator(".gp-mini", { hasText: "None" }).click();
   await page.locator(".gp-person", { hasText: "Fz V3" }).click();
   await page.click("#gp-text");
-  await expect(page.locator(".gp-extras .gp-xrow", { hasText: "Vehicle" }).locator(".gp-mini.active")).toContainText("Fz V3");
+  await expect(page.locator("#gp-c-page.active")).toContainText("Fz V3");
   await page.click("#gp-b-plus");
   await expect(page.locator(".gp-plus-menu")).toBeVisible();
   await page.mouse.click(5, 300);
@@ -569,6 +584,7 @@ test("the space's + menu closes with a tap outside; an open page is picked for t
 test("@fzv3 on a snap picks that vehicle's page when sorting", async ({ page }) => {
   await createGroup(page, "Vehicles", "Bike");
   await page.click("#gp-text");
+  await page.click("#gp-c-page");
   await page.click(".gp-extras .gp-mini:has-text('New')");
   await page.fill("#gp-page-name", "Fz V3");
   await page.click("#gp-page-create");
@@ -615,4 +631,67 @@ test("App icon style: pick one in Appearance; the app logo, tab icon and iPhone 
   expect(await page.evaluate(() => new Promise((r) => { const i = new Image(); i.onload = () => r(i.naturalWidth); i.onerror = () => r(0); i.src = "icons/styles/style-glass-apple.png"; }))).toBe(180);
   await page.reload();
   expect(await now()).toEqual(["icons/styles/style-glass.png", "icons/styles/style-glass.png", "icons/styles/style-glass-apple.png"]);
+});
+
+test("New person, place or thing: Person · Place · Thing chips, guessed from the name until you pick", async ({ page }) => {
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Food" }).first().click();
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await page.click("#gp-page-new");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Place");
+  await page.fill("#gp-page-name", "Dr Asha Verma");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Person");
+  await expect(page.locator("#gp-page-types .gp-mini.active")).toHaveText("Doctor");
+  await page.fill("#gp-page-name", "Chocolate Room");
+  await expect(page.locator("#gp-page-types .gp-mini.active")).toHaveText("Restaurant");
+  // Picked by hand: the guess stops changing it.
+  await page.locator("#gp-page-kinds .gp-mini", { hasText: "Thing" }).click();
+  await page.fill("#gp-page-name", "Chocolate Room box");
+  await expect(page.locator("#gp-page-kinds .gp-mini.active")).toHaveText("Thing");
+  await page.click("#gp-page-create");
+  const ent = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entities").objectStore("entities").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((e) => [e.name, e.kind]);
+  });
+  expect(ent).toContainEqual(["Chocolate Room box", "thing"]);
+});
+
+test("doctors: departments used as pages are tidied into a specialty; entries get a doctor or keep the specialty as a tag; Undo", async ({ page }) => {
+  // A Health collection with a doctor and a department page, as older versions allowed.
+  await page.click("#groups-add-btn");
+  await page.locator(".gp-tpl", { hasText: "Health" }).first().click();
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  for (const name of ["Dr Asha Verma", "Dermatology", "ENT"]) {
+    await page.click("#gp-page-new");
+    await page.fill("#gp-page-name", name);
+    if (name !== "Dr Asha Verma") await page.locator("#gp-page-types .gp-mini", { hasText: "Doctor" }).click();
+    await page.click("#gp-page-create");
+    await page.click(".gp-person.all");
+  }
+  // Two entries under Dermatology.
+  for (const text of ["Skin check", "Cream refill"]) {
+    await page.locator(".gp-person", { hasText: "Dermatology" }).click();
+    await page.fill("#gp-text", text);
+    await page.click("#gp-send");
+  }
+  await page.click(".gp-person.all");
+  await expect(page.locator("#gp-tidy-card")).toContainText("Dermatology and ENT look like specialties");
+  await page.click("#gp-tidy");
+  const rows = page.locator(".gp-tidy-row");
+  await expect(rows).toHaveCount(2);
+  await rows.first().locator(".gp-mini", { hasText: "Dr Asha Verma" }).click();
+  await page.click("#gp-tidy-apply");
+  await expect(page.locator(".gp-person", { hasText: "Dermatology" })).toHaveCount(0);
+  await expect(page.locator(".gp-person", { hasText: "ENT" })).toHaveCount(0);
+  await expect(page.locator("#gp-tidy-card")).toHaveCount(0);
+  const stored = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entries").objectStore("entries").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((e) => ({ t: e.title, page: !!e.refs[0].tag, tags: e.tags })).sort((a, b) => a.t.localeCompare(b.t));
+  });
+  expect(stored).toEqual([{ t: "Cream refill", page: false, tags: ["dermatology"] }, { t: "Skin check", page: true, tags: [] }]);
+  // Undo puts it all back.
+  await page.locator(".toast-item", { hasText: "Tidied up" }).getByRole("button", { name: "Undo" }).click();
+  await expect(page.locator(".gp-person", { hasText: "Dermatology" })).toHaveCount(1);
 });

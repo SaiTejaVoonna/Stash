@@ -52,7 +52,7 @@ test("an older version open in another tab: says so, then opens once it's closed
   await expect(page.locator("#main-nav .nav-item").first()).toBeVisible();
   await page.click("#new-btn");
   await page.click('#new-menu [data-new="note"]');
-  await expect(page.locator("#content-input")).toBeVisible();
+  await expect(page.locator("#rich-input")).toBeVisible(); // a fresh page: the rich editor
 });
 
 test("a newer version opened in another tab takes over; this one offers Reload", async ({ page, context }) => {

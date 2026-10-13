@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stash Privacy</title>
+<meta name="description" content="Stash keeps your data on your device. What it stores, what it never collects, and how Google Drive sync works.">
+<link rel="icon" href="icons/favicon-32.png">
+<style>
+:root { --bg: #0f1020; --card: #181a2e; --line: #2a2d47; --text: #eef0ff; --muted: #a3a8c9; --accent: #7B61FF; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f5f6fb; --card: #fff; --line: #e3e5f0; --text: #15172b; --muted: #5b6085; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.65 -apple-system, system-ui, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+a { color: var(--accent); }
+h1 { font-size: 30px; margin: 8px 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: 19px; margin: 28px 0 6px; }
+p, li { color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px; }
+.back { display: inline-block; margin-bottom: 12px; text-decoration: none; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="./">← Back to Stash</a>
+<h1>Privacy</h1>
+<p>Last updated: October 2026</p>
+
+<div class="card">
+<h2>In short</h2>
+<p>Stash has no accounts and no server. Everything you save stays on your device unless you choose to sync it to your own Google Drive. We don't collect, see, sell or share your data.</p>
+</div>
+
+<h2>What Stash stores</h2>
+<p>Your notes, photos, files, collections and settings are stored in your browser's storage on your device. Vault items are encrypted with your password before they're stored.</p>
+
+<h2>What Stash never does</h2>
+<ul>
+<li>No analytics, tracking, ads or crash reports.</li>
+<li>No account, sign-up or email.</li>
+<li>No copy of your data on any server of ours.</li>
+</ul>
+
+<h2>Google Drive sync (optional)</h2>
+<p>If you connect Google Drive, Stash signs in with Google on your device and asks only for access to files it creates (the <code>drive.file</code> permission). It writes your data to a “Stash” folder in your own Drive and reads it back to keep your devices in step. It can't see any other files in your Drive. Vault items are never synced. You can disconnect any time in Settings → Sync; the files stay in your Drive until you delete them. Google's own privacy policy applies to your Google account and Drive.</p>
+
+<h2>Features that download something once</h2>
+<p>Some optional features download a tool the first time you use them, then keep it on your device: the photo guesser (an image model), text from photos (a text reader), the PDF viewer, the QR reader and the zip reader. These are downloads only; your photos and files are never uploaded. You can switch features off in Settings → Add-ons.</p>
+
+<h2>Location and camera</h2>
+<p>Location is added to snaps and pins only if you allow it, and is stored only with that item on your device. The camera is used only while you take a photo, scan or read a QR code.</p>
+
+<h2>Your choices</h2>
+<p>Export everything from Settings → Your data at any time. Deleting a profile deletes its data from your device. Removing the site's data in your browser deletes everything Stash stored there.</p>
+
+<h2>Children</h2>
+<p>Stash isn't directed at children under 13 and collects no data from anyone.</p>
+
+<h2>Contact</h2>
+<p>Questions about privacy: use the support email shown on Stash's Google sign-in screen.</p>
+</main>
+</body>
+</html>

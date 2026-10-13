@@ -20,7 +20,7 @@ async function noGroupWord(page, where) {
   expect(hits, "the word 'group' on " + where).toEqual([]);
 }
 
-test("no screen says 'group': spaces, entries, menus, filters and settings", async ({ page }) => {
+test("no screen says 'group': collections, entries, menus, filters and settings", async ({ page }) => {
   await newNote(page, "Groceries #home");
   await noGroupWord(page, "Inbox");
   await page.click("#new-btn");
@@ -30,20 +30,20 @@ test("no screen says 'group': spaces, entries, menus, filters and settings", asy
   await page.click("#groups-add-btn");
   await noGroupWord(page, "the template picker");
   await page.locator(".gp-tpl", { hasText: "Health" }).click();
-  await noGroupWord(page, "New space");
-  await page.click(".gp-sheet button:has-text('Create space')");
-  await noGroupWord(page, "a space");
+  await noGroupWord(page, "New collection");
+  await page.click(".gp-sheet button:has-text('Create collection')");
+  await noGroupWord(page, "a collection");
   await page.fill("#gp-composer-input, .gp-composer textarea, .gp-composer input", "Fever check").catch(() => {});
   await page.keyboard.press("Enter").catch(() => {});
-  await noGroupWord(page, "a space with an entry");
-  await page.click("button[aria-label='Edit space']");
-  await noGroupWord(page, "Edit space");
+  await noGroupWord(page, "a collection with an entry");
+  await page.click("button[aria-label='Edit collection']");
+  await noGroupWord(page, "Edit collection");
   await page.keyboard.press("Escape");
 
   await page.locator('#main-nav [data-nav="timeline"]').click();
   await noGroupWord(page, "Timeline");
-  await page.locator('.tl-drop[data-filter="group"], .tl-drop').filter({ hasText: "Space" }).first().click();
-  await noGroupWord(page, "Timeline space menu");
+  await page.locator('.tl-drop[data-filter="group"], .tl-drop').filter({ hasText: "Collection" }).first().click();
+  await noGroupWord(page, "Timeline collection menu");
   await page.keyboard.press("Escape");
 
   await page.click("#sidebar-search");

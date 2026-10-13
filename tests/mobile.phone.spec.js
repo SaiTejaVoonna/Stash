@@ -74,8 +74,9 @@ test("long-press opens the action sheet; pin and move to folder work from it", a
 test("side menu opens, picks a view and closes; new folder box is on top", async ({ page }) => {
   await menuBtn(page).tap();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator("#sidebar .nav-item", { hasText: "Commands" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Commands");
+  // (Empty views like Commands stay out of the menu until they have something.)
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator("#sidebar")).not.toHaveClass(/open/);
 
   await menuBtn(page).tap();
@@ -118,7 +119,7 @@ test("Save on a phone says Saved and goes back to the list", async ({ page }) =>
   await newBtn(page).tap();
   await page.tap('#new-menu [data-new="note"]');
   await page.fill("#content-input", "saved from phone");
-  await page.locator("#detail-pane button.action", { hasText: "Save" }).tap();
+  await page.locator("#detail-pane button.action", { hasText: "Done" }).tap();
   await expect(lastToast(page)).toContainText("Saved");
   await expect(page.locator("#detail-pane")).not.toHaveClass(/open/);
   await expect(page.locator(".item-row", { hasText: "saved from phone" })).toBeVisible();
@@ -135,8 +136,8 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
   await expect(page.locator("#profile-name")).toHaveText("Work");
 });
 
-test("the dock: Me, Spaces, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Me", "Spaces", "Snap", "Search", "More"]);
+test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "More"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -144,15 +145,16 @@ test("the dock: Me, Spaces, Snap, Search, More; New is the + at the top; no seco
   await expect(page.locator('.tab-btn[data-tab="search"]')).toHaveClass(/active/);
   // Inbox is under More now (Me took its place in the dock).
   await page.tap('.tab-btn[data-tab="more"]');
-  await page.locator("#sidebar .nav-item", { hasText: "Inbox" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Inbox");
+  await page.locator("#sidebar .nav-item", { hasText: "All notes" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("All notes");
   await page.tap('.tab-btn[data-tab="chat"]');
   await expect(page.locator("#chat-pane")).toBeVisible();
   await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator("#sidebar .nav-item", { hasText: "Commands" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Commands");
+  // (Empty views like Commands stay out of the menu until they have something.)
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await page.tap("#settings-btn");

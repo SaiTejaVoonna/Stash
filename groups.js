@@ -22,11 +22,14 @@
   let groups = [];
   let entries = [];
   let enabled = false;
-  const ui = { screen: null, g: null, s: "all", tag: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, drafts: {} };
+  const ui = { screen: null, g: null, s: "all", tag: null, spec: null, q: "", tools: false, open: new Set(), selected: null, flash: null, menu: false, chip: null, drafts: {} };
   let prefs = { lastSub: {}, lastTag: {}, snapDest: null, collapsed: [], sort: {} };
   const TRASH_DAYS = 30;
   // Each group remembers its own sort; a new group starts at Newest first.
   const sortOf = (g) => (prefs.sort && prefs.sort[g.id]) || "newest";
+  // How a collection is shown: its timeline, a wall of photos, or a table.
+  const viewOf = (g) => (prefs.view && prefs.view[g.id]) || "timeline";
+  function setView(g, v) { prefs.view = prefs.view || {}; if (v === "timeline") delete prefs.view[g.id]; else prefs.view[g.id] = v; savePrefs(); }
   function setSort(g, v) { prefs.sort = prefs.sort || {}; if (v === "newest") delete prefs.sort[g.id]; else prefs.sort[g.id] = v; savePrefs(); }
   let pane, mainEl, headEl, filtersEl, timelineEl, dropEl, detailEl;
 
@@ -91,7 +94,7 @@
   function readEnabled() { try { return localStorage.getItem(api.profileKey(ENABLED_KEY)) !== "0"; } catch { return true; } }
 
   // Tells the app something changed (Timeline, tag counts).
-  const changed = () => { if (api.changed) api.changed(); };
+  const changed = () => { brainIx = null; if (api.changed) api.changed(); };
   async function saveGroup(g) { g.updatedAt = Date.now(); await api.put(GROUPS_STORE, g); changed(); }
   async function saveEntry(e) { e.updatedAt = Date.now(); await api.put(ENTRIES_STORE, e); changed(); }
   // ---------- Entities: people, places and things (see entities-core.js) ----------
@@ -347,7 +350,7 @@
     if (!groupById(gid)) return;
     await api.leaveNotes();
     // A doctor/place filter and search stay while you switch tabs in the same group.
-    if (ui.g !== gid) { ui.tag = null; ui.q = ""; ui.tools = false; }
+    if (ui.g !== gid) { ui.tag = null; ui.spec = null; ui.q = ""; ui.tools = false; }
     ui.menu = false;
     if (ui.g !== gid) ui.open = new Set();
     ui.screen = "group"; ui.g = gid; ui.s = sid;
@@ -406,7 +409,7 @@
     list.replaceChildren();
     if (!enabled) return;
     if (!groups.length) {
-      list.append(h("div", { class: "nav-item gp-nav-new", onclick: () => openNewGroup() }, h("span", { class: "nav-label" }, h("span", { class: "nav-icon" }, ic("plus")), h("span", { class: "nav-text" }, "New space"))));
+      list.append(h("div", { class: "nav-item gp-nav-new", onclick: () => openNewGroup() }, h("span", { class: "nav-label" }, h("span", { class: "nav-icon" }, ic("plus")), h("span", { class: "nav-text" }, "New collection"))));
       return;
     }
     for (const g of groups) {
@@ -414,14 +417,17 @@
       const activeAll = ui.screen === "group" && ui.g === g.id && ui.s === "all";
       const row = h("div", { class: "nav-item gp-nav-group" + (activeAll ? " active" : ""), title: g.name, onclick: () => { if (collapsed) toggleCollapsed(g.id); openGroup(g.id, "all"); } },
         h("span", { class: "nav-label" },
-          g.subs.length ? h("span", { class: "gp-twisty" + (collapsed ? " collapsed" : ""), role: "button", "aria-label": collapsed ? "Show sub-chats" : "Hide sub-chats", onclick: (e) => { e.stopPropagation(); toggleCollapsed(g.id); } }, ic("chevron-down")) : h("span", { class: "gp-twisty blank" }),
+          g.subs.length ? h("span", { class: "gp-twisty" + (collapsed ? " collapsed" : ""), role: "button", "aria-label": collapsed ? "Show sections" : "Hide sections", onclick: (e) => { e.stopPropagation(); toggleCollapsed(g.id); } }, ic("chevron-down")) : h("span", { class: "gp-twisty blank" }),
           groupTile(g, "sm"), h("span", { class: "nav-text" }, g.name)),
         h("span", { class: "count" }, C.inGroup(entries, g.id).length));
       list.append(row);
       if (!collapsed && g.subs.length) {
         const cnt = C.counts(entries, g, "all");
+        const any = C.inGroup(entries, g.id).length > 0;
         for (const s of g.subs) {
           const active = ui.screen === "group" && ui.g === g.id && ui.s === s.id;
+          // Empty sections stay out of the sidebar once the collection is in use (they're in its tabs).
+          if (any && !cnt.bySub[s.id] && !active) continue;
           list.append(h("div", { class: "nav-item gp-nav-sub" + (active ? " active" : ""), title: s.name, onclick: () => openGroup(g.id, s.id) },
             h("span", { class: "nav-label" }, tile(s.icon, s.color, true, "xs"), h("span", { class: "nav-text" }, s.name)),
             h("span", { class: "count" }, cnt.bySub[s.id] || 0)));
@@ -436,26 +442,178 @@
   }
 
   // ---------- Main column ----------
+  // ---------- Doctors: specialties as filters, departments tidied ----------
+  // Pages of a doctors' collection that are really departments ("Dermatology", "ENT").
+  const isDoctors = (g) => !!g && !!g.mainLabel && groupType(g).key === "doctor";
+  const deptPages = (g) => (isDoctors(g) ? g.mainTags.filter((t) => E.specialtyOf(t.name)) : []);
+  const specOfPage = (t) => {
+    const ent = pageEntity(t);
+    const sp = ent && ent.type === "doctor" && ent.fields.specialty ? E.shortSpecialty(ent.fields.specialty) : "";
+    return sp || "";
+  };
+  // "Skin", "Gastro"…: from the doctors' specialties and from entries tagged with one.
+  function specialtiesIn(g) {
+    if (!isDoctors(g)) return [];
+    const set = new Map();
+    for (const t of g.mainTags) { const sp = specOfPage(t); if (sp) set.set(sp, (set.get(sp) || 0)); }
+    for (const e of C.inGroup(entries, g.id)) for (const tg of e.tags) { const sp = E.specialtyOf(tg); if (sp) set.set(sp.short, set.get(sp.short) || 0); }
+    return [...set.keys()];
+  }
+  function matchesSpec(e, g, spec) {
+    const r = e.refs.find((x) => x.g === g.id);
+    const t = r && r.tag ? g.mainTags.find((x) => x.id === r.tag) : null;
+    if (t && specOfPage(t) === spec) return true;
+    return e.tags.some((tg) => { const sp = E.specialtyOf(tg); return sp && sp.short === spec; });
+  }
+  function listFor(g) {
+    const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q);
+    return ui.spec ? list.filter((e) => matchesSpec(e, g, ui.spec)) : list;
+  }
+  // Turns department pages into a specialty: each entry gets a doctor, or keeps the
+  // specialty as a tag when the doctor isn't known. One Undo puts everything back.
+  function openTidyDepartments(g) {
+    const depts = deptPages(g);
+    if (!depts.length) return;
+    const doctors = g.mainTags.filter((t) => !E.specialtyOf(t.name));
+    const choice = new Map(); // entry id → doctor page id, or "" for not known
+    sheet("Tidy up departments", (body, close) => {
+      body.append(h("p", { class: "gp-hint" }, depts.map((t) => t.name).join(" and ") + (depts.length > 1 ? " look like specialties" : " looks like a specialty") +
+        ", not people. Pick the doctor for each entry. If you don't know, it keeps the specialty as a tag. Nothing is deleted."));
+      for (const t of depts) {
+        const sp = E.specialtyOf(t.name);
+        const list = entries.filter((e) => !e.deletedAt && e.refs.some((r) => r.g === g.id && r.tag === t.id));
+        const guess = doctors.filter((d) => specOfPage(d) === sp.short);
+        body.append(h("h4", { class: "gp-tidy-head" }, t.name, h("small", { class: "gp-dim" }, " · " + (list.length === 1 ? "1 entry" : list.length + " entries"))));
+        if (!list.length) body.append(h("p", { class: "gp-hint" }, "No entries; the page is just removed."));
+        for (const e of list) {
+          choice.set(e.id, guess.length === 1 ? guess[0].id : "");
+          const row = h("div", { class: "gp-sort-row gp-tidy-row", "data-entry": e.id });
+          const draw = () => row.replaceChildren(
+            ...doctors.map((d) => h("button", { class: "gp-mini" + (choice.get(e.id) === d.id ? " active" : ""), type: "button", onclick: () => { choice.set(e.id, d.id); draw(); } }, d.name)),
+            h("button", { class: "gp-mini" + (choice.get(e.id) === "" ? " active" : ""), type: "button", "data-unknown": "1", onclick: () => { choice.set(e.id, ""); draw(); } }, "Doctor not known"));
+          draw();
+          body.append(h("div", { class: "gp-tidy-entry" }, h("b", null, e.title || C.entryText(e).slice(0, 60) || "Entry"), h("small", { class: "gp-dim" }, " " + new Date(e.happenedOn).toLocaleDateString()), row));
+        }
+      }
+      body.append(h("div", { class: "gp-sheet-actions" },
+        h("button", { class: "btn ghost", onclick: close }, "Not now"),
+        h("button", { class: "btn primary", id: "gp-tidy-apply", onclick: async () => {
+          const before = { g: JSON.parse(JSON.stringify(g)), entries: [], ents: [] };
+          for (const t of depts) {
+            const sp = E.specialtyOf(t.name);
+            for (const e of entries.filter((x) => !x.deletedAt && x.refs.some((r) => r.g === g.id && r.tag === t.id))) {
+              before.entries.push(JSON.parse(JSON.stringify(e)));
+              const r = e.refs.find((x) => x.g === g.id && x.tag === t.id);
+              r.tag = choice.get(e.id) || null;
+              const tagName = C.normalizeTagName(sp.name);
+              if (!r.tag && tagName && !e.tags.includes(tagName)) e.tags.push(tagName);
+              await saveEntry(e);
+            }
+            g.mainTags = g.mainTags.filter((x) => x.id !== t.id);
+            const ent = pageEntity(t);
+            if (ent && !groups.some((x) => x.mainTags.some((y) => y.entity === ent.id))) {
+              before.ents.push(JSON.parse(JSON.stringify(ent)));
+              entities = entities.filter((x) => x !== ent);
+              await api.remove(ENTITIES_STORE, ent.id);
+            }
+          }
+          await saveGroup(g);
+          for (const t of depts) if (api.ensureTag) api.ensureTag(E.specialtyOf(t.name).name);
+          close();
+          if (ui.tag && !g.mainTags.some((x) => x.id === ui.tag)) ui.tag = null;
+          render();
+          api.showToast("Tidied up " + depts.map((t) => t.name).join(" and "), { action: { label: "Undo", onClick: async () => {
+            for (const ent of before.ents) { const x = E.normalizeEntity(ent, types); entities.push(x); await api.put(ENTITIES_STORE, x); }
+            for (const raw of before.entries) { const i = entries.findIndex((x) => x.id === raw.id); const e = C.normalizeEntry(raw); if (i >= 0) entries[i] = e; await api.put(ENTRIES_STORE, e); }
+            const gi = groups.findIndex((x) => x.id === g.id);
+            if (gi >= 0) { groups[gi] = C.normalizeGroup(before.g); await api.put(GROUPS_STORE, groups[gi]); }
+            changed(); render();
+          } } });
+        } }, "Tidy up")));
+    });
+  }
+
   function renderMain() {
     [headEl, filtersEl, timelineEl, dropEl].forEach((el) => el.replaceChildren());
     if (ui.screen === "home") { renderHome(); return; }
     const g = curGroup();
-    const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q);
+    const list = listFor(g);
     renderHead(g, list);
     renderFilters(g);
-    renderTimeline(g, list);
+    renderView(g, list);
     renderComposer(g);
+    // Each collection keeps its own colour, softly, so Health and Bike look different.
+    mainEl.style.setProperty("--gp-tint", g.color || "transparent");
+  }
+
+  // ---------- Photos and Table views ----------
+  // Whatever redraws the list (an edit, a search, a new entry) draws the view you're on.
+  function renderView(g, list) {
+    const v = viewOf(g);
+    if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list);
+  }
+  function viewSwitch(g) {
+    const cur = viewOf(g);
+    const sw = h("div", { class: "gp-views", role: "tablist", "aria-label": "Show as", id: "gp-views" });
+    [["timeline", "timeline", "Timeline"], ["photos", "image", "Photos"], ["table", "list-ul", "Table"]].forEach(([k, iconName, label]) =>
+      sw.append(h("button", { class: "gp-view" + (cur === k ? " active" : ""), role: "tab", "aria-selected": String(cur === k), "data-view": k, title: label, onclick: () => { setView(g, k); render(); } }, ic(iconName, "icon-sm"), h("span", null, label))));
+    return sw;
+  }
+  function renderPhotoWall(g, list) {
+    const shots = [];
+    for (const e of [...list].sort((a, b) => b.happenedOn - a.happenedOn)) e.photos.forEach((p, i) => shots.push({ e, p, i }));
+    if (!shots.length) {
+      timelineEl.append(h("div", { class: "gp-empty" }, groupTile(g, "big"), h("h3", null, "No photos yet"),
+        h("p", null, "Bills, prescriptions and pictures you add here show up as a wall of photos.")));
+      return;
+    }
+    const wall = h("div", { class: "gp-wall", id: "gp-wall" });
+    shots.slice(0, 600).forEach(({ e, p, i }) => wall.append(h("button", { class: "gp-wall-tile" + (ui.selected === e.id ? " sel" : ""), "data-entry": e.id, title: (e.title || "Entry") + " · " + fmtDay(e.happenedOn),
+      "aria-label": (e.title || "Entry") + ", " + fmtDay(e.happenedOn) + (e.photos.length > 1 ? ", photo " + (i + 1) : ""), onclick: () => selectEntry(e.id) },
+      h("img", { src: p, alt: "", loading: "lazy" }),
+      h("span", { class: "gp-wall-cap" }, h("b", null, e.title || ""), h("small", null, fmtDay(e.happenedOn) + (e.amount ? " · " + money(e, g) : ""))))));
+    timelineEl.append(wall);
+  }
+  function renderTable(g, list) {
+    if (!list.length) { renderTimeline(g, list); return; }
+    const rows = [...list].sort((a, b) => b.happenedOn - a.happenedOn);
+    const showAmount = g.fields.amount.on;
+    // Columns only when something fills them.
+    const anySub = g.subs.length && rows.some((e) => (C.refIn(e, g.id) || {}).s);
+    const anyTag = g.mainLabel && rows.some((e) => (C.refIn(e, g.id) || {}).tag);
+    const cols = ["Date", "What", anySub ? "Section" : null, anyTag ? g.mainLabel : null, showAmount ? "Amount" : null].filter(Boolean);
+    const table = h("table", { class: "gp-table", id: "gp-table" });
+    table.append(h("thead", null, h("tr", null, ...cols.map((c) => h("th", { class: c === "Amount" ? "num" : null, scope: "col" }, c)))));
+    const body = h("tbody");
+    const cells = (e) => {
+      const r = C.refIn(e, g.id) || {};
+      const sub = C.subOf(g, r.s), tag = C.tagOf(g, r.tag);
+      return [fmtDate(e.happenedOn), e.title || (sub ? sub.label : "Entry"), anySub ? (sub ? sub.name : "") : null, anyTag ? (tag ? tag.name : "") : null, showAmount ? (e.amount ? money(e, g) : "") : null].filter((x) => x !== null);
+    };
+    rows.slice(0, 2000).forEach((e) => body.append(h("tr", { class: ui.selected === e.id ? "sel" : null, "data-entry": e.id, tabindex: "0", onclick: () => selectEntry(e.id), onkeydown: (ev) => { if (ev.key === "Enter") selectEntry(e.id); } },
+      ...cells(e).map((v, i) => h("td", { class: cols[i] === "Amount" ? "num" : null }, v)))));
+    table.append(body);
+    if (showAmount) {
+      const t = C.totals(rows, g);
+      table.append(h("tfoot", null, h("tr", null, h("td", { colspan: String(cols.length - 1) }, rows.length + (rows.length === 1 ? " entry" : " entries")), h("td", { class: "num" }, C.formatTotals(t, g)))));
+    }
+    // Paste straight into a spreadsheet.
+    const copy = h("button", { class: "btn ghost gp-small", id: "gp-table-copy", onclick: () => {
+      const tsv = [cols.join("\t"), ...rows.map((e) => cells(e).join("\t"))].join("\n");
+      api.copy(tsv, "Copied " + rows.length + " rows. Paste into any spreadsheet");
+    } }, ic("copy", "icon-sm"), "Copy table");
+    timelineEl.append(h("div", { class: "gp-table-wrap" }, table), h("div", { class: "gp-table-foot" }, copy));
   }
 
   function renderHome() {
-    headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Spaces"),
-      h("button", { class: "btn icon ghost", "aria-label": "New space", title: "New space", onclick: () => openNewGroup() }, ic("plus"))));
+    headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
+      h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
     const wrap = h("div", { class: "gp-home" });
     if (!groups.length) {
       wrap.append(h("div", { class: "gp-empty" }, h("span", { class: "gp-tile big", style: "--c:var(--accent)" }, ic("layers")),
         h("h3", null, "A timeline for each part of your life"),
         h("p", null, "Doctor visits, food you loved, trips, your bike, shows you watch. Drop things in, and they sort themselves by date."),
-        h("button", { class: "btn primary", onclick: () => openNewGroup() }, ic("plus"), "New space")));
+        h("button", { class: "btn primary", onclick: () => openNewGroup() }, ic("plus"), "New collection")));
     }
     for (const g of groups) {
       const cnt = C.counts(entries, g, "all");
@@ -472,19 +630,35 @@
       }
       wrap.append(card);
     }
-    if (groups.length) wrap.append(h("button", { class: "btn gp-wide", onclick: () => openNewGroup() }, ic("plus"), "New space"));
+    if (groups.length) wrap.append(h("button", { class: "btn gp-wide", onclick: () => openNewGroup() }, ic("plus"), "New collection"));
     timelineEl.append(wrap);
   }
 
+  // "Try it" from the store: keep it, or remove it (only asks when it has entries).
+  function trialBanner(g) {
+    if (!g.trialUntil) return null;
+    const n = C.inGroup(entries, g.id).length;
+    return h("div", { class: "gp-tidy gp-trial", id: "gp-trial" }, ic("sparkle"),
+      h("span", null, h("b", null, Date.now() > g.trialUntil ? "Keep " + g.name + "?" : "Trying " + g.name + "."), " Keep it if it's useful, or remove it."),
+      h("button", { class: "btn primary gp-small", id: "gp-trial-keep", onclick: async () => { g.trialUntil = null; await saveGroup(g); render(); api.showToast("Kept " + g.name); } }, "Keep"),
+      h("button", { class: "btn ghost gp-small", id: "gp-trial-remove", onclick: async () => {
+        if (n) { askDeleteGroup(g, () => {}); return; }
+        const kept = JSON.parse(JSON.stringify(g));
+        groups = groups.filter((x) => x !== g);
+        await api.remove(GROUPS_STORE, g.id);
+        changed(); if (groups.length) openGroup(groups[0].id); else exit();
+        api.showToast("Removed " + g.name, { action: { label: "Undo", onClick: () => restoreGroup(kept, []) } });
+      } }, "Remove"));
+  }
   function renderHead(g, list) {
     const sub = ui.s !== "all" ? C.subOf(g, ui.s) : null;
     headEl.append(h("div", { class: "gp-id" },
-      h("button", { class: "btn icon ghost gp-back", "aria-label": "Back to spaces", onclick: () => { ui.screen = "home"; ui.selected = null; render(); } }, ic("chevron-left", "icon-lg")),
+      h("button", { class: "btn icon ghost gp-back", "aria-label": "Back to collections", onclick: () => { ui.screen = "home"; ui.selected = null; render(); } }, ic("chevron-left", "icon-lg")),
       h("button", { class: "btn icon ghost gp-menu-btn", "aria-label": "Menu", onclick: () => api.openSidebarDrawer() }, ic("menu", "icon-lg")),
       groupTile(g, "xl"),
       h("div", { class: "gp-id-text" }, h("h1", null, g.name, sub ? h("span", { class: "gp-dim" }, " / " + sub.name) : null), g.desc ? h("p", null, g.desc) : null),
       h("button", { class: "btn icon ghost gp-tools-btn" + (ui.tools ? " on" : ""), "aria-label": "Search and sort", "aria-expanded": String(ui.tools), onclick: () => { ui.tools = !ui.tools; render(); if (ui.tools) focusLater("gp-search"); } }, ic("search")),
-      h("button", { class: "btn icon ghost", "aria-label": "Edit space", title: "Edit space", onclick: () => openEditGroup(g) }, ic("edit"))));
+      h("button", { class: "btn icon ghost", "aria-label": "Edit collection", title: "Edit collection", onclick: () => openEditGroup(g) }, ic("edit"))));
     const page = ui.tag && ui.tag !== "__none" ? C.tagOf(g, ui.tag) : null;
     if (page) { headEl.append(renderPageHead(g, page)); return; }
     const statsEl = h("div", { class: "gp-stats" });
@@ -493,11 +667,20 @@
   }
 
   function renderFilters(g) {
+    const tb = trialBanner(g);
+    if (tb) filtersEl.append(tb);
     const cnt = C.counts(entries, g, ui.s);
     if (g.subs.length) {
       const tabs = h("div", { class: "gp-tabs", role: "tablist" });
       tabs.append(h("button", { class: "gp-tab" + (ui.s === "all" ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, "all") }, "All", h("span", { class: "num" }, cnt.all)));
-      g.subs.forEach((s) => tabs.append(h("button", { class: "gp-tab" + (ui.s === s.id ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, s.id) }, s.name, h("span", { class: "num" }, cnt.bySub[s.id] || 0))));
+      // Sections you haven't used yet wait behind "+N more", so the row stays short.
+      const used = g.subs.filter((s) => cnt.bySub[s.id] || ui.s === s.id);
+      const idle = g.subs.filter((s) => !used.includes(s));
+      const shown = ui.allTabs || g.subs.length <= 5 ? g.subs : [...used, ...idle.slice(0, Math.max(0, 4 - used.length))];
+      shown.forEach((s) => tabs.append(h("button", { class: "gp-tab" + (ui.s === s.id ? " active" : ""), role: "tab", onclick: () => openGroup(g.id, s.id) }, s.name, h("span", { class: "num" }, cnt.bySub[s.id] || 0))));
+      const hiddenN = g.subs.length - shown.length;
+      if (hiddenN > 0) tabs.append(h("button", { class: "gp-tab gp-tab-more", id: "gp-tabs-more", onclick: () => { ui.allTabs = true; render(); } }, "+" + hiddenN + " more"));
+      else if (ui.allTabs && g.subs.length > 5 && idle.length) tabs.append(h("button", { class: "gp-tab gp-tab-more", onclick: () => { ui.allTabs = false; render(); } }, "Fewer"));
       filtersEl.append(tabs);
     }
     const line = h("div", { class: "gp-filter-line" });
@@ -511,6 +694,20 @@
       people.append(h("button", { class: "gp-person add", id: "gp-page-new", title: "New " + g.mainLabel.toLowerCase(), onclick: () => newMainTag(g, (t) => setTag(t.id)) },
         h("span", { class: "gp-ava md add" }, ic("plus")), h("span", { class: "gp-person-name" }, "New")));
       line.append(people);
+      // Departments used as pages: offer to tidy them into specialties.
+      const depts = deptPages(g);
+      if (depts.length && !(prefs.tidyLater || {})[g.id]) filtersEl.append(h("div", { class: "gp-tidy", id: "gp-tidy-card" },
+        ic("sparkle"), h("span", null, h("b", null, "Tidy up?"), " " + depts.map((t) => t.name).join(" and ") + (depts.length > 1 ? " look like specialties" : " looks like a specialty") + ", not people."),
+        h("button", { class: "btn primary gp-small", id: "gp-tidy", onclick: () => openTidyDepartments(g) }, "Tidy up"),
+        h("button", { class: "btn ghost gp-small", onclick: () => { prefs.tidyLater = { ...(prefs.tidyLater || {}), [g.id]: Date.now() }; savePrefs(); render(); } }, "Not now")));
+      // Specialties as filters: Gastro, Skin, ENT…
+      const specs = specialtiesIn(g);
+      if (specs.length >= 2 || ui.spec) {
+        const row = h("div", { class: "gp-chips gp-specs", id: "gp-specs" });
+        row.append(h("button", { class: "gp-chip plain" + (!ui.spec ? " active" : ""), onclick: () => { ui.spec = null; render(); } }, "All"));
+        specs.forEach((sp) => row.append(h("button", { class: "gp-chip plain" + (ui.spec === sp ? " active" : ""), "data-spec": sp, onclick: () => { ui.spec = ui.spec === sp ? null : sp; render(); } }, sp)));
+        line.append(row);
+      }
       if (cnt.noTag) {
         const chips = h("div", { class: "gp-chips" });
         chips.append(h("button", { class: "gp-chip" + (cnt.noTagNeeded ? " warn" : " plain") + (ui.tag === "__none" ? " active" : ""), onclick: () => setTag(ui.tag === "__none" ? null : "__none") },
@@ -518,9 +715,10 @@
         line.append(chips);
       }
     }
+    line.append(viewSwitch(g));
     const tools = h("div", { class: "gp-tools" });
     const search = h("input", { class: "input gp-search", id: "gp-search", type: "search", placeholder: "Search " + g.name, "aria-label": "Search in " + g.name, value: ui.q,
-      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderTimeline(g, list); }, 150); } });
+      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderView(g, list); }, 150); } });
     tools.append(search);
     const sortSel = h("select", { class: "input gp-select", "aria-label": "Sort", onchange: (e) => { setSort(g, e.target.value); render(); } });
     const sorts = [["newest", "Newest first"], ["oldest", "Oldest first"]];
@@ -531,11 +729,18 @@
     sortSel.value = sortOf(g);
     tools.append(sortSel);
     const jump = h("select", { class: "input gp-select", id: "gp-jump", "aria-label": "Jump to month", hidden: true, onchange: (e) => {
+      tlShowMonth(e.target.value);
       const target = document.getElementById("gp-m-" + e.target.value);
       if (target) target.scrollIntoView({ block: "start", behavior: api.motionOK() ? "smooth" : "auto" });
       e.target.value = "";
     } });
     tools.append(jump);
+    // What's shown now (search and filters applied), as text for any AI.
+    if (window.CPAI) tools.append(h("button", { class: "btn ghost gp-small", id: "gp-ai", title: "Copy what's shown, as text to paste into any AI chat", onclick: () => {
+      const list = listFor(g);
+      if (!list.length) { api.showToast("Nothing to copy"); return; }
+      api.copy(window.CPAI.format(list.map(entryForAI), { source: g.name }), "Copied " + list.length + (list.length === 1 ? " entry" : " entries") + " for AI");
+    } }, ic("copy", "icon-sm"), "Copy for AI"));
     line.append(tools);
     filtersEl.append(line);
     filtersEl.classList.toggle("tools-open", ui.tools);
@@ -557,6 +762,8 @@
   function setTag(t) { ui.tag = t; render(); }
 
   // ---------- Timeline ----------
+  const TL_PAGE = 120;
+  let tlPaging = { key: null, limit: TL_PAGE }, tlShowMonth = () => {};
   function renderTimeline(g, list) {
     const cards = C.buildCards(list, g, ui.s);
     const sort = sortOf(g);
@@ -584,20 +791,45 @@
       return;
     }
     const jump = document.getElementById("gp-jump");
-    const months = [];
-    let lastMonth = null;
-    for (const c of cards) {
-      if (byDate && C.monthKey(c.anchor) !== lastMonth) {
-        lastMonth = C.monthKey(c.anchor);
-        const inMonth = cards.filter((x) => C.monthKey(x.anchor) === lastMonth);
-        const items = inMonth.flatMap((x) => x.items);
-        const t = C.totals(items, g);
-        months.push([lastMonth, c.anchor]);
-        timelineEl.append(h("div", { class: "gp-month", id: "gp-m-" + lastMonth }, h("span", null, fmtMonth(c.anchor)),
-          h("small", null, (g.fields.amount.on && Object.keys(t).length ? C.formatTotals(t, g) + " · " : "") + items.length + (items.length === 1 ? " entry" : " entries"))));
-      }
-      timelineEl.append(renderCard(c, g));
+    // Every month (for Jump to month), its cards counted once.
+    const months = [], byMonth = new Map();
+    if (byDate) for (const c of cards) {
+      const k = C.monthKey(c.anchor);
+      if (!byMonth.has(k)) { byMonth.set(k, []); months.push([k, c.anchor]); }
+      byMonth.get(k).push(c);
     }
+    // Long timelines draw a page of cards at a time, more as you scroll.
+    const key = [g.id, ui.s, ui.tag, ui.q, ui.spec, sort].join("\u0001");
+    if (key !== tlPaging.key) tlPaging = { key, limit: TL_PAGE };
+    const must = cards.findIndex((c) => c.items.some((e) => e.id === ui.selected || e.id === ui.flash));
+    if (must >= tlPaging.limit) tlPaging.limit = Math.ceil((must + 1) / TL_PAGE) * TL_PAGE;
+    let lastMonth = null, drawn = 0;
+    const drawUpTo = (limit) => {
+      timelineEl.querySelectorAll(".gp-more").forEach((x) => x.remove());
+      for (const c of cards.slice(drawn, limit)) {
+        if (byDate && C.monthKey(c.anchor) !== lastMonth) {
+          lastMonth = C.monthKey(c.anchor);
+          const items = byMonth.get(lastMonth).flatMap((x) => x.items);
+          const t = C.totals(items, g);
+          timelineEl.append(h("div", { class: "gp-month", id: "gp-m-" + lastMonth }, h("span", null, fmtMonth(c.anchor)),
+            h("small", null, (g.fields.amount.on && Object.keys(t).length ? C.formatTotals(t, g) + " · " : "") + items.length + (items.length === 1 ? " entry" : " entries"))));
+        }
+        timelineEl.append(renderCard(c, g));
+      }
+      drawn = Math.min(limit, cards.length);
+      tlPaging.limit = Math.max(tlPaging.limit, drawn);
+      const left = cards.length - drawn;
+      if (left <= 0) return;
+      const more = h("button", { class: "gp-more list-more", id: "gp-more", onclick: () => drawUpTo(drawn + TL_PAGE) }, "Show more (" + left + " left)");
+      timelineEl.append(more);
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && more.isConnected) { io.disconnect(); drawUpTo(drawn + TL_PAGE); } }, { root: timelineEl, rootMargin: "600px" });
+        io.observe(more);
+      }
+    };
+    drawUpTo(tlPaging.limit);
+    // Jump to a month that isn't drawn yet: draw down to it first.
+    tlShowMonth = (k) => { const i = cards.findIndex((c) => C.monthKey(c.anchor) === k); if (i >= drawn) drawUpTo(i + TL_PAGE); };
     if (jump && months.length > 1) {
       jump.hidden = false;
       jump.append(h("option", { value: "" }, "Jump to month"));
@@ -681,7 +913,7 @@
     if (e.refs.length > 1) tags.append(h("span", { class: "gp-tagchip link" }, ic("link", "icon-sm"), "Also in " + e.refs.filter((x) => x.g !== g.id).map((x) => (groupById(x.g) || {}).name).filter(Boolean).join(", ")));
     const showSubPill = s && (opts.inCard || ui.s === "all") && e.title !== s.label;
     const subText = e.note || e.link || "";
-    const row = h("button", { class: "gp-entry" + (ui.selected === e.id ? " sel" : ""), onclick: () => selectEntry(e.id) },
+    const row = h("button", { class: "gp-entry" + (ui.selected === e.id ? " sel" : ""), "data-entry": e.id, onclick: () => selectEntry(e.id) },
       e.photos.length ? thumb(e.photos[0]) : null,
       s ? tile(s.icon, s.color, true) : tile(g.icon, g.color, true),
       h("span", { class: "gp-entry-main" },
@@ -782,39 +1014,48 @@
       opt("image", "Photos", "From your gallery", async () => { const ps = await pickPhotos(); if (ps.length) { d.photos.push(...ps); d.extras = true; } renderComposerTop(); });
       opt("link", "Link", "Saved as text, nothing is fetched", () => { d.showLink = true; d.extras = true; renderComposerTop(); focusLater("gp-link"); });
       if (g.fields.amount.on) opt("wallet", "Amount", "Adds to the totals", () => { d.showAmount = true; d.extras = true; renderComposerTop(); focusLater("gp-amount"); });
-      opt("list-ul", "Existing entry", "Link one from another space", () => openLinkExisting(g));
+      opt("list-ul", "Existing entry", "Link one from another collection", () => openLinkExisting(g));
       top.append(menu);
     }
     if (d.extras || canSend(d)) {
       const ex = h("div", { class: "gp-extras" });
-      if (g.subs.length) {
-        const row = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Type"));
-        g.subs.forEach((s) => row.append(h("button", { class: "gp-mini" + (d.sub === s.id ? " active" : ""), style: "--c:" + s.color, onclick: () => { d.sub = s.id; renderComposerTop(); } }, ic(s.icon, "icon-sm"), s.label)));
-        ex.append(row);
-      }
-      if (g.mainLabel) {
+      // One calm line: the types, then a chip each for Who / Where, when, rating
+      // and tags. A chip opens its own row below; only one is open at a time.
+      const line = h("div", { class: "gp-xrow gp-chipline", id: "gp-chipline" });
+      g.subs.forEach((s) => line.append(h("button", { class: "gp-mini" + (d.sub === s.id ? " active" : ""), style: "--c:" + s.color, onclick: () => { d.sub = s.id; renderComposerTop(); } }, ic(s.icon, "icon-sm"), s.label)));
+      if (g.subs.length) line.append(h("span", { class: "gp-chipsep", "aria-hidden": "true" }));
+      const chip = (id, key, iconName, label, set) => line.append(h("button", { class: "gp-mini gp-chip" + (set ? " active" : "") + (ui.chip === key ? " open" : ""), id, "aria-expanded": String(ui.chip === key),
+        onclick: () => { ui.chip = ui.chip === key ? null : key; renderComposerTop(); } }, ic(iconName, "icon-sm"), label, ic("chevron-down", "icon-sm gp-chip-caret")));
+      const page = d.tag && g.mainTags.find((t) => t.id === d.tag);
+      if (g.mainLabel) chip("gp-c-page", "page", "user", page ? page.name : g.mainLabel, !!page);
+      chip("gp-c-date", "date", "calendar", d.date ? fmtDay(fromLocalInput(d.date) || Date.now()) : "Now", !!d.date);
+      if (g.fields.rating) chip("gp-c-rate", "rate", "star", d.rating ? d.rating + " \u2605" : "Rate", !!d.rating);
+      chip("gp-c-tags", "tags", "hash", d.tags.length ? d.tags.map((k) => "#" + tagLabel(k)).join(" ") : "Tag", d.tags.length);
+      ex.append(line);
+      if (ui.chip === "page" && g.mainLabel) {
         const sub = C.subOf(g, d.sub);
-        const row = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, g.mainLabel));
-        g.mainTags.forEach((t) => row.append(h("button", { class: "gp-mini" + (d.tag === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { d.tag = d.tag === t.id ? null : t.id; renderComposerTop(); } }, h("span", { class: "dot" }), t.name)));
-        row.append(h("button", { class: "gp-mini", onclick: () => newMainTag(g, (t) => { d.tag = t.id; renderComposerTop(); }) }, ic("plus", "icon-sm"), "New"));
+        const row = h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, g.mainLabel));
+        g.mainTags.forEach((t) => row.append(h("button", { class: "gp-mini" + (d.tag === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { d.tag = d.tag === t.id ? null : t.id; ui.chip = null; renderComposerTop(); } }, h("span", { class: "dot" }), t.name)));
+        row.append(h("button", { class: "gp-mini", onclick: () => newMainTag(g, (t) => { d.tag = t.id; ui.chip = null; renderComposerTop(); }) }, ic("plus", "icon-sm"), "New"));
         if (!(sub && sub.noTag) || d.tag) row.append(h("button", { class: "gp-mini" + (!d.tag ? " active" : ""), onclick: () => { d.tag = null; renderComposerTop(); } }, "None"));
         ex.append(row);
       }
-      const dateRow = h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Happened"),
-        h("input", { type: "datetime-local", id: "gp-date", class: "gp-mini-input", value: d.date || toLocalInput(Date.now()), onchange: (e) => { d.date = e.target.value; } }),
-        d.date ? h("button", { class: "gp-mini", onclick: () => { d.date = ""; renderComposerTop(); } }, "Now") : null);
-      ex.append(dateRow);
-      if (g.fields.rating) {
+      if (ui.chip === "date") ex.append(h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, "Happened"),
+        h("input", { type: "datetime-local", id: "gp-date", class: "gp-mini-input", value: d.date || toLocalInput(Date.now()), onchange: (e) => { d.date = e.target.value; renderComposerTop(); } }),
+        d.date ? h("button", { class: "gp-mini", onclick: () => { d.date = ""; renderComposerTop(); } }, "Now") : null));
+      if (ui.chip === "rate" && g.fields.rating) {
         const rs = h("span", { class: "gp-rate" });
         for (let i = 1; i <= 5; i++) rs.append(h("button", { "aria-label": i + " stars", onclick: () => { d.rating = d.rating === i ? null : i; renderComposerTop(); } }, ic("star", i <= (d.rating || 0) ? "on" : "off")));
-        ex.append(h("div", { class: "gp-xrow" }, h("span", { class: "gp-lbl" }, "Rating"), rs));
+        ex.append(h("div", { class: "gp-xrow gp-open-row" }, h("span", { class: "gp-lbl" }, "Rating"), rs));
       }
-      // Tags: the ones picked, a few recent ones, and "Tag" to find or create any.
-      {
-        const row = h("div", { class: "gp-xrow", id: "gp-tags-row" }, h("span", { class: "gp-lbl" }, "Tags"));
-        const recent = api.tags().filter((t) => !d.tags.includes(t.key)).slice(0, 4);
+      // Tags: the ones picked, then the ones this collection already uses, and "Tag" to find or create any.
+      if (ui.chip === "tags") {
+        const row = h("div", { class: "gp-xrow gp-open-row", id: "gp-tags-row" }, h("span", { class: "gp-lbl" }, "Tags"));
+        const used = new Map();
+        for (const e of C.inGroup(entries, g.id)) for (const k of e.tags) used.set(k, (used.get(k) || 0) + 1);
+        const recent = [...used.keys()].filter((k) => !d.tags.includes(k)).sort((a, b) => used.get(b) - used.get(a)).slice(0, 6);
         d.tags.forEach((k) => row.append(h("button", { class: "gp-mini active", "data-tag": k, "aria-label": "Remove tag " + tagLabel(k), onclick: () => { d.tags = d.tags.filter((x) => x !== k); renderComposerTop(); } }, "#" + tagLabel(k), ic("close", "icon-sm"))));
-        recent.forEach((t) => row.append(h("button", { class: "gp-mini", "data-tag": t.key, onclick: () => { d.tags = [...d.tags, t.key].slice(0, 20); renderComposerTop(); } }, "#" + t.name)));
+        recent.forEach((k) => row.append(h("button", { class: "gp-mini", "data-tag": k, onclick: () => { d.tags = [...d.tags, k].slice(0, 20); renderComposerTop(); } }, "#" + tagLabel(k))));
         row.append(h("button", { class: "gp-mini", id: "gp-tag-more", onclick: () => pickTags(d, () => renderComposerTop(), { draft: true }) }, ic("plus", "icon-sm"), "Tag"));
         ex.append(row);
       }
@@ -879,6 +1120,7 @@
     changed();
     prefs.lastSub[g.id] = d.sub || null; prefs.lastTag[g.id] = d.tag || null; savePrefs();
     ui.drafts[g.id] = null;
+    ui.chip = null;
     const fresh = draftFor(g); fresh.extras = true;
     if (ui.tag && ui.tag !== (d.tag || "__none")) ui.tag = null;
     if (ui.q) ui.q = "";
@@ -922,11 +1164,25 @@
     const type0 = groupType(target);
     const label = (target.mainLabel || type0.name).trim();
     sheet("New " + label.toLowerCase(), (body, close) => {
-      let typeKey = type0.key;
+      let typeKey = type0.key, picked = false;
       const input = h("input", { class: "input gp-input", id: "gp-page-name", placeholder: type0.key === "doctor" ? "Dr Asha Verma" : type0.key === "restaurant" ? "Nimrah Cafe" : "Name", autocomplete: "off", "aria-label": "Name", maxlength: E.MAX.name });
-      const typeSel = h("select", { class: "input gp-input", id: "gp-page-type", "aria-label": "Type", onchange: (e) => { typeKey = e.target.value; draw(); } });
-      types.forEach((t) => typeSel.append(h("option", { value: t.key }, t.name)));
-      typeSel.value = typeKey;
+      // Person · Place · Thing, then the exact kind. Guessed from the name until you pick.
+      const kindRow = h("div", { class: "gp-sort-row", id: "gp-page-kinds" });
+      const typeRow = h("div", { class: "gp-sort-row", id: "gp-page-types" });
+      const KIND_NAMES = { person: ["Person", "user"], place: ["Place", "map-pin"], thing: ["Thing", "layers"] };
+      const drawTypes = () => {
+        const kind = E.typeOf(types, typeKey).kind;
+        kindRow.replaceChildren(...Object.entries(KIND_NAMES).map(([k, [label, icon]]) => h("button", { class: "gp-mini" + (k === kind ? " active" : ""), "data-kind": k, type: "button",
+          onclick: () => { picked = true; if (E.typeOf(types, typeKey).kind !== k) typeKey = (types.find((t) => t.kind === k && t.key === k) || types.find((t) => t.kind === k)).key; drawTypes(); draw(); } }, ic(icon), label)));
+        typeRow.replaceChildren(...types.filter((t) => t.kind === kind).map((t) => h("button", { class: "gp-mini" + (t.key === typeKey ? " active" : ""), "data-type": t.key, type: "button",
+          onclick: () => { picked = true; typeKey = t.key; drawTypes(); draw(); } }, t.name)));
+      };
+      input.addEventListener("input", () => {
+        if (picked) return;
+        const g = E.guessType(input.value);
+        const next = g && types.some((t) => t.key === g) ? g : type0.key;
+        if (next !== typeKey) { typeKey = next; drawTypes(); }
+      });
       const list = h("div", { class: "tl-pick-list", id: "gp-page-matches" });
       const use = async (ent) => {
         const t = pageFor(target, ent);
@@ -945,7 +1201,7 @@
           const here = target.mainTags.some((t) => t.entity === ent.id);
           list.append(h("button", { class: "tl-pick gp-match", "data-entity": ent.id, onclick: () => use(ent) },
             h("span", { class: "gp-ava sm", style: "--c:var(--accent)" }, initials(ent.name)),
-            h("span", { class: "gp-match-main" }, h("b", null, ent.name), h("small", null, [entSummary(ent), here ? "Already in this space" : where.length ? "In " + where.join(", ") : ""].filter(Boolean).join(" · ")))));
+            h("span", { class: "gp-match-main" }, h("b", null, ent.name), h("small", null, [entSummary(ent), here ? "Already in this collection" : where.length ? "In " + where.join(", ") : ""].filter(Boolean).join(" · ")))));
         });
         if (raw) list.append(h("button", { class: "tl-pick", id: "gp-page-create", onclick: async () => {
           const ent = E.normalizeEntity({ name: E.tidy(raw), type: typeKey }, types);
@@ -957,11 +1213,12 @@
       input.addEventListener("input", draw);
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const b = list.querySelector(".gp-match") && E.fold(list.querySelector(".gp-match b").textContent) === E.fold(input.value) ? list.querySelector(".gp-match") : list.querySelector("#gp-page-create"); if (b) b.click(); } });
       body.append(h("label", { class: "gp-label", for: "gp-page-name" }, "Name"), input,
-        h("label", { class: "gp-label", for: "gp-page-type" }, "Type"), typeSel, list,
+        h("span", { class: "gp-label" }, "Is it a"), kindRow, typeRow, list,
         h("p", { class: "gp-hint" }, "Only the name is needed. Add details any time from the page."));
+      drawTypes();
       draw();
       setTimeout(() => input.focus(), 30);
-    }, { stack: !!opts.workingCopy });
+    }, { stack: !!(opts.workingCopy || opts.stack) });
   }
 
   // One input for any field type. onChange gets the value ("" to clear).
@@ -1093,7 +1350,7 @@
       if (!ranked.length) list.append(h("p", { class: "gp-hint" }, "Nothing of the same kind to merge with."));
       ranked.forEach((to) => list.append(h("button", { class: "tl-pick", "data-entity": to.id, onclick: async () => { close(); closeEditor(); await mergeEntities(from, to); } },
         h("span", { class: "gp-ava sm", style: "--c:var(--accent)" }, initials(to.name)), h("span", { class: "gp-match-main" }, h("b", null, to.name), h("small", null, entSummary(to))))));
-      body.append(list, h("p", { class: "gp-hint" }, "Entries, spaces and details move over; details already set on the one you keep win."));
+      body.append(list, h("p", { class: "gp-hint" }, "Entries, collections and details move over; details already set on the one you keep win."));
     }, { stack: true });
   }
   async function mergeEntities(from, to) {
@@ -1125,7 +1382,7 @@
     const where = pagesOf(ent);
     sheet("Delete " + ent.name + "?", (body, close) => {
       const n = where.reduce((t, p) => t + p.n, 0);
-      body.append(h("p", null, where.length ? "It's removed from " + where.map((p) => p.g.name).join(", ") + ". " + (n ? n + (n === 1 ? " entry stays" : " entries stay") + " in those spaces, just without it." : "") : "It isn't used in any space."),
+      body.append(h("p", null, where.length ? "It's removed from " + where.map((p) => p.g.name).join(", ") + ". " + (n ? n + (n === 1 ? " entry stays" : " entries stay") + " in those collections, just without it." : "") : "It isn't used in any collection."),
         h("div", { class: "gp-sheet-actions" }, h("button", { class: "btn", onclick: close }, "Cancel"),
           h("button", { class: "btn danger", id: "gp-ent-delete", onclick: async () => {
             for (const p of where) {
@@ -1157,7 +1414,7 @@
           const done = async () => { review = review.filter((x) => x !== r); await saveReview(); draw(); };
           const card = h("div", { class: "gp-review", "data-entity": ent.id },
             h("div", null, h("b", null, ent.name), r.was.info ? h("span", { class: "gp-dim" }, " · " + r.was.info) : null),
-            h("small", { class: "gp-dim" }, r.reason === "same-name" ? "The same name appears twice in this space." : "This looks like a department, with the " + (g.mainLabel || "name").toLowerCase() + " in the details."));
+            h("small", { class: "gp-dim" }, r.reason === "same-name" ? "The same name appears twice in this collection." : "This looks like a department, with the " + (g.mainLabel || "name").toLowerCase() + " in the details."));
           const acts = h("div", { class: "gp-review-acts" });
           if (r.suggest) acts.append(h("button", { class: "btn primary gp-small gp-review-use", onclick: async () => {
             ent.name = r.suggest.name; Object.assign(ent.fields, r.suggest.fields); if (r.suggest.note !== undefined) ent.note = r.suggest.note;
@@ -1256,7 +1513,12 @@
     if (!id) return;
     // Re-render rows so the selected one is highlighted.
     const g = curGroup();
-    if (g) { const st = timelineEl.scrollTop; timelineEl.replaceChildren(); renderTimeline(g, C.filterEntries(entries, g, ui.s, ui.tag, ui.q)); timelineEl.scrollTop = st; }
+    if (g) {
+      const st = timelineEl.scrollTop, v = viewOf(g), list = listFor(g);
+      timelineEl.replaceChildren();
+      renderView(g, list);
+      timelineEl.scrollTop = st;
+    }
   }
 
   let saveTimer = null;
@@ -1264,7 +1526,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       await saveEntry(e);
-      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = C.filterEntries(entries, g, ui.s, ui.tag, ui.q); renderHead(g, list); renderTimeline(g, list); timelineEl.scrollTop = st; renderSidebar(); }
+      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = listFor(g); renderHead(g, list); renderView(g, list); timelineEl.scrollTop = st; renderSidebar(); }
     }, 350);
   }
 
@@ -1379,9 +1641,9 @@
       also.append(h("button", { class: "gp-also-row", onclick: () => { if (x.g !== g.id) openGroup(x.g, "all").then(() => selectEntry(e.id)); } },
         groupTile(gg, "sm"), h("span", { class: "gp-grow" }, gg.name + (ss ? " / " + ss.name : "")), x.g === g.id ? h("span", { class: "gp-dim" }, "here") : ic("chevron-right", "icon-sm")));
     });
-    also.append(h("small", null, ic("link", "icon-sm"), e.refs.length > 1 ? "Linked, not copied. Edit once and it updates in every space." : "Only in this space. Search finds it too."));
-    if (groups.length > e.refs.length) also.append(h("button", { class: "btn ghost gp-small", onclick: () => addToAnotherGroup(e) }, ic("plus", "icon-sm"), "Also add to another space"));
-    sc.append(h("div", { class: "gp-sec" }, h("h4", null, e.refs.length > 1 ? "In " + e.refs.length + " spaces" : "In"), also));
+    also.append(h("small", null, ic("link", "icon-sm"), e.refs.length > 1 ? "Linked, not copied. Edit once and it updates in every collection." : "Only in this collection. Search finds it too."));
+    if (groups.length > e.refs.length) also.append(h("button", { class: "btn ghost gp-small", onclick: () => addToAnotherGroup(e) }, ic("plus", "icon-sm"), "Also add to another collection"));
+    sc.append(h("div", { class: "gp-sec" }, h("h4", null, e.refs.length > 1 ? "In " + e.refs.length + " collections" : "In"), also));
 
     // Same visit / outing / title
     const card = g.cards !== "none" ? C.buildCards(C.inGroup(entries, g.id), g, "all").find((c) => c.items.includes(e)) : null;
@@ -1436,7 +1698,7 @@
     sheet("Entry", (body, close) => {
       const act = (iconName, label, fn, danger) => body.append(h("button", { class: "gp-choice" + (danger ? " danger" : ""), onclick: () => { close(); fn(); } }, ic(iconName), h("span", null, label)));
       act("copy", "Copy text", () => api.copy([e.title, e.note, e.link].filter(Boolean).join("\n")));
-      act("plus", "Also add to another space", () => addToAnotherGroup(e));
+      act("plus", "Also add to another collection", () => addToAnotherGroup(e));
       act("note", "Move to Notes", () => moveEntryToNotes(e));
       act(e.refs.length > 1 ? "unlink" : "trash", e.refs.length > 1 ? "Remove…" : "Delete…", () => askRemove(e, g), true);
     });
@@ -1447,17 +1709,33 @@
     const others = e.refs.filter((x) => x.g !== g.id).map((x) => (groupById(x.g) || {}).name).filter(Boolean);
     sheet("Remove “" + (e.title || "entry") + "”?", (body, close) => {
       if (others.length) body.append(h("button", { class: "gp-choice", onclick: async () => {
+        const before = e.refs.slice();
         e.refs = e.refs.filter((x) => x.g !== g.id); await saveEntry(e); close(); ui.selected = null;
-        api.showToast("Removed from " + g.name + ". Still in " + others.join(", ") + "."); render();
+        api.showToast("Removed from " + g.name + ". Still in " + others.join(", ") + ".", { action: { label: "Undo", onClick: async () => { e.refs = before; await saveEntry(e); changed(); render(); } } }); render();
       } }, ic("unlink"), h("span", null, "Remove from " + g.name, h("small", null, "Stays in " + others.join(", ") + "."))));
       body.append(h("button", { class: "gp-choice danger", onclick: async () => {
         close(); ui.selected = null;
         await trashEntry(e); render();
-      } }, ic("trash"), h("span", null, others.length ? "Delete everywhere" : "Delete", h("small", null, (others.length ? "Also removes it from " + others.join(", ") + ". " : "") + "Kept in Trash for " + TRASH_DAYS + " days (Settings \u2192 Spaces)."))));
+      } }, ic("trash"), h("span", null, others.length ? "Delete everywhere" : "Delete", h("small", null, (others.length ? "Also removes it from " + others.join(", ") + ". " : "") + "Kept in Trash for " + TRASH_DAYS + " days (Settings \u2192 Collections)."))));
       body.append(h("button", { class: "gp-choice", onclick: () => { close(); moveEntryToNotes(e); } }, ic("note"), h("span", null, "Move to Notes instead", h("small", null, "Keeps the text and photos as a normal note."))));
     });
   }
 
+  // One entry for Copy for AI: where it's filed, amount, fields, tags, text.
+  function entryForAI(e) {
+    const where = [], extra = [];
+    let amount = "";
+    for (const r of e.refs) {
+      const g = groupById(r.g); if (!g) continue;
+      const s = C.subOf(g, r.s), t = C.tagOf(g, r.tag);
+      where.push(g.name + (s ? " › " + s.name : "") + (t ? " · " + t.name : ""));
+      if (e.amount && !amount) amount = money(e, g);
+      g.fields.custom.forEach((f) => { if (e.fields[f.id] !== undefined && e.fields[f.id] !== "") extra.push(f.name + ": " + fieldText(f, e.fields[f.id])); });
+    }
+    if (e.rating) extra.push("Rating: " + e.rating + "/5");
+    return { title: e.title, at: e.happenedOn, where: where.join("; "), amount, tags: e.tags.map(tagLabel), extra,
+      text: [e.note, e.link].filter(Boolean).join("\n"), photos: e.photos.length, files: (e.files || []).map((f) => f.name), ocr: e.ocr || "" };
+  }
   function entryAsNoteText(e) {
     const lines = [];
     if (e.note) lines.push(e.note);
@@ -1476,10 +1754,14 @@
     return lines.concat(lines.length ? [""] : [], [...new Set(extra)]).join("\n");
   }
   async function moveEntryToNotes(e) {
-    await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
+    const note = await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
     await deleteEntry(e);
     ui.selected = null;
-    api.showToast("Moved to Notes");
+    api.showToast("Moved to Notes", { action: { label: "Undo", onClick: async () => {
+      await saveEntry(e); if (!entries.includes(e)) entries.push(e); changed();
+      if (note && note.id) await api.deleteNote(note.id);
+      render();
+    } } });
     render();
   }
 
@@ -1493,7 +1775,7 @@
   }
   function addToAnotherGroup(e) {
     const dests = destinations().filter((d) => !e.refs.some((r) => r.g === d.g));
-    if (!dests.length) { api.showToast("It's already in every space"); return; }
+    if (!dests.length) { api.showToast("It's already in every collection"); return; }
     sheet("Also add to", (body, close) => {
       body.append(h("p", { class: "gp-hint" }, "It's linked, not copied: edit it once and it changes in both places."));
       dests.forEach((d) => body.append(h("button", { class: "gp-choice", onclick: async () => {
@@ -1504,8 +1786,8 @@
   function openLinkExisting(g) {
     const pool = live().filter((e) => !C.refIn(e, g.id)).sort((a, b) => b.happenedOn - a.happenedOn);
     sheet("Link an entry into " + g.name, (body, close) => {
-      if (!pool.length) { body.append(h("p", { class: "gp-hint" }, "Nothing in other spaces yet. To bring in a note, open it in Notes and choose Move to space.")); return; }
-      body.append(h("p", { class: "gp-hint" }, "It stays where it is and also shows here. Notes can be brought in from a note's ⋯ menu: Move to space."));
+      if (!pool.length) { body.append(h("p", { class: "gp-hint" }, "Nothing in other collections yet. To bring in a note, open it in Notes and choose Move to collection.")); return; }
+      body.append(h("p", { class: "gp-hint" }, "It stays where it is and also shows here. Notes can be brought in from a note's ⋯ menu: Move to collection."));
       pool.slice(0, 80).forEach((e) => {
         const home = groupById(e.refs[0].g);
         body.append(h("button", { class: "gp-choice", onclick: async () => {
@@ -1517,34 +1799,16 @@
 
   // From the notes side: a note becomes an entry, then the note is removed.
   function moveNoteToGroup(item) {
-    if (!enabled) return;
-    if (!groups.length) { api.showToast("Make a space first: Settings → Spaces, or + next to Spaces"); return; }
-    sheet("Move to space", (body, close) => {
-      body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that space, with the same text and photos."));
-      destinations().forEach((d) => body.append(h("button", { class: "gp-choice", onclick: async () => {
-        close();
-        const content = item.content || "";
-        const title = (item.title || "").trim() || content.split("\n")[0].slice(0, 120);
-        const note = item.title ? content : content.split("\n").slice(1).join("\n");
-        const photos = (item.images || []).filter((p) => typeof p === "string" && /^data:image\/(jpeg|png|webp|gif);/.test(p));
-        const e = C.normalizeEntry({ refs: [{ g: d.g, s: d.s, tag: null }], title, note, photos, capture: item.capture, happenedOn: (item.capture && item.capture.at) || item.createdAt || Date.now(), addedOn: Date.now() });
-        try { await saveEntry(e); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
-        entries.push(e);
-        changed();
-        await api.deleteNote(item.id);
-        api.showToast("Moved to " + d.label);
-        await openGroup(d.g, "all");
-        selectEntry(e.id);
-      } }, tile(d.icon, d.color, true), h("span", null, d.label))));
-    });
+    sortSnap(item, { open: true });
   }
 
   // ---------- New group / templates ----------
   function openNewGroup(prefill) {
     if (!enabled) { setEnabled(true); }
     let pick = prefill || C.TEMPLATES[0];
-    sheet("New space", (body, close) => {
-      const name = h("input", { class: "input gp-input", id: "gp-new-name", value: pick.key === "blank" ? "" : pick.name, placeholder: "Bike, Trips, Pets…", "aria-label": "Space name" });
+    let store = false, cat = "All"; // the template store: every template, by category
+    sheet("New collection", (body, close) => {
+      const name = h("input", { class: "input gp-input", id: "gp-new-name", value: pick.key === "blank" ? "" : pick.name, placeholder: "Bike, Trips, Pets…", "aria-label": "Collection name" });
       const search = h("input", { class: "input gp-input", id: "gp-tpl-search", type: "search", placeholder: "Search templates: gym, rent, EMI\u2026", "aria-label": "Search templates", autocomplete: "off" });
       const draw = () => {
         body.replaceChildren();
@@ -1552,10 +1816,11 @@
         body.append(h("span", { class: "gp-label" }, "Start from"), search);
         const list = prefill ? [prefill, ...C.TEMPLATES] : C.TEMPLATES;
         const box = h("div", { class: "gp-tpl-sections", id: "gp-tpl-list" });
+        const cats = h("div", { class: "gp-sort-row gp-tpl-cats", id: "gp-tpl-cats", hidden: !store });
         const card = (t) => h("button", { class: "gp-tpl" + (pick === t ? " active" : ""), onclick: () => {
           const wasDefault = !name.value.trim() || list.some((x) => x.name === name.value.trim());
           pick = t; if (wasDefault) name.value = t.key === "blank" ? "" : t.name; draw();
-        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ")) : h("small", { class: "gp-dim" }, "No sub-chats yet"));
+        } }, h("b", null, tile(t.icon, t.color), t.name), h("small", null, t.desc), t.subs.length ? h("small", { class: "gp-dim" }, t.subs.map((s) => s.name).join(" · ") + (C.moreCount(t) ? " · +" + C.moreCount(t) + " more when needed" : "")) : h("small", { class: "gp-dim" }, "No sections yet"));
         // Sections (Health, Money, Home & family…); typing filters across all of them.
         const drawList = () => {
           box.replaceChildren();
@@ -1566,8 +1831,18 @@
             const words = [t.name, t.desc, t.mainLabel, ...t.subs.map((x) => x.name)].join(" ").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
             return q.split(/\s+/).every((w) => words.some((x) => x.startsWith(w)));
           };
-          const sections = C.templateSections(list.filter((t) => t !== prefill));
+          let sections;
+          if (!store && !q) {
+            // First: Blank and the popular ones; everything else is in the store.
+            sections = [{ name: "Popular", items: [C.TEMPLATES.find((t) => t.key === "blank"), ...C.POPULAR.map((k) => C.TEMPLATES.find((t) => t.key === k)).filter(Boolean)] }];
+          } else {
+            sections = C.templateSections(list.filter((t) => t !== prefill));
+            if (store && cat !== "All") sections = sections.filter((s) => s.name === cat);
+          }
           if (prefill && hit(prefill)) sections.unshift({ name: "Imported", items: [prefill] });
+          cats.hidden = !store;
+          cats.replaceChildren(...["All", ...C.templateSections(C.TEMPLATES).map((s) => s.name).filter((n) => n !== "Start")].map((n) =>
+            h("button", { class: "gp-mini" + (cat === n ? " active" : ""), "data-cat": n, onclick: () => { cat = n; drawList(); } }, n)));
           let shown = 0;
           for (const sec of sections) {
             const items = sec.items.filter(hit);
@@ -1575,27 +1850,131 @@
             shown += items.length;
             box.append(h("div", { class: "gp-tpl-sec" }, sec.name), h("div", { class: "gp-tpl-grid" }, ...items.map(card)));
           }
-          if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sub-chats."));
+          if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sections."));
+          if (!store && !q) box.append(h("button", { class: "btn gp-wide", id: "gp-tpl-store", onclick: () => { store = true; drawList(); box.scrollIntoView({ block: "start" }); } },
+            ic("grid"), "Browse all " + C.TEMPLATES.length + " templates"));
         };
         search.oninput = drawList;
         drawList();
-        body.append(box);
-        body.append(h("p", { class: "gp-hint" }, "Everything can be changed later with Edit space: sub-chats, fields, currency, icon or photo."));
+        body.append(cats, box);
+        body.append(h("p", { class: "gp-hint" }, "Everything can be changed later with Edit collection: sections, fields, currency, icon or photo."));
+        const create = async (trial) => {
+          const g = C.groupFromTemplate(pick, name.value.trim() || pick.name);
+          g.order = Date.now();
+          if (trial) g.trialUntil = Date.now() + 7 * C.DAY;
+          await saveGroup(g);
+          groups.push(g);
+          close();
+          api.showToast(trial ? "Trying " + g.name + ": keep it or remove it any time" : "Created " + g.name);
+          openGroup(g.id);
+        };
         body.append(h("div", { class: "gp-sheet-actions" },
-          h("button", { class: "btn", onclick: () => importTemplateFile(close) }, ic("upload"), "Import template"),
-          h("button", { class: "btn primary", onclick: async () => {
-            const g = C.groupFromTemplate(pick, name.value.trim() || pick.name);
-            g.order = Date.now();
-            await saveGroup(g);
-            groups.push(g);
-            close();
-            api.showToast("Created " + g.name);
-            openGroup(g.id);
-          } }, "Create space")));
+          h("button", { class: "btn ghost", onclick: () => importTemplateFile(close) }, ic("upload"), "Import"),
+          pick.key !== "blank" ? h("button", { class: "btn", id: "gp-tpl-preview", onclick: () => previewTemplate(pick, () => create(true)) }, ic("eye"), "Preview") : null,
+          h("button", { class: "btn primary", onclick: () => create(false) }, "Create collection")));
       };
       draw();
       if (!isPhone()) setTimeout(() => name.focus(), 50);
     });
+  }
+
+  // First run: an example collection to look around in. It's a trial, so the
+  // banner offers Keep or Remove (which takes the examples with it).
+  async function tryExample() {
+    if (!enabled) setEnabled(true);
+    const have = groups.find((x) => x.trialUntil && /^Example/.test(x.name));
+    if (have) { openGroup(have.id); return; }
+    const t = C.TEMPLATES.find((x) => x.key === "trips") || C.TEMPLATES[0];
+    const g = C.groupFromTemplate(t, "Example trip");
+    g.order = Date.now(); g.trialUntil = Date.now() + 7 * C.DAY;
+    await saveGroup(g);
+    groups.push(g);
+    const day = (n) => Date.now() - n * C.DAY;
+    const subId = (i) => (g.subs[i] || {}).id || null;
+    const samples = [
+      { s: 0, title: "Train to Mysore", note: "Coach B2, seat 41. Leaves 6:15 am.", amount: 75000, at: day(3) },
+      { s: 1, title: "Homestay, 2 nights", note: "Near the palace. Check-in after 12.", amount: 240000, at: day(3) },
+      { s: 2, title: "Masala dosa breakfast", note: "", amount: 12000, at: day(2) },
+      { s: 3, title: "Palace entry tickets", note: "Two adults.", amount: 20000, at: day(2) }
+    ];
+    for (const x of samples) {
+      const e = C.normalizeEntry({ refs: [{ g: g.id, s: subId(x.s), tag: null }], title: x.title, note: x.note, amount: x.amount, currency: "INR", happenedOn: x.at, addedOn: Date.now() });
+      await saveEntry(e);
+      entries.push(e);
+    }
+    changed();
+    await openGroup(g.id);
+    api.showToast("This is an example. Keep it, change it, or remove it");
+  }
+
+  // ---------- Demo data (Settings → Your data) ----------
+  // spec: [{ template, name, pages: [{ name, type }], entries: [{ s, page, title, note, amount, at, photos, fields: { Odometer: 12000 }, rating }] }]
+  // Returns the ids it made, so removing takes exactly those away.
+  async function addDemo(spec) {
+    if (!enabled) setEnabled(true);
+    const made = { groups: [], entries: [], entities: [] };
+    for (const gs of spec) {
+      const t = C.TEMPLATES.find((x) => x.key === gs.template) || C.TEMPLATES[0];
+      const g = C.groupFromTemplate(t, gs.name);
+      g.order = Date.now() + made.groups.length;
+      const pageId = {};
+      for (const p of gs.pages || []) {
+        let ent = entities.find((x) => E.fold(x.name) === E.fold(p.name));
+        if (!ent) { ent = E.normalizeEntity({ name: p.name, type: p.type || t.mainType }, types); await saveEntity(ent); made.entities.push(ent.id); }
+        pageId[p.name] = pageFor(g, ent).id;
+      }
+      await saveGroup(g);
+      groups.push(g);
+      made.groups.push(g.id);
+      for (const x of gs.entries || []) {
+        const sub = typeof x.s === "string" ? g.subs.find((s) => s.name === x.s) : g.subs[x.s];
+        const fields = {};
+        for (const [name, v] of Object.entries(x.fields || {})) { const f = g.fields.custom.find((f) => f.name === name); if (f) fields[f.id] = String(v); }
+        const e = C.normalizeEntry({ refs: [{ g: g.id, s: sub ? sub.id : null, tag: x.page ? pageId[x.page] || null : null }], title: x.title, note: x.note || "",
+          amount: x.amount || null, currency: "INR", happenedOn: x.at, addedOn: x.at, photos: x.photos || [], fields, rating: x.rating || null, tags: x.tags || [] });
+        await saveEntry(e);
+        entries.push(e);
+        made.entries.push(e.id);
+      }
+    }
+    changed();
+    render();
+    return made;
+  }
+  async function removeDemo(made) {
+    if (!made) return;
+    for (const id of made.entries || []) { const e = entries.find((x) => x.id === id); if (e) await deleteEntry(e); }
+    for (const id of made.groups || []) { const g = groupById(id); if (!g) continue; groups = groups.filter((x) => x !== g); await api.remove(GROUPS_STORE, g.id); }
+    // People and places it added, unless something else now uses them.
+    for (const id of made.entities || []) {
+      if (groups.some((g) => g.mainTags.some((t) => t.entity === id))) continue;
+      entities = entities.filter((x) => x.id !== id);
+      await api.remove(ENTITIES_STORE, id);
+    }
+    if (ui.screen === "group" && !curGroup()) ui.screen = "home";
+    changed();
+    render();
+  }
+
+  // What a template gives you, filled with examples, before you add it.
+  function previewTemplate(t, onTry) {
+    sheet("Preview: " + t.name, (body, close) => {
+      const ex = C.templateExamples(t);
+      body.append(
+        h("div", { class: "gp-pv-head" }, tile(t.icon, t.color), h("span", null, h("b", null, t.name), h("small", null, t.desc))),
+        t.subs.length ? h("div", { class: "gp-tabs gp-pv-tabs" }, h("span", { class: "gp-tab active" }, "All"), ...t.subs.map((s) => h("span", { class: "gp-tab" }, s.name))) : null,
+        t.mainLabel ? h("p", { class: "gp-hint" }, "Each " + t.mainLabel.toLowerCase() + " gets a page with their visits and totals.") : null,
+        C.moreCount(t) ? h("p", { class: "gp-hint", id: "gp-pv-more" }, "Ready when you need them: " + C.MORE[t.key].map((x) => x.name).join(", ") + ". Stash offers each one the first time something needs it.") : null,
+        h("div", { class: "gp-pv-list", id: "gp-pv-list" }, ex.map((e) => h("div", { class: "gp-pv-entry" },
+          h("span", { class: "gp-pv-sec" }, e.section || "Entry"),
+          h("b", null, e.title), e.page ? h("small", null, e.page) : null,
+          e.amount ? h("span", { class: "gp-pv-amt" }, "\u20b9" + e.amount.toLocaleString("en-IN")) : null))),
+        t.fields && t.fields.custom && t.fields.custom.length ? h("p", { class: "gp-hint" }, "Details on each entry: " + t.fields.custom.map((f) => f.name).join(", ") + ".") : null,
+        h("p", { class: "gp-hint" }, "These are examples; your collection starts empty. Sections and details can be changed any time."),
+        h("div", { class: "gp-sheet-actions" },
+          h("button", { class: "btn", onclick: close }, "Back"),
+          h("button", { class: "btn primary", id: "gp-tpl-try", onclick: () => { close(); onTry(); } }, "Try it")));
+    }, { stack: true });
   }
 
   function importTemplateFile(closeParent) {
@@ -1630,7 +2009,7 @@
           const g = C.groupFromTemplate({ ...t, key: "import" }, t.name);
           await saveGroup(g); groups.push(g); close();
           api.showToast("Added " + g.name); openGroup(g.id);
-        } }, "Add space")));
+        } }, "Add collection")));
     });
   }
   function templateSummary(t) {
@@ -1638,7 +2017,7 @@
     box.append(h("div", { class: "gp-tpl-id" }, tile(t.icon, t.color), h("b", null, t.name)));
     if (t.desc) box.append(h("p", null, t.desc));
     const row = (k, v) => box.append(h("div", { class: "gp-sum-row" }, h("span", { class: "gp-dim" }, k), h("span", null, v)));
-    row("Sub-chats", t.subs.length ? t.subs.map((s) => s.name).join(", ") : "None");
+    row("Sections", t.subs.length ? t.subs.map((s) => s.name).join(", ") : "None");
     row("Main tag", t.mainLabel || "Off");
     const f = [];
     if (t.fields.amount.on) f.push("Amount (" + t.fields.amount.currency + ")");
@@ -1675,7 +2054,7 @@
   function openEditGroup(g) {
     const w = JSON.parse(JSON.stringify(g)); // working copy; saved only on Save
     const counts = C.counts(entries, g, "all");
-    sheet("Edit space", (body, close) => {
+    sheet("Edit collection", (body, close) => {
       const draw = () => {
         const st = body.scrollTop;
         body.replaceChildren();
@@ -1699,13 +2078,13 @@
         body.append(look);
 
         // Sub-chats
-        body.append(h("span", { class: "gp-label" }, "Sub-chats"), h("p", { class: "gp-hint" }, "Kinds of things in this space, like Service, Petrol, Spare parts. The singular name is what one entry is called."));
+        body.append(h("span", { class: "gp-label" }, "Sections"), h("p", { class: "gp-hint" }, "Kinds of things in this collection, like Service, Petrol, Spare parts. The singular name is what one entry is called."));
         const subsBox = h("div", { class: "gp-edit-list" });
         w.subs.forEach((s, i) => {
           const n = counts.bySub[s.id] || 0;
           const iconBtn = h("button", { class: "gp-icon-btn", "aria-label": "Icon for " + s.name, style: "--c:" + s.color, onclick: () => { s._pick = !s._pick; draw(); } }, ic(s.icon));
           subsBox.append(h("div", { class: "gp-edit-row" }, iconBtn,
-            h("input", { class: "input", value: s.name, "aria-label": "Sub-chat name", placeholder: "Name (plural)", maxlength: C.MAX.name, oninput: (e) => { const old = s.name; s.name = e.target.value; if (!s.label || s.label === old || s.label === singular(old)) s.label = singular(e.target.value); } }),
+            h("input", { class: "input", value: s.name, "aria-label": "Section name", placeholder: "Name (plural)", maxlength: C.MAX.name, oninput: (e) => { const old = s.name; s.name = e.target.value; if (!s.label || s.label === old || s.label === singular(old)) s.label = singular(e.target.value); } }),
             h("input", { class: "input gp-narrow", value: s.label, "aria-label": "One entry is called", placeholder: "One is a…", maxlength: C.MAX.name, oninput: (e) => { s.label = e.target.value; } }),
             h("button", { class: "btn icon ghost", "aria-label": "Move up", disabled: i === 0 || null, onclick: () => { w.subs.splice(i - 1, 0, w.subs.splice(i, 1)[0]); draw(); } }, ic("arrow-up")),
             h("button", { class: "btn icon ghost", "aria-label": "Remove " + s.name, title: n ? n + " entries move to All" : "Remove", onclick: () => { w.subs.splice(i, 1); draw(); } }, ic("trash"))));
@@ -1718,12 +2097,20 @@
           }
         });
         const removed = g.subs.filter((s) => !w.subs.some((x) => x.id === s.id)).reduce((t, s) => t + (counts.bySub[s.id] || 0), 0);
-        if (removed) subsBox.append(h("p", { class: "gp-warn" }, removed + (removed === 1 ? " entry" : " entries") + " in removed sub-chats will stay in the space, under All."));
-        if (w.subs.length < C.MAX.subs) subsBox.append(h("button", { class: "btn ghost gp-small", onclick: () => { w.subs.push({ id: C.uid(), name: "", label: "", icon: "note", color: C.COLORS[w.subs.length % C.COLORS.length], _new: true }); draw(); focusLastSub(body); } }, ic("plus", "icon-sm"), "Add sub-chat"));
+        if (removed) subsBox.append(h("p", { class: "gp-warn" }, removed + (removed === 1 ? " entry" : " entries") + " in removed sections will stay in the collection, under All."));
+        if (w.subs.length < C.MAX.subs) subsBox.append(h("button", { class: "btn ghost gp-small", onclick: () => { w.subs.push({ id: C.uid(), name: "", label: "", icon: "note", color: C.COLORS[w.subs.length % C.COLORS.length], _new: true }); draw(); focusLastSub(body); } }, ic("plus", "icon-sm"), "Add section"));
+        // Sections this kind of collection usually grows into, one tap each.
+        const ready = w.subs.length < C.MAX.subs ? C.moreSections(w) : [];
+        if (ready.length) subsBox.append(h("div", { class: "gp-ready", id: "gp-ready" }, h("span", { class: "gp-label" }, "Ready to add"),
+          h("div", { class: "gp-sort-row" }, ...ready.map((m) => h("button", { class: "gp-mini gp-mini-new", type: "button", "data-ready": m.name, onclick: () => {
+            if (w.subs.length >= C.MAX.subs) return;
+            w.subs.push({ id: C.uid(), name: m.name, label: m.label, icon: m.icon, color: m.color, late: !!m.late, noTag: !!m.noTag });
+            draw();
+          } }, ic("plus", "icon-sm"), m.name)))));
         body.append(subsBox);
 
         // Who or what the group is about: its pages (people, places, things).
-        body.append(h("span", { class: "gp-label" }, "About"), h("p", { class: "gp-hint" }, "Who or what this space revolves around: doctors, places, a bike, shows. Each one gets a page here. Leave \u201cCalled\u201d empty to turn it off."));
+        body.append(h("span", { class: "gp-label" }, "About"), h("p", { class: "gp-hint" }, "Who or what this collection revolves around: doctors, places, a bike, shows. Each one gets a page here. Leave \u201cCalled\u201d empty to turn it off."));
         const mt = h("div", { class: "gp-edit-list" });
         mt.append(h("div", { class: "gp-edit-row" }, h("span", { class: "gp-dim gp-row-label" }, "Called"),
           h("input", { class: "input", id: "gp-edit-main-label", value: w.mainLabel, placeholder: "Doctor, Place, Title, Bike…", maxlength: C.MAX.label, "aria-label": "What they're called", oninput: (e) => { const had = !!w.mainLabel; w.mainLabel = e.target.value; if (had !== !!w.mainLabel.trim()) draw(); } })));
@@ -1738,7 +2125,7 @@
               h("button", { class: "gp-color sm", "aria-label": "Colour of " + t.name, style: "--c:" + t.color, onclick: () => { t.color = C.COLORS[(C.COLORS.indexOf(t.color) + 1) % C.COLORS.length]; draw(); } }),
               h("span", { class: "gp-edit-page-name" }, h("b", null, t.name), t.info ? h("small", { class: "gp-dim" }, t.info) : null),
               ent ? h("button", { class: "btn ghost gp-small", "aria-label": "Edit " + t.name, onclick: () => openEntity(ent, { onSaved: () => { hydrate(w); draw(); } }) }, ic("edit", "icon-sm"), "Edit") : null,
-              h("button", { class: "btn icon ghost", "aria-label": "Remove " + t.name + " from this space", title: "Remove from this space (stays in your other spaces)", onclick: () => { w.mainTags.splice(i, 1); draw(); } }, ic("trash"))));
+              h("button", { class: "btn icon ghost", "aria-label": "Remove " + t.name + " from this collection", title: "Remove from this collection (stays in your other collections)", onclick: () => { w.mainTags.splice(i, 1); draw(); } }, ic("trash"))));
           });
           mt.append(h("button", { class: "btn ghost gp-small", id: "gp-edit-add-page", onclick: () => { if (!w.mainType) w.mainType = groupType(w).key; newMainTag(w, () => draw(), { workingCopy: true }); } }, ic("plus", "icon-sm"), "Add " + (w.mainLabel.trim() || "tag").toLowerCase()));
         }
@@ -1786,7 +2173,7 @@
 
         body.append(h("div", { class: "gp-sheet-actions sticky" },
           h("button", { class: "btn", onclick: () => shareTemplate(C.normalizeGroup(w)) }, ic("share"), "Share as template"),
-          h("button", { class: "btn danger ghost", onclick: () => askDeleteGroup(g, close) }, ic("trash"), "Delete space"),
+          h("button", { class: "btn danger ghost", onclick: () => askDeleteGroup(g, close) }, ic("trash"), "Delete collection"),
           h("span", { class: "gp-grow" }),
           h("button", { class: "btn", onclick: close }, "Cancel"),
           h("button", { class: "btn primary", onclick: async () => {
@@ -1818,7 +2205,7 @@
       draw();
     }, { wide: true });
   }
-  function focusLastSub(body) { setTimeout(() => { const rows = body.querySelectorAll(".gp-edit-row input[aria-label='Sub-chat name']"); if (rows.length) rows[rows.length - 1].focus(); }, 0); }
+  function focusLastSub(body) { setTimeout(() => { const rows = body.querySelectorAll(".gp-edit-row input[aria-label='Section name']"); if (rows.length) rows[rows.length - 1].focus(); }, 0); }
   const singular = (w) => { const s = String(w || "").trim(); if (/ies$/i.test(s)) return s.slice(0, -3) + "y"; if (/(ss|us)$/i.test(s)) return s; if (/s$/i.test(s)) return s.slice(0, -1); return s; };
   function squareCover(dataUrl) {
     return new Promise((resolve) => {
@@ -1834,11 +2221,27 @@
     });
   }
 
+  // Undo for deleting a collection: it and its entries come back as they were.
+  async function restoreGroup(g0, list) {
+    const g = C.normalizeGroup(g0);
+    await saveGroup(g);
+    groups = groups.filter((x) => x.id !== g.id).concat(g);
+    for (const raw of list) {
+      const e = C.normalizeEntry(raw);
+      await saveEntry(e);
+      entries = entries.filter((x) => x.id !== e.id).concat(e);
+    }
+    changed();
+    await openGroup(g.id);
+    api.showToast("Brought back " + g.name);
+  }
   function askDeleteGroup(g, closeEdit) {
     const own = C.inGroup(entries, g.id);
     const onlyHere = own.filter((e) => e.refs.length === 1);
     sheet("Delete " + g.name + "?", (body, close) => {
       const finish = async (mode) => {
+        // Undo puts the collection and its entries back (not after "keep as notes").
+        const keptG = JSON.parse(JSON.stringify(g)), keptE = own.map((e) => JSON.parse(JSON.stringify(e)));
         for (const e of own) {
           if (e.refs.length > 1) { e.refs = e.refs.filter((r) => r.g !== g.id); await saveEntry(e); continue; }
           if (mode === "notes") await api.createNote({ title: e.title, content: entryAsNoteText(e), images: e.photos, createdAt: e.happenedOn });
@@ -1847,13 +2250,14 @@
         groups = groups.filter((x) => x !== g);
         await api.remove(GROUPS_STORE, g.id);
         close(); if (closeEdit) closeEdit();
-        api.showToast("Deleted " + g.name + (mode === "notes" && onlyHere.length ? ". " + onlyHere.length + " entries are in Notes now." : ""));
+        api.showToast("Deleted " + g.name + (mode === "notes" && onlyHere.length ? ". " + onlyHere.length + " entries are in Notes now." : ""),
+          mode === "notes" ? {} : { action: { label: "Undo", onClick: () => restoreGroup(keptG, keptE) } });
         if (ui.g === g.id) { if (isPhone()) { ui.screen = "home"; render(); } else if (groups.length) openGroup(groups[0].id); else exit(); }
         else render();
         if (mode === "notes") api.renderAllViews();
       };
-      if (onlyHere.length) body.append(h("button", { class: "gp-choice", onclick: () => finish("notes") }, ic("note"), h("span", null, "Delete space, keep entries as notes", h("small", null, onlyHere.length + " entries move to Notes with their text and photos."))));
-      body.append(h("button", { class: "gp-choice danger", onclick: () => finish("delete") }, ic("trash"), h("span", null, onlyHere.length ? "Delete space and its " + onlyHere.length + " entries" : "Delete space", h("small", null, "Entries linked into other spaces stay there. This can't be undone."))));
+      if (onlyHere.length) body.append(h("button", { class: "gp-choice", onclick: () => finish("notes") }, ic("note"), h("span", null, "Delete collection, keep entries as notes", h("small", null, onlyHere.length + " entries move to Notes with their text and photos."))));
+      body.append(h("button", { class: "gp-choice danger", onclick: () => finish("delete") }, ic("trash"), h("span", null, onlyHere.length ? "Delete collection and its " + onlyHere.length + " entries" : "Delete collection", h("small", null, "Entries linked into other collections stay there. This can't be undone."))));
     });
   }
 
@@ -1954,28 +2358,37 @@
     return null;
   }
   // Moves a snap from Inbox into a space as an entry: same photo, original and capture details.
-  async function moveSnapInto(n, where, title) {
+  // extra (from the brain): { also: [more refs], amount (minor units), currency, happenedOn, tags: [keys] }
+  async function moveSnapInto(n, where, title, extra = {}) {
     const photos = (n.images || []).filter((p) => typeof p === "string" && /^data:image\/(jpeg|png|webp|gif);/.test(p));
-    const e = C.normalizeEntry({ refs: [where], title: (title || "").trim() || (n.title || "").trim() || (n.content || "").split("\n")[0].slice(0, 120) || "Photo",
+    const refs = [where, ...(extra.also || []).filter((r) => r && r.g && r.g !== where.g)];
+    const e = C.normalizeEntry({ refs, title: (title || "").trim() || (n.title || "").trim() || (n.content || "").split("\n")[0].slice(0, 120) || (photos.length ? "Photo" : (n.files || [])[0] ? n.files[0].name : "Note"),
       note: n.title ? n.content || "" : (n.content || "").split("\n").slice(1).join("\n"),
-      photos, files: n.files || [], capture: n.capture, happenedOn: (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now() });
+      photos, files: n.files || [], capture: n.capture, ocr: n.ocr || null, happenedOn: extra.happenedOn || (n.capture && n.capture.at) || n.createdAt || Date.now(), addedOn: Date.now(),
+      amount: Number.isInteger(extra.amount) ? extra.amount : null, currency: Number.isInteger(extra.amount) ? (extra.currency || "INR") : null, tags: extra.tags || [] });
+    if (window.CPBrain) window.CPBrain.learn((n.title || "") + " " + (n.content || "") + " " + (n.files || []).map((f) => f.name).join(" "), where, e.tags);
     await saveEntry(e);
     entries.push(e);
     changed();
     await api.deleteNote(n.id);
     return e;
   }
-  // "Sort this snap": everything filled in from what's known; one tap to file it.
-  // n: one snap or message, or a list of them (Forward from the Me chat).
+  // One picker for filing anything: "Sort this snap", Move from the Inbox and
+  // Move to collection from Notes. Search at the top; Collection → Section →
+  // Who / Where → Tags, each row ending in + New.
+  // n: one snap, message or note, or a list of them.
+  // opts: { onDone, open: open the collection afterwards (from Notes) }
   function sortSnap(nOrList, opts = {}) {
     const list = (Array.isArray(nOrList) ? nOrList : [nOrList]).filter(Boolean);
     if (!list.length) return;
+    if (!enabled) setEnabled(true);
     const n = list[0];
     const many = list.length > 1;
     const guess = (list.find((x) => x.suggest) || {}).suggest || null;
     const m = guess && SNAP_MATCH[guess.kind];
     let g = (guess && snapSpaceFor(guess.kind)) || null;
-    let subId = null, tagId = null;
+    let subId = null, tagId = null, tags = [];
+    let q = "", adding = null; // adding: "space" | "sub" | "tag" while its name box is open
     const pickSub = () => { subId = null; if (g && m) for (const re of m.sub) { const s = g.subs.find((x) => re.test(x.name)); if (s) { subId = s.id; break; } } };
     // "@fzv3" written on it picks that page and its space.
     const mention = mentionIn(list.map((x) => (x.title || "") + " " + (x.content || "")).join(" "));
@@ -1984,59 +2397,119 @@
     pickSub();
     const cap = n.capture || {};
     const nice = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
-    sheet(many ? "Forward " + list.length + " messages" : n.images && n.images.length ? "Sort this snap" : "Forward to a space", (body, close) => {
+    const heading = many ? "Move " + list.length + " messages" : opts.open ? "Move to collection" : n.images && n.images.length ? "Sort this snap" : "Move to a collection";
+    sheet(heading, (body, close) => {
       const written = ((n.title || "").trim() || (n.content || "").split("\n")[0]).replace(/@[\w.-]+/g, "").replace(/\s+/g, " ").trim();
       const title = h("input", { class: "input gp-input", id: "gp-sort-title", placeholder: "What is it?", value: written || (guess && guess.detail ? nice(guess.detail) : ""), "aria-label": "Title" });
+      // Search stays put while the rows below redraw (so it keeps focus).
+      const search = h("input", { class: "input gp-input", id: "gp-sort-find", type: "search", placeholder: "Find a collection", autocomplete: "off", "aria-label": "Find a collection" });
+      const rows = h("div", { class: "gp-sort-rows" });
+      search.addEventListener("input", () => { q = search.value.trim(); draw(); });
+      // A small name box that replaces a row's + New button.
+      const nameBox = (id, placeholder, value, onAdd) => {
+        const input = h("input", { class: "input gp-input gp-sort-new-input", id, placeholder, value: value || "", autocomplete: "off", "aria-label": placeholder, maxlength: C.MAX.name });
+        const add = async () => { const v = input.value.trim(); if (!v) { input.focus(); return; } adding = null; await onAdd(v); draw(); };
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); adding = null; draw(); } });
+        setTimeout(() => input.focus(), 20);
+        return h("div", { class: "gp-sort-new" }, input, h("button", { class: "btn primary gp-small", id: id + "-add", onclick: add }, "Add"),
+          h("button", { class: "btn ghost gp-small", onclick: () => { adding = null; draw(); } }, "Cancel"));
+      };
+      const plus = (id, label, onclick) => h("button", { class: "gp-mini gp-mini-new", id, onclick }, ic("plus", "icon-sm"), label);
       const draw = () => {
-        body.replaceChildren();
-        const facts = [guess ? (window.CPSee ? window.CPSee.describe(guess) : guess.label) : "", cap.at ? fmtDay(cap.at) + ", " + fmtTime(cap.at) : "",
-          cap.location ? "\u{1F4CD} " + cap.location.lat.toFixed(4) + ", " + cap.location.lng.toFixed(4) : ""].filter(Boolean);
-        const firstPhoto = (list.find((x) => x.images && x.images[0]) || {}).images;
-        body.append(h("div", { class: "gp-sort-top" }, firstPhoto ? h("img", { src: firstPhoto[0], alt: "", class: "gp-sort-img" }) : null,
-          h("div", { class: "gp-sort-facts" }, ...(many ? [list.length + " messages, each becomes an entry"] : facts).map((f) => h("small", null, f)),
-            guess && !many ? h("small", { class: "gp-dim" }, "A guess made on this phone") : null)));
-        if (!many) body.append(h("label", { class: "gp-label", for: "gp-sort-title" }, "Title"), title);
-        body.append(h("span", { class: "gp-label" }, "Space"));
+        rows.replaceChildren();
+        rows.append(h("span", { class: "gp-label" }, "Collection"));
         const row = h("div", { class: "gp-sort-row", id: "gp-sort-spaces" });
-        const ordered = suggestedId ? [groups.find((x) => x.id === suggestedId), ...groups.filter((x) => x.id !== suggestedId)] : groups.slice();
-        ordered.forEach((x) => row.append(h("button", { class: "gp-mini" + (g && g.id === x.id ? " active" : ""), style: "--c:" + x.color, "data-space": x.id,
-          onclick: () => { g = x; tagId = null; pickSub(); draw(); } }, ic(x.icon), x.name, x.id === suggestedId ? h("span", { class: "gp-dim" }, "· suggested") : null)));
+        const ordered = suggestedId ? [groups.find((x) => x.id === suggestedId), ...groups.filter((x) => x.id !== suggestedId)].filter(Boolean) : groups.slice();
+        const fq = E.fold(q);
+        const shown = ordered.filter((x) => !fq || E.fold(x.name).includes(fq) || (g && g.id === x.id));
+        shown.forEach((x) => row.append(h("button", { class: "gp-mini" + (g && g.id === x.id ? " active" : ""), style: "--c:" + x.color, "data-space": x.id,
+          onclick: () => { g = x; tagId = null; tags = []; adding = null; pickSub(); draw(); } }, ic(x.icon), x.name, x.id === suggestedId ? h("span", { class: "gp-dim" }, "· suggested") : null)));
+        if (fq && !shown.some((x) => E.fold(x.name).includes(fq))) row.append(h("small", { class: "gp-dim" }, "No collection called “" + q + "”"));
         // No matching space yet: offer to make one from the right template.
         const tpl = m && !suggestedId ? C.TEMPLATES.find((t) => t.key === m.tpl) : null;
         if (tpl && !groups.some((x) => x.name === tpl.name)) row.append(h("button", { class: "gp-mini", id: "gp-sort-new-space", onclick: async () => {
           const ng = C.groupFromTemplate(tpl, tpl.name); ng.order = Date.now();
-          await saveGroup(ng); groups.push(ng); g = ng; pickSub(); draw();
-        } }, ic("plus"), "New " + tpl.name + " space"));
-        if (!groups.length && !tpl) row.append(h("button", { class: "gp-mini", onclick: () => { close(); openNewGroup(); } }, ic("plus"), "New space"));
-        body.append(row);
-        if (g && g.subs.length) {
-          body.append(h("span", { class: "gp-label" }, "Sub-chat"));
+          await saveGroup(ng); groups.push(ng); g = ng; pickSub(); render(); draw();
+        } }, ic("plus"), "New " + tpl.name + " collection"));
+        if (adding === "space") row.append(nameBox("gp-sort-space-name", "New collection name", q, async (name) => {
+          // A name that matches a template ("Bike", "Health") gets that template's sections.
+          const t = C.TEMPLATES.find((x) => x.key !== "blank" && E.fold(x.name) === E.fold(name)) || C.TEMPLATES.find((x) => x.key === "blank") || C.TEMPLATES[0];
+          const ng = C.groupFromTemplate(t, name.slice(0, C.MAX.name)); ng.order = Date.now();
+          await saveGroup(ng); groups.push(ng); g = ng; subId = null; tagId = null; tags = []; q = ""; search.value = "";
+          render(); api.showToast("Made " + ng.name);
+        }));
+        else row.append(plus("gp-sort-add-space", "New", () => { adding = "space"; draw(); }));
+        rows.append(row);
+        if (g) {
+          rows.append(h("span", { class: "gp-label" }, "Section"));
           const subs = h("div", { class: "gp-sort-row", id: "gp-sort-subs" });
           subs.append(h("button", { class: "gp-mini" + (!subId ? " active" : ""), onclick: () => { subId = null; draw(); } }, "None"));
-          g.subs.forEach((x) => subs.append(h("button", { class: "gp-mini" + (subId === x.id ? " active" : ""), style: "--c:" + x.color, onclick: () => { subId = x.id; draw(); } }, ic(x.icon), x.name)));
-          body.append(subs);
-        }
-        if (g && g.mainTags.length) {
-          body.append(h("span", { class: "gp-label" }, g.mainLabel || "Page"));
-          const pages = h("div", { class: "gp-sort-row" });
+          g.subs.forEach((x) => subs.append(h("button", { class: "gp-mini" + (subId === x.id ? " active" : ""), style: "--c:" + x.color, "data-sub": x.id, onclick: () => { subId = x.id; draw(); } }, ic(x.icon), x.name)));
+          if (adding === "sub") subs.append(nameBox("gp-sort-sub-name", "New section name", "", async (name) => {
+            const s = { id: C.uid(), name: name.slice(0, C.MAX.name), label: name.slice(0, C.MAX.label), icon: "note", color: C.COLORS[g.subs.length % C.COLORS.length] };
+            g.subs.push(s); await saveGroup(g); subId = s.id; render();
+          }));
+          else if (g.subs.length < C.MAX.subs) subs.append(plus("gp-sort-add-sub", "New", () => { adding = "sub"; draw(); }));
+          rows.append(subs);
+
+          rows.append(h("span", { class: "gp-label" }, g.mainLabel || "Who / Where"));
+          const pages = h("div", { class: "gp-sort-row", id: "gp-sort-pages" });
           pages.append(h("button", { class: "gp-mini" + (!tagId ? " active" : ""), onclick: () => { tagId = null; draw(); } }, "None"));
-          g.mainTags.forEach((t) => pages.append(h("button", { class: "gp-mini" + (tagId === t.id ? " active" : ""), style: "--c:" + t.color, onclick: () => { tagId = t.id; draw(); } }, t.name)));
-          body.append(pages);
+          g.mainTags.forEach((t) => pages.append(h("button", { class: "gp-mini" + (tagId === t.id ? " active" : ""), style: "--c:" + t.color, "data-page": t.id, onclick: () => { tagId = t.id; draw(); } }, t.name)));
+          pages.append(plus("gp-sort-add-page", "New", () => newMainTag(g, (t) => { tagId = t.id; draw(); }, { stack: true })));
+          rows.append(pages);
+
+          // Tags: only the ones already used in this collection, plus + New.
+          const used = new Map();
+          for (const e of C.inGroup(entries, g.id)) for (const k of e.tags) used.set(k, (used.get(k) || 0) + 1);
+          const keys = [...new Set([...[...used.keys()].sort((a, b) => used.get(b) - used.get(a)).slice(0, 12), ...tags])];
+          rows.append(h("span", { class: "gp-label" }, "Tags"));
+          const tagRow = h("div", { class: "gp-sort-row", id: "gp-sort-tags" });
+          keys.forEach((k) => { const on = tags.includes(k); tagRow.append(h("button", { class: "gp-mini" + (on ? " active" : ""), "aria-pressed": String(on), "data-tag": k,
+            onclick: () => { tags = on ? tags.filter((x) => x !== k) : [...tags, k]; draw(); } }, "#" + tagLabel(k))); });
+          if (adding === "tag") tagRow.append(nameBox("gp-sort-tag-name", "New tag", "", async (name) => {
+            const k = api.ensureTag ? await api.ensureTag(name) : C.normalizeTagName(name);
+            if (k && !tags.includes(k)) tags = [...tags, k].slice(0, 20);
+          }));
+          else tagRow.append(plus("gp-sort-add-tag", "New", () => { adding = "tag"; draw(); }));
+          rows.append(tagRow);
         }
-        body.append(h("div", { class: "gp-sheet-actions" },
-          h("button", { class: "btn", onclick: () => close() }, "Leave in Inbox"),
+        const sub = g && subId ? C.subOf(g, subId) : null;
+        rows.append(h("div", { class: "gp-sheet-actions" },
+          h("button", { class: "btn", onclick: () => close() }, opts.open ? "Cancel" : "Leave in Inbox"),
           h("button", { class: "btn primary", id: "gp-sort-save", disabled: !g, onclick: async () => {
             if (!g) return;
-            try { for (const x of list) await moveSnapInto(x, { g: g.id, s: subId, tag: tagId }, many ? null : title.value); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
+            let last = null;
+            try { for (const x of list) last = await moveSnapInto(x, { g: g.id, s: subId, tag: tagId }, many ? null : title.value, { tags }); } catch (err) { console.error(err); api.showToast("Couldn't move it"); return; }
             close();
             if (opts.onDone) opts.onDone();
-            const sub = subId ? C.subOf(g, subId) : null;
-            api.showToast("Saved to " + [g.name, sub && sub.name].filter(Boolean).join(" → "), { action: { label: "Open", onClick: () => openGroup(g.id, subId || "all") } });
-          } }, g ? (many ? "Forward to " : "Save to ") + g.name : "Pick a space")));
+            const where = [g.name, sub && sub.name].filter(Boolean).join(" → ");
+            if (opts.open) { api.showToast("Moved to " + where); await openGroup(g.id, subId || "all"); if (last) selectEntry(last.id); return; }
+            api.showToast("Saved to " + where, { action: { label: "Open", onClick: () => openGroup(g.id, subId || "all") } });
+          } }, g ? (many ? "Move to " : opts.open ? "Move to " : "Save to ") + g.name : "Pick a collection")));
       };
+      const facts = [guess ? (window.CPSee ? window.CPSee.describe(guess) : guess.label) : "", cap.at ? fmtDay(cap.at) + ", " + fmtTime(cap.at) : "",
+        cap.location ? "\u{1F4CD} " + cap.location.lat.toFixed(4) + ", " + cap.location.lng.toFixed(4) : ""].filter(Boolean);
+      const firstPhoto = (list.find((x) => x.images && x.images[0]) || {}).images;
+      if (firstPhoto || facts.length || many) body.append(h("div", { class: "gp-sort-top" }, firstPhoto ? h("img", { src: firstPhoto[0], alt: "", class: "gp-sort-img" }) : null,
+        h("div", { class: "gp-sort-facts" }, ...(many ? [list.length + " messages, each becomes an entry"] : facts).map((f) => h("small", null, f)),
+          guess && !many ? h("small", { class: "gp-dim" }, "A guess made on this phone") : null)));
+      if (opts.open) body.append(h("p", { class: "gp-hint" }, "It leaves Notes and becomes an entry in that collection, with the same text and photos."));
+      if (!many) body.append(h("label", { class: "gp-label", for: "gp-sort-title" }, "Title"), title);
+      if (groups.length > 5) body.append(search);
+      body.append(rows);
       draw();
     });
   }
+
+  // Resting the mouse on an entry shows the whole note and its first photo.
+  if (window.CPHints) window.CPHints.preview(".gp-entry[data-entry]", (row) => {
+    const e = entries.find((x) => x.id === row.dataset.entry);
+    if (!e) return null;
+    const text = [e.note, e.link, e.ocr && !e.note ? e.ocr : ""].filter(Boolean).join("\n").trim();
+    if (text.length < 60 && !e.photos.length) return null;
+    return { title: e.title || "", text, img: e.photos[0] || null, meta: fmtDay(e.happenedOn) + " " + new Date(e.happenedOn).getFullYear() };
+  });
 
   // ---------- Sheets ----------
   // Sheets stack: one opened with { stack: true } sits on top of the one below
@@ -2078,19 +2551,19 @@
     const box = document.getElementById("groups-settings-body");
     if (!box) return;
     box.replaceChildren();
-    const toggle = h("label", { class: "settings-check" }, h("input", { type: "checkbox", id: "groups-enabled", checked: enabled, onchange: (e) => setEnabled(e.target.checked) }), " Show Spaces");
+    const toggle = h("label", { class: "settings-check" }, h("input", { type: "checkbox", id: "groups-enabled", checked: enabled, onchange: (e) => setEnabled(e.target.checked) }), " Show Collections");
     box.append(h("div", { class: "settings-group" }, toggle,
-      h("div", { class: "settings-hint" }, "Spaces are timelines for topics like Health, Food or Trips. They're separate from your notes. Turning this off only hides them; nothing is deleted.")));
-    const stats = groups.length ? groups.length + (groups.length === 1 ? " space, " : " spaces, ") + live().length + (live().length === 1 ? " entry" : " entries") + ". Included in Back up." : "No spaces yet.";
+      h("div", { class: "settings-hint" }, "Collections are timelines for topics like Health, Food or Trips. They're separate from your notes. Turning this off only hides them; nothing is deleted.")));
+    const stats = groups.length ? groups.length + (groups.length === 1 ? " collection, " : " collections, ") + live().length + (live().length === 1 ? " entry" : " entries") + ". Included in Back up." : "No collections yet.";
     const trashed = entries.filter((e) => e.deletedAt);
     box.append(h("div", { class: "settings-group padded" }, h("div", { class: "settings-hint" }, stats),
       h("div", { class: "settings-row-actions" },
-        h("button", { onclick: () => { api.closeSettings(); openNewGroup(); } }, "+ New space"),
+        h("button", { onclick: () => { api.closeSettings(); openNewGroup(); } }, "+ New collection"),
         h("button", { onclick: () => importTemplateFile() }, "Import template\u2026"),
         trashed.length ? h("button", { onclick: openTrash }, "Trash (" + trashed.length + ")") : null)));
   }
   function openTrash() {
-    sheet("Spaces Trash", (body) => {
+    sheet("Collections Trash", (body) => {
       const draw = () => {
         body.replaceChildren();
         const list = entries.filter((e) => e.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt);
@@ -2232,6 +2705,84 @@
     await openGroup(gid, "all");
     focusLater("gp-text");
   }
+  // Another device changed things (two-way sync): read everything again.
+  async function reload() {
+    brainIx = null;
+    groups = (await api.getAll(GROUPS_STORE)).map(C.normalizeGroup).sort((a, b) => a.order - b.order);
+    entries = (await api.getAll(ENTRIES_STORE)).map(C.normalizeEntry);
+    await loadEntities();
+    if (ui.selected && !entries.some((e) => e.id === ui.selected)) ui.selected = null;
+    render();
+  }
+  // ---------- The brain (brain.js): suggestions from your own names and habits ----------
+  let brainIx = null;
+  function brainIndex() {
+    if (!window.CPBrain) return null;
+    if (!brainIx) brainIx = window.CPBrain.build({ groups, entries, entities, tags: [...new Set(entries.flatMap((e) => e.tags))].concat(api.tags ? api.tags().map((t) => t.key || t.name) : []) });
+    return brainIx;
+  }
+  const brainComplete = (kind, prefix) => { const ix = brainIndex(); return ix ? window.CPBrain.complete(ix, kind, prefix) : []; };
+  // n: an Inbox message; picks: [{ g, s, tag }] chosen with @; tags: [keys] chosen with #.
+  function brainUnderstand(n, picks = [], tags = []) {
+    const ix = brainIndex();
+    if (!ix) return { dests: [], spots: [] };
+    let text = [n.title, n.content, ...(n.files || []).map((f) => f.name), n.ocr || ""].filter(Boolean).join(" ");
+    if (window.CPWords) text = window.CPWords.expand(text); // "Amma" is also "Mother"
+    const dests = window.CPBrain.understand(ix, { text, picks, tags, files: n.files || [], guess: n.suggest, location: n.capture && n.capture.location }, SNAP_MATCH)
+      .map((d) => ({ ...d, label: window.CPBrain.label(ix, d) }));
+    // "Discharge summary" and Health has no such section yet: suggest the
+    // ready one from its template, made on first use.
+    if (!picks.length) {
+      const more = [];
+      for (const g of groups) for (const m of C.moreSections(g)) {
+        const hit = m.hint && text.match(m.hint);
+        if (hit) more.push({ g, m, word: hit[0] });
+      }
+      if (more.length) {
+        const top = dests[0];
+        const pick = (top && more.find((x) => x.g.id === top.g)) || (!top || top.score < 40 ? more[0] : null);
+        if (pick && !(top && top.g === pick.g.id && top.s)) {
+          const d = { g: pick.g.id, s: null, tag: top && top.g === pick.g.id ? top.tag : null, newSub: pick.m, score: Math.max(30, top && top.g === pick.g.id ? top.score : 0),
+            why: ["it mentions " + pick.word.toLowerCase(), pick.g.name + " has a " + pick.m.name.toLowerCase() + " section ready"], sure: false };
+          d.label = pick.g.name + " › " + pick.m.name + " (new section)";
+          dests.unshift(d);
+          if (dests[1] && dests[1].g === d.g) dests.splice(1, 1);
+        }
+      }
+    }
+    return { dests, spots: window.CPBrain.spot(text) };
+  }
+  // Files a message where the brain (or you) said, with the amount, date and tags it spotted.
+  async function fileInto(n, d, opts = {}) {
+    const g = groupById(d.g);
+    if (!g) return null;
+    if (!enabled) setEnabled(true);
+    // A ready section from the template, added on first use.
+    if (d.newSub && !d.s) {
+      const have = g.subs.find((x) => x.name.toLowerCase() === d.newSub.name.toLowerCase());
+      if (have) d = { ...d, s: have.id };
+      else if (g.subs.length < C.MAX.subs) {
+        const sub = { id: C.uid(), name: d.newSub.name, label: d.newSub.label, icon: d.newSub.icon, color: d.newSub.color, late: !!d.newSub.late, noTag: !!d.newSub.noTag };
+        g.subs.push(sub);
+        await saveGroup(g);
+        d = { ...d, s: sub.id };
+      }
+    }
+    const spots = window.CPBrain ? window.CPBrain.spot([n.title, n.content].join(" ")) : [];
+    const amount = g.fields.amount.on ? (spots.find((x) => x.kind === "amount") || {}).value : undefined;
+    const when = spots.find((x) => x.kind === "when");
+    const e = await moveSnapInto(n, { g: g.id, s: d.s || null, tag: d.tag || null }, "", { also: opts.also || [], amount, happenedOn: when ? when.value : undefined, tags: opts.tags || [] });
+    render();
+    return e;
+  }
+  // Undo for fileInto: the entry goes, the message comes back (the app restores it).
+  async function unfile(entryId) {
+    const e = entries.find((x) => x.id === entryId);
+    if (!e) return;
+    entries = entries.filter((x) => x !== e);
+    await api.remove(ENTRIES_STORE, e.id);
+    changed(); render();
+  }
   const groupList = () => groups.map((g) => ({ id: g.id, name: g.name, icon: g.icon, color: g.color }));
 
   const publicApi = {
@@ -2240,7 +2791,7 @@
     onHome: () => ui.screen === "home",
     stepBack, exit, showHome, snapContext, snapHere, openNewGroup, paletteItems, exportData, importData, moveNoteToGroup, focusComposer,
     timelineRows, openEntry, tagCounts, renameTag, removeTag, openComposer, groupList, setEnabled,
-    dueRows, takeDue, sortSnap,
+    dueRows, takeDue, sortSnap, reload, tryExample, addDemo, removeDemo, brainLabel: (d) => { const ix = brainIndex(); return ix ? window.CPBrain.label(ix, d) : ""; }, brainComplete, brainUnderstand, fileInto, unfile,
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.

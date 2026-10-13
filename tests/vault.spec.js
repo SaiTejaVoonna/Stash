@@ -59,9 +59,9 @@ test("items made in the Vault are stored encrypted; locking hides them, the pass
   expect(record.enc.ct.length).toBeGreaterThan(40);
 
   // Not in any other view.
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await expect(page.locator(".item-row")).toHaveCount(0);
-  await expect(nav(page, "Inbox").locator(".count")).toHaveText("0");
+  await expect(nav(page, "All notes").locator(".count")).toHaveText("");
   await expect(nav(page, "Vault").locator(".count")).toHaveText("1");
 
   await nav(page, "Vault").click();
@@ -205,7 +205,7 @@ test("pasting a token suggests the Vault; copying a Vault item clears the clipbo
   await page.clock.install();
   await page.reload();
   await setUpVault(page);
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   const token = "ghp_" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8";
   await paste(page, token);
   await expect(lastToast(page)).toContainText("Looks like a GitHub token");
@@ -251,6 +251,7 @@ test("Face ID / fingerprint unlock with a passkey", async ({ page }) => {
 test("importing items from a different Vault re-encrypts them into this one", async ({ page, browser }) => {
   // Another device with its own Vault and password.
   const other = await browser.newPage();
+  await other.addInitScript(() => localStorage.setItem("copypaster-editor", "plain"));
   await openApp(other);
   await setUpVault(other, "the other password");
   await vaultNote(other, "from the other vault");
@@ -283,7 +284,7 @@ test("importing items from a different Vault re-encrypts them into this one", as
 test("deleting the Vault removes its items and lets you start again", async ({ page }) => {
   await setUpVault(page);
   await vaultNote(page, SECRET);
-  await nav(page, "Inbox").click();
+  await nav(page, "All notes").click();
   await newNote(page, "an ordinary note");
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="vault"]');

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stash Help</title>
+<meta name="description" content="How to use Stash: Inbox, Collections, sync, scanner, and answers to common questions.">
+<link rel="icon" href="icons/favicon-32.png">
+<style>
+:root { --bg: #0f1020; --card: #181a2e; --line: #2a2d47; --text: #eef0ff; --muted: #a3a8c9; --accent: #7B61FF; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f5f6fb; --card: #fff; --line: #e3e5f0; --text: #15172b; --muted: #5b6085; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, system-ui, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+a { color: var(--accent); }
+h1 { font-size: 30px; margin: 8px 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: 20px; margin: 32px 0 8px; }
+.lead { color: var(--muted); margin: 0 0 20px; }
+details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+details p, details ul { color: var(--muted); margin: 8px 0 2px; }
+.back { display: inline-block; margin-bottom: 12px; text-decoration: none; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="./">← Back to Stash</a>
+<h1>Help</h1>
+<p class="lead">Stash keeps your notes, photos and files on your own device. Here's how it works.</p>
+
+<h2>The basics</h2>
+<details open><summary>Inbox</summary><p>Drop anything into the Inbox, like messaging yourself: text, photos, PDFs, voice, a location or a contact. Add a caption before sending. Sort it later.</p></details>
+<details><summary>Collections, Sections and Who / Where</summary><p>A Collection is a topic (Health, Food, Bike). Sections split it (Prescriptions, Bills, Petrol). Who / Where are the people, places and things in it (a doctor, a cafe, your scooter). One message can go to more than one collection.</p></details>
+<details><summary>Moving things from the Inbox</summary><p>Each message shows where it probably goes; tap it to file it. Or select messages and tap Sort. Type <b>@</b> while writing to pick where it goes, and <b>#</b> to pick a tag. A #word you don't pick stays plain text.</p></details>
+<details><summary>Smart sorting</summary><p>Stash reads what you send using your own collections, names and habits, and spots dates, amounts, km and litres. It never sends anything anywhere. Choose Suggest, Auto when sure, or Off in Settings → Add-ons.</p></details>
+
+<h2>Tools</h2>
+<details><summary>Scanner</summary><p>New → Scan document. Take or pick a photo, drag the corners onto the paper, pick a look (Colour boost, Grey, B&W), add more pages, then Save PDF. You can sign a page with your saved signature.</p></details>
+<details><summary>Text from photos</summary><p>Scans are read after saving, and any photo has Copy text in the viewer. The words become searchable. The first time, the reader downloads (about 10 MB). It reads print well and handwriting poorly.</p></details>
+<details><summary>Sketch</summary><p>Pens, highlighter, shapes, text and lasso. Draw a rough circle, line or box and hold still at the end: it snaps neat. Pinch to zoom.</p></details>
+<details><summary>Add-ons</summary><p>Settings → Add-ons turns features off you don't use. They're hidden and not loaded; nothing you saved is removed.</p></details>
+
+<h2>Your data</h2>
+<details><summary>Where is my data?</summary><p>Only in this browser on this device. Each web address and each installed app keeps its own copy. Back up with Settings → Your data → Export, or turn on Sync.</p></details>
+<details><summary>Sync between devices</summary><p>Settings → Sync → Connect Google Drive. Stash writes to a “Stash” folder in your own Drive and can only see the files it makes there. Turn it on on each device to keep them in step. The Vault never syncs.</p></details>
+<details><summary>Moving to a new phone or address</summary><p>Turn on Sync on the old one and the new one, or Export on the old one and Import on the new one.</p></details>
+<details><summary>Bringing in from other apps</summary><p>Settings → Your data → Bring in from other apps: Google Keep (Takeout), a WhatsApp chat export, text files, or a batch of photos and PDFs.</p></details>
+<details><summary>The Vault</summary><p>Items in the Vault are encrypted with your password. If you forget both the password and the recovery key, they can't be opened, by anyone.</p></details>
+
+<p class="lead" style="margin-top:32px">Also see the <a href="privacy.html">privacy page</a>.</p>
+</main>
+</body>
+</html>

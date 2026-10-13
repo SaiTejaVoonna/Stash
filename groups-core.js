@@ -44,7 +44,7 @@
   const T = (key, name, desc, icon, color, subs, o) => ({ key, name, desc, icon, color, subs, mainLabel: o.mainLabel || "", mainType: o.mainType || "",
     fields: { amount: { on: o.amount !== false, currency: "INR" }, rating: !!o.rating, custom: o.custom || [] }, cards: "none", cardWord: "" });
   const TEMPLATES = [
-    { key: "blank", name: "Blank", desc: "Just a timeline. Add sub-chats and fields whenever you want.", icon: "layers", color: "#64748b",
+    { key: "blank", name: "Blank", desc: "Just a timeline. Add sections and fields whenever you want.", icon: "layers", color: "#64748b",
       subs: [], mainLabel: "", fields: { amount: { on: true, currency: "INR" }, rating: false, custom: [] }, cards: "none", cardWord: "" },
     { key: "hospital", name: "Health", desc: "Doctors, prescriptions, lab reports, medicines and bills", icon: "cross", color: "#ef4444",
       subs: [sub("Prescriptions", "Prescription", "clipboard", "#22c55e"), sub("Lab Reports", "Lab Report", "flask", "#8b5cf6", { late: true }),
@@ -98,7 +98,7 @@
       [sub("Classes", "Class", "school", "#4c8dff"), sub("Notes", "Note", "note", "#f5b544", { noStatus: true }), sub("Exams", "Exam", "calendar", "#ef4444"), sub("Fees", "Fee", "receipt", "#22c55e")],
       { mainLabel: "Course", mainType: "thing", custom: [{ name: "Marks", type: "number", unit: "", stat: "latest" }] }),
     T("kids", "Kids", "Doctor visits, school, milestones and photos for each child", "baby", "#f97316",
-      [sub("Doctor visits", "Doctor visit", "cross", "#ef4444"), sub("School", "School", "school", "#4c8dff"), sub("Milestones", "Milestone", "star", "#f5b544", { noStatus: true }), sub("Photos", "Photo", "camera", "#ec4899")],
+      [sub("Doctor visits", "Doctor visit", "cross", "#ef4444", { hint: /\b(consultation|opd|check-?up|follow-?up)\b/i }), sub("School", "School", "school", "#4c8dff"), sub("Milestones", "Milestone", "star", "#f5b544", { noStatus: true }), sub("Photos", "Photo", "camera", "#ec4899")],
       { mainLabel: "Child", mainType: "person", custom: [{ name: "Height", type: "number", unit: "cm", stat: "latest" }, { name: "Weight", type: "number", unit: "kg", stat: "latest" }] }),
     T("books", "Books", "Reading, read, to read and favourite quotes", "book", "#8b5cf6",
       [sub("Reading", "Reading", "book", "#4c8dff"), sub("Read", "Read", "check", "#22c55e"), sub("To read", "To read", "bookmark", "#f5b544"), sub("Quotes", "Quote", "quote", "#8b5cf6", { noStatus: true })],
@@ -149,7 +149,7 @@
       [sub("Payments", "Payment", "wallet", "#22c55e"), sub("Visits", "Visit", "calendar", "#4c8dff"), sub("Notes", "Note", "note", "#f5b544", { noStatus: true })],
       { mainLabel: "Person", mainType: "person", custom: [{ name: "Phone", type: "phone", unit: "", stat: "none" }] }),
     T("elders", "Parents & elders", "Doctor visits, medicines, bills and papers for parents", "heart", "#ef4444",
-      [sub("Doctor visits", "Doctor visit", "cross", "#ef4444"), sub("Medicines", "Medicine", "pill", "#ec4899"), sub("Bills", "Bill", "receipt", "#f5b544"), sub("Papers", "Paper", "clipboard", "#6366f1")],
+      [sub("Doctor visits", "Doctor visit", "cross", "#ef4444", { hint: /\b(consultation|opd|check-?up|follow-?up)\b/i }), sub("Medicines", "Medicine", "pill", "#ec4899"), sub("Bills", "Bill", "receipt", "#f5b544"), sub("Papers", "Paper", "clipboard", "#6366f1")],
       { mainLabel: "Person", mainType: "person", custom: [] }),
     T("wedding", "Wedding & big events", "Vendors, payments, guests and ideas", "gift", "#db2777",
       [sub("Vendors", "Vendor", "briefcase", "#4c8dff"), sub("Payments", "Payment", "wallet", "#22c55e"), sub("Guests", "Guest", "heart", "#ec4899"), sub("Ideas", "Idea", "image", "#8b5cf6", { noStatus: true })],
@@ -194,7 +194,7 @@
     T("photography", "Photography", "Shoots, edits, gear and ideas", "camera", "#64748b",
       [sub("Shoots", "Shoot", "camera", "#4c8dff"), sub("Edits", "Edit", "image", "#8b5cf6"), sub("Gear", "Gear", "cog", "#64748b"), sub("Ideas", "Idea", "quote", "#f5b544", { noStatus: true })],
       { mainLabel: "Place", mainType: "place", custom: [] }),
-    T("collections", "Collections", "Things you collect: owned, wanted, sold", "star", "#f5b544",
+    T("collections", "Hobby collections", "Things you collect: owned, wanted, sold", "star", "#f5b544",
       [sub("Owned", "Owned", "check", "#22c55e"), sub("Wanted", "Wanted", "heart", "#ec4899"), sub("Sold", "Sold", "wallet", "#f97316")],
       { mainLabel: "Item", mainType: "thing", rating: true, custom: [] })
   ];
@@ -227,7 +227,7 @@
   function groupFromTemplate(t, name) {
     const now = Date.now();
     return normalizeGroup({
-      id: uid(), name: name || t.name, desc: t.desc || "", icon: t.icon, color: t.color, cover: null,
+      id: uid(), tpl: t.key || "", name: name || t.name, desc: t.desc || "", icon: t.icon, color: t.color, cover: null,
       subs: (t.subs || []).map((s) => ({ ...s, id: uid() })),
       mainLabel: t.mainLabel || "", mainType: t.mainType || "", mainTags: [],
       fields: { amount: { ...(t.fields && t.fields.amount) }, rating: !!(t.fields && t.fields.rating),
@@ -244,7 +244,8 @@
     const out = {
       id: g.id || uid(),
       schema: GROUP_SCHEMA,
-      name: clampStr(g.name, MAX.name) || "Untitled space",
+      tpl: typeof g.tpl === "string" ? g.tpl.slice(0, 40) : "",
+      name: clampStr(g.name, MAX.name) || "Untitled collection",
       desc: clampStr(g.desc, MAX.desc),
       icon: ICONS.includes(g.icon) ? g.icon : "layers",
       color: isColor(g.color) ? g.color : COLORS[9],
@@ -275,6 +276,8 @@
         }))
       },
       cards: CARD_MODES.includes(g.cards) ? g.cards : "none",
+      // Made with "Try it" from the template store: a Keep / Remove banner until then.
+      trialUntil: Number.isFinite(g.trialUntil) ? g.trialUntil : null,
       cardWord: clampStr(g.cardWord, MAX.label),
       createdAt: g.createdAt || Date.now(),
       updatedAt: g.updatedAt || Date.now(),
@@ -305,7 +308,9 @@
       capture: e.capture && window.CPSnap ? window.CPSnap.normalizeCapture(e.capture) : null,
       // Files forwarded from the Me chat (PDFs and the like), kept as they were.
       files: (Array.isArray(e.files) ? e.files : []).filter((f) => f && typeof f.data === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*;base64,/.test(f.data) && !/^data:(text\/html|image\/svg)/i.test(f.data))
-        .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data })),
+        .slice(0, 10).map((f) => ({ name: String(f.name || "file").slice(0, 200), type: String(f.type || "application/octet-stream").slice(0, 100), size: Number(f.size) || 0, data: f.data,
+          ...(typeof f.text === "string" && f.text ? { text: f.text.slice(0, 50000) } : {}) })),
+      ocr: typeof e.ocr === "string" && e.ocr ? e.ocr.slice(0, 50000) : null,
       happenedOn: typeof e.happenedOn === "number" ? e.happenedOn : (e.addedOn || now),
       addedOn: typeof e.addedOn === "number" ? e.addedOn : now,
       updatedAt: e.updatedAt || now,
@@ -369,7 +374,7 @@
   function entryText(e, g) {
     const r = g ? refIn(e, g.id) : null;
     const t = g && r ? tagOf(g, r.tag) : null;
-    return [e.title, e.note, e.link, ...e.tags, t && t.name, t && t.info, ...Object.values(e.fields || {})].filter(Boolean).join(" ").toLowerCase();
+    return [e.title, e.note, e.link, ...e.tags, t && t.name, t && t.info, ...Object.values(e.fields || {}), e.ocr, ...(e.files || []).map((f) => f.name + " " + (f.text || ""))].filter(Boolean).join(" ").toLowerCase();
   }
   // Counts that always add up: per sub-chat and per main tag.
   function counts(entries, g, sid) {
@@ -551,8 +556,58 @@
     return validateTemplate(JSON.parse(new TextDecoder().decode(bytes)));
   }
 
+  // More sections each template has ready, one tap away (Edit collection, and
+  // suggested when something you save needs one). Real life has more than the
+  // starter four; showing them all at once would overwhelm.
+  const MORE = {
+    hospital: [sub("Doctor visits", "Visit", "clipboard", "#4c8dff", { hint: /\b(consultation|opd|check-?up|follow-?up)\b/i }), sub("Scans & X-rays", "Scan", "image", "#14b8a6", {  late: true, hint: /\b(x-?ray|mri|ct scan|ultrasound|usg|scan|ecg|echo)\b/i }),
+      sub("Surgeries & procedures", "Procedure", "cross", "#ef4444", { hint: /\b(surgery|operation|procedure|operated)\b/i }), sub("Discharge summaries", "Discharge summary", "note", "#6366f1", {  late: true, hint: /\bdischarge\b/i }),
+      sub("Vaccinations", "Vaccination", "check", "#22c55e", { hint: /\b(vaccin\w*|booster)\b/i }), sub("Insurance & claims", "Claim", "wallet", "#f97316", {  late: true, hint: /\b(claim|insurance|cashless|tpa)\b/i }),
+      sub("BP & sugar readings", "Reading", "calendar", "#ec4899", {  noTag: true, hint: /\b(bp|blood pressure|sugar|glucose|hba1c)\b/i }), sub("Allergies & conditions", "Note", "heart", "#64748b", { noTag: true })],
+    elders: [sub("Scans & X-rays", "Scan", "image", "#14b8a6", { hint: /\b(x-?ray|mri|ct scan|ultrasound|usg|scan|ecg|echo)\b/i }), sub("Discharge summaries", "Discharge summary", "note", "#6366f1", { hint: /\bdischarge\b/i }),
+      sub("Insurance & claims", "Claim", "wallet", "#f97316", { hint: /\b(claim|insurance|cashless|tpa)\b/i }), sub("Caregivers", "Caregiver note", "heart", "#ec4899")],
+    kids: [sub("Vaccinations", "Vaccination", "check", "#22c55e", { hint: /\b(vaccin\w*|booster)\b/i }), sub("Fees", "Fee", "receipt", "#f5b544"),
+      sub("Report cards", "Report card", "school", "#4c8dff", { hint: /\b(report card|marks|grades?)\b/i }), sub("Activities", "Activity", "star", "#8b5cf6")],
+    bike: [sub("PUC & pollution", "PUC", "leaf", "#22c55e", { hint: /\b(puc|pollution)\b/i }), sub("Accidents & claims", "Claim", "wallet", "#ef4444"), sub("Washes", "Wash", "check", "#14b8a6")],
+    home: [sub("Rent", "Rent", "home", "#6366f1", { hint: /\brent\b/i }), sub("Electricity & water", "Bill", "receipt", "#f5b544", { hint: /\b(electricity|power bill|water bill|eb bill)\b/i }),
+      sub("Internet & phone", "Bill", "link", "#4c8dff", { hint: /\b(wifi|wi-fi|broadband|internet|recharge|postpaid)\b/i }), sub("Maintenance", "Payment", "wrench", "#64748b")],
+    trips: [sub("Visas & passports", "Document", "bookmark", "#6366f1", { hint: /\b(visa|passport)\b/i }), sub("Packing lists", "List", "check", "#22c55e", { noTag: true }), sub("Places to visit", "Place", "map-pin", "#ec4899")],
+    pets: [sub("Insurance", "Policy", "wallet", "#f97316"), sub("Training", "Session", "star", "#8b5cf6")],
+    money: [sub("Taxes", "Tax", "receipt", "#ef4444", { hint: /\b(income tax|itr|tds|gst)\b/i }), sub("Insurance", "Policy", "wallet", "#14b8a6"), sub("Subscriptions", "Subscription", "calendar", "#8b5cf6", { hint: /\b(subscription|netflix|spotify|prime)\b/i })],
+    documents: [sub("Property", "Paper", "home", "#64748b"), sub("Vehicles", "Paper", "car", "#4c8dff"), sub("Education", "Certificate", "school", "#8b5cf6")],
+    dental: [sub("Braces & aligners", "Visit", "check", "#14b8a6")],
+    fitness: [sub("Sleep", "Night", "calendar", "#6366f1", { noTag: true }), sub("Body measurements", "Measurement", "dumbbell", "#ec4899", { noTag: true })],
+    work: [sub("Leave", "Leave", "calendar", "#22c55e"), sub("Payslips", "Payslip", "wallet", "#f5b544", { hint: /\b(payslip|salary slip)\b/i })],
+    study: [sub("Assignments", "Assignment", "note", "#4c8dff"), sub("Projects", "Project", "briefcase", "#8b5cf6")],
+    food: [sub("Groceries", "Grocery run", "cart", "#22c55e")],
+    wedding: [sub("Outfits", "Outfit", "gift", "#ec4899"), sub("Travel & stay", "Booking", "plane", "#4c8dff")]
+  };
+  // Ready sections a collection doesn't have yet. g.tpl says which template it
+  // came from; older collections are matched by the template's name.
+  function moreSections(g) {
+    const t = (g && g.tpl && TEMPLATES.find((x) => x.key === g.tpl)) || (g && TEMPLATES.find((x) => x.name.toLowerCase() === String(g.name || "").toLowerCase()))
+      || (g && TEMPLATES.find((x) => MORE[x.key] && x.icon === g.icon));
+    const list = t ? MORE[t.key] || [] : [];
+    const have = new Set((g.subs || []).map((x) => String(x.name).toLowerCase()));
+    return list.filter((x) => !have.has(x.name.toLowerCase()));
+  }
+  const moreCount = (t) => (MORE[t.key] || []).length;
+
+  // The templates offered first when making a collection; the rest are in the store.
+  const POPULAR = ["hospital", "food", "money", "bike", "home", "trips", "work", "study", "shopping", "movies", "fitness", "documents"];
+  // Example entries for a template's preview: a few per section, so you see what you'd get.
+  function templateExamples(t) {
+    const who = { doctor: "Dr Asha Verma", restaurant: "Corner Cafe", vehicle: "My scooter", person: "Asha", place: "Home", clinic: "City Clinic", title: "A favourite show" };
+    const page = t.mainLabel ? (who[t.mainType] || "Example " + t.mainLabel.toLowerCase()) : null;
+    const out = [];
+    const subs = t.subs.length ? t.subs.slice(0, 4) : [{ name: "", label: "Entry" }];
+    subs.forEach((s, i) => {
+      out.push({ section: s.name, title: (s.label || "Entry") + (i % 2 ? " this week" : " today"), page, amount: t.fields && t.fields.amount && t.fields.amount.on !== false ? [350, 1200, 799, 450][i % 4] : null });
+    });
+    return out;
+  }
   window.CPGroupsCore = {
-    DAY, ICONS, COLORS, CURRENCIES, FIELD_TYPES, CARD_MODES, TEMPLATES, templateSections, MAX,
+    DAY, ICONS, COLORS, CURRENCIES, FIELD_TYPES, CARD_MODES, TEMPLATES, templateSections, POPULAR, templateExamples, MAX, MORE, moreSections, moreCount,
     uid, normalizeGroup, normalizeEntry, normalizeTagName, groupFromTemplate,
     toMinor, formatMoney, formatTotals, totals, entryCurrency, formatNumber, plural,
     refIn, subOf, tagOf, sameDay, monthKey, inGroup, inSub, filterEntries, entryText, counts,

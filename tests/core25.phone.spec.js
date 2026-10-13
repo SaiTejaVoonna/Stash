@@ -32,7 +32,7 @@ test("Search tab: the Timeline with one Filter sheet; a note opened from it goes
   await page.goBack(); // clears the filter
   await expect(page.locator(".tl-row")).toHaveCount(2);
   await page.goBack(); // leaves the Timeline
-  await expect(page.locator("#list-title")).toHaveText("Inbox");
+  await expect(page.locator("#list-title")).toHaveText("All notes");
 });
 
 test("the dock's + makes a sketch and a group entry", async ({ page }) => {
@@ -40,7 +40,7 @@ test("the dock's + makes a sketch and a group entry", async ({ page }) => {
   await page.tap("#new-menu [data-new='entry']");
   // No groups yet: it offers to make one.
   await page.locator(".gp-tpl", { hasText: "Food" }).tap();
-  await page.tap(".gp-sheet button:has-text('Create space')");
+  await page.tap(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toHaveText("Food");
   await page.goBack();
   await page.goBack();

@@ -46,15 +46,17 @@
 
   // ---------- Sheet ----------
   let closeTop = null;
+  // opts.stack: open on top of the current sheet (closing it goes back to that one).
   function sheet(title, build, opts = {}) {
-    close();
+    const below = opts.stack ? closeTop : null;
+    if (!opts.stack) close();
     const body = h("div", { class: "gp-sheet-body" });
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
       overlay.remove();
-      if (closeTop === finish) closeTop = null;
+      if (closeTop === finish) closeTop = below;
       if (opts.onClose) opts.onClose();
     };
     const overlay = h("div", { id: "cp-sheet-overlay", class: opts.full ? "full" : null, onmousedown: (e) => { if (e.target === overlay && !opts.sticky) finish(); } },
@@ -235,9 +237,9 @@
               h("button", { class: "btn icon", "aria-label": "More " + label, disabled: isFill || null, onclick: () => set(plan.counts[k] + 1) }, "+")),
             h("button", { class: "pw-fill" + (isFill ? " on" : ""), "aria-pressed": String(isFill), title: "This one fills whatever is left", onclick: change(() => { o.fill = isFill ? null : k; }) }, isFill ? "Auto" : "Fill")));
         });
-        optsBox.append(rows, total, o.counts.symbols || o.fill === "symbols" ? symbolsBox(o) : null,
+        optsBox.append(...[rows, total, o.counts.symbols || o.fill === "symbols" ? symbolsBox(o) : null,
           toggle("Avoid look-alikes", o.avoidSimilar, (v) => change(() => { o.avoidSimilar = v; })(), "No 0 O o l 1 I |"),
-          h("p", { class: "gp-hint" }, "Characters land in random places, never in order."));
+          h("p", { class: "gp-hint" }, "Characters land in random places, never in order.")].filter(Boolean));
         drawExactTotal();
       };
 
@@ -472,6 +474,8 @@
   // Strokes are kept as points (0..1 of the width and height), so resizing,
   // undo and the eraser simply redraw them; the eraser uncovers the photo.
   function sketch(opts = {}) {
+    // The full sketch pad (sketch.js) when it's loaded; this simple one otherwise.
+    if (window.CPSketch) return window.CPSketch.open({ sheet, h, ic, toast: (m) => api.showToast(m) }, opts);
     return new Promise((resolve) => {
       let result = null;
       let onResize = null;
@@ -593,7 +597,7 @@
     const first = document.querySelector("svg symbol");
     const sprite = first && first.parentNode;
     if (!sprite) return;
-    for (const [name, paths] of Object.entries(ICON_PATHS)) {
+    for (const [name, paths] of Object.entries({ ...ICON_PATHS, ...(window.CPSketch ? window.CPSketch.ICONS : {}) })) {
       if (document.getElementById("icon-" + name)) continue;
       const sym = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
       sym.id = "icon-" + name;

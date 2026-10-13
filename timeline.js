@@ -115,8 +115,21 @@
     if (p.types.length && !p.types.some((t) => r.types.includes(t))) return false;
     if (!p.is.includes("archived") && r.flags.archived) return false;
     for (const f of p.is) if (!r.flags[f]) return false;
-    if (p.text && !S.textMatches(r.text, p.text)) return false;
+    r._why = null;
+    if (p.text) {
+      // Your own words count too ("PUC" also finds "pollution certificate").
+      const alts = window.CPWords ? window.CPWords.alternatives(p.text) : [p.text];
+      const hit = alts.find((q) => S.textMatches(r.text, q));
+      if (!hit) return false;
+      r._why = whyFor(r, hit, hit !== alts[0]);
+    }
     return S.passesNot(p, r);
+  }
+  // Says why a result matched, only when it isn't plain to see.
+  function whyFor(r, q, viaWords) {
+    if (viaWords) return "Matched one of your words";
+    if (S.textMatches((r.title || "") + " " + (r.sub || ""), q)) return null;
+    return "Matched words inside it (photo, file or full text)";
   }
   function sortRows(rows) {
     const by = {
@@ -149,8 +162,8 @@
     const filterCount = p.tokens.length;
     barEl.append(h("button", { class: "tl-drop tl-filter-btn" + (filterCount ? " on" : ""), "data-filter": "all", onclick: () => openAllFilters() }, ic("filter"), "Filter" + (filterCount ? " · " + filterCount : "")));
     const hiddenGroups = p.not.groups.length + (p.not.notes ? 1 : 0);
-    const groupLabel = p.notesOnly ? "Notes only" : p.groups.length ? (p.tokens.find((t) => t.kind === "group" && !t.neg) || {}).label || "Space" : hiddenGroups ? "Hiding " + hiddenGroups : "Space";
-    barEl.append(drop("group", groupLabel, p.notesOnly || p.groups.length || hiddenGroups, (a) => menu(a, "Space", (b, done) => groupMenu(b, done))));
+    const groupLabel = p.notesOnly ? "Notes only" : p.groups.length ? (p.tokens.find((t) => t.kind === "group" && !t.neg) || {}).label || "Collection" : hiddenGroups ? "Hiding " + hiddenGroups : "Collection";
+    barEl.append(drop("group", groupLabel, p.notesOnly || p.groups.length || hiddenGroups, (a) => menu(a, "Collection", (b, done) => groupMenu(b, done))));
     barEl.append(drop("tag", p.tags.length ? (p.tags.length === 1 && !p.not.tags.length ? "#" + tagName(p.tags[0]) : p.tags.length + p.not.tags.length + " tags") : p.not.tags.length ? "Hiding " + p.not.tags.length : "Tag", p.tags.length + p.not.tags.length, (a) => menu(a, "Tags", (b, done) => tagMenu(b, done))));
     barEl.append(drop("date", p.date ? p.date.label : "Date", !!p.date, (a) => menu(a, "Date", (b, done) => dateMenu(b, done))));
     const typeOn = p.types.length + p.is.length + p.not.types.length + p.not.is.length;
@@ -160,6 +173,13 @@
     sortBtn.classList.add("tl-sort");
     barEl.append(sortBtn);
     renderActive(p);
+    // Find by memory: one tap for the time you remember.
+    if (!p.date) {
+      const when = h("div", { class: "tl-when", id: "tl-when", "aria-label": "When" });
+      ["Today", "Yesterday", "This week", "Last week", "This month", "Last month"].forEach((w) =>
+        when.append(h("button", { class: "tl-when-chip", type: "button", onclick: () => setQ((ui.q + " " + w.toLowerCase()).trim()) }, w)));
+      activeEl.append(when);
+    }
   }
 
   function renderActive(p) {
@@ -182,7 +202,7 @@
     if (ui.kbd >= rows.length) ui.kbd = -1;
     if (!rows.length) {
       const empty = h("div", { class: "tl-empty" });
-      if (!rowsCache.length) empty.append(h("h3", null, "Nothing yet"), h("p", null, "Notes and space entries show up here by date, newest first."));
+      if (!rowsCache.length) empty.append(h("h3", null, "Nothing yet"), h("p", null, "Notes and collection entries show up here by date, newest first."));
       else empty.append(h("h3", null, "Nothing matches"), h("p", null, "Remove a filter, or search for fewer words."));
       empty.append(h("p", { class: "tl-help" }, "Try ", h("code", null, "#lab"), " ", h("code", null, "space:food"), " ", h("code", null, "date:2026-03"), " ", h("code", null, "type:photo"), " ", h("code", null, "is:fav")));
       bodyEl.append(empty);
@@ -214,7 +234,8 @@
       r.amountText ? h("span", { class: "gp-amount" }, r.amountText) : null);
     return h("button", { class: "tl-row" + (i === ui.kbd ? " kbd" : ""), "data-kind": r.kind, "data-id": r.id, onclick: () => openRow(r) },
       iconBox,
-      h("span", { class: "tl-main" }, h("span", { class: "tl-t" }, r.title || "Untitled"), r.sub ? h("span", { class: "tl-sub" }, r.sub) : null, meta.childNodes.length ? meta : null),
+      h("span", { class: "tl-main" }, h("span", { class: "tl-t" }, r.title || "Untitled"), r.sub ? h("span", { class: "tl-sub" }, r.sub) : null, meta.childNodes.length ? meta : null,
+        r._why ? h("span", { class: "tl-why" }, r._why) : null),
       side);
   }
   function openRow(r) {
@@ -287,7 +308,7 @@
     list.append(pickBtn([ic("timeline"), "Everything"], !p.groups.length && !p.notesOnly, () => { setGroupToken(""); done(); }));
     list.append(pickBtn([ic("note"), "Notes only", h("span", { class: "num" }, count((r) => r.kind === "note"))], p.notesOnly, () => { setGroupToken("in:notes"); done(); }));
     const groups = api.groups();
-    if (groups.length) list.append(h("div", { class: "tl-pick-sec" }, "Spaces"));
+    if (groups.length) list.append(h("div", { class: "tl-pick-sec" }, "Collections"));
     groups.forEach((g) => list.append(withHide(pickBtn([h("span", { class: "gp-tile sm", style: "--c:" + g.color }, ic(g.icon)), g.name, h("span", { class: "num" }, count((r) => r.kind === "entry" && r.groups.includes(g.id)))],
       p.groups.includes(g.id), () => { setGroupToken(S.tokenFor("group", g.name)); done(); }), "group", g.id, S.tokenFor("group", g.name), g.name, done)));
     body.append(list);
@@ -301,7 +322,7 @@
       const q = S.normalizeTag(input.value);
       list.replaceChildren();
       const tags = api.tags().filter((t) => !q || t.key.includes(q) || t.name.toLowerCase().includes(input.value.trim().toLowerCase()));
-      if (!tags.length) { list.append(h("div", { class: "gp-hint", style: "padding:8px 10px" }, api.tags().length ? "No tag like that." : "No tags yet. Add tags to notes or space entries.")); return; }
+      if (!tags.length) { list.append(h("div", { class: "gp-hint", style: "padding:8px 10px" }, api.tags().length ? "No tag like that." : "No tags yet. Add tags to notes or collection entries.")); return; }
       tags.forEach((t) => {
         const on = p.tags.includes(t.key);
         list.append(withHide(pickBtn([t.emoji ? h("span", null, t.emoji) : h("span", { class: "tag-dot", style: "--c:" + (t.color || "var(--text-3)") }), t.name, h("span", { class: "num" }, t.count)], on, () => {
@@ -342,7 +363,7 @@
   }
 
   const TYPE_OPTIONS = [["type", "note", "Notes", "note"], ["type", "checklist", "Checklists", "checklist"], ["type", "command", "Commands", "command"], ["type", "link", "Links", "link"],
-    ["type", "photo", "Photos", "image"], ["type", "voice", "Voice notes", "mic"], ["type", "sketch", "Sketches", "pen"], ["type", "entry", "Space entries", "layers"]];
+    ["type", "photo", "Photos", "image"], ["type", "voice", "Voice notes", "mic"], ["type", "sketch", "Sketches", "pen"], ["type", "entry", "Collection entries", "layers"]];
   const IS_OPTIONS = [["is", "todo", "To do"], ["is", "doing", "In progress"], ["is", "done", "Done"], ["is", "fav", "Favorites"], ["is", "pinned", "Pinned"], ["is", "unread", "Unread"], ["is", "reminder", "Has a reminder"], ["is", "archived", "Archived"]];
 
   // A chip with three states: off → show only these → hide these → off.
@@ -416,7 +437,7 @@
         } }, "Everything"));
         groups.append(triChip("notes", true, "in:notes", [ic("note"), "Notes"], { name: "Notes", pick: setGroupToken, redraw: draw }));
         api.groups().forEach((g) => groups.append(triChip("group", g.id, S.tokenFor("group", g.name), [ic(g.icon), g.name], { name: g.name, pick: setGroupToken, redraw: draw })));
-        sec("Space", [groups]);
+        sec("Collection", [groups]);
 
         const tags = row();
         const tagList = api.tags().slice(0, 40);

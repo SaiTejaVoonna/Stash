@@ -7,7 +7,7 @@ on:
 jobs:
   browser-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      # The published copy is the minified build: test that too.
+      - run: npm run test:dist
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

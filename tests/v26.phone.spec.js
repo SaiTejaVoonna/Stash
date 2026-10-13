@@ -57,10 +57,10 @@ test("dock: pick tabs in Settings; Timeline gets its own tab without the keyboar
   await expect(page.locator("#tab-bar [data-tab='timeline']")).toHaveClass(/active/);
 });
 
-test("the phone Filter sheet and dock settings say Space, never group", async ({ page }) => {
+test("the phone Filter sheet and dock settings say Collection, never group", async ({ page }) => {
   await page.tap("#tab-bar [data-tab='search']");
   await page.tap(".tl-filter-btn");
-  await expect(page.locator("#cp-sheet-overlay")).toContainText("Space");
+  await expect(page.locator("#cp-sheet-overlay")).toContainText("Collection");
   await expect(page.locator("#cp-sheet-overlay")).not.toContainText(/group/i);
   await page.keyboard.press("Escape");
   await page.goto("./");
@@ -68,7 +68,7 @@ test("the phone Filter sheet and dock settings say Space, never group", async ({
   await page.tap("#settings-btn");
   await page.tap('.settings-nav-item[data-page="appearance"]');
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
-  expect(options).toContain("Spaces");
+  expect(options).toContain("Collections");
   expect(options.join(" ")).not.toMatch(/group/i);
 });
 
@@ -76,6 +76,16 @@ test("Snap is the dock's middle button; holding it opens New; Settings can put N
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.tap("#tab-bar [data-tab='snap']")]);
   await chooser.setFiles({ name: "a.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64") });
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  // Saved at once; the box below now adds its caption.
+  await expect(page.locator("#cx-capbar")).toContainText("Saved");
+  await page.fill("#cx-input", "Matcha boba");
+  // Shown under the photo while typing, before it's sent.
+  await expect(page.locator("#chat-pane .cx-msg .cx-live")).toHaveText("Matcha boba");
+  await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-live")).toHaveCount(0);
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  await expect(page.locator("#chat-pane .cx-msg")).toContainText("Matcha boba");
+  await expect(page.locator("#cx-capbar")).toBeHidden();
   // Hold for the New menu.
   const snap = page.locator("#tab-bar [data-tab='snap']");
   const box = await snap.boundingBox();
@@ -114,7 +124,7 @@ test("What's new shows once after an update, never on a brand-new install", asyn
   await page.evaluate(() => localStorage.removeItem("copypaster-seen-version"));
   await page.reload();
   await expect(page.locator("#whats-new")).toBeVisible();
-  await expect(page.locator("#whats-new")).toContainText("Groups are now Spaces");
+  await expect(page.locator("#whats-new")).toContainText("Suggestions that say why");
   await page.tap("#whats-new-ok");
   await expect(page.locator("#whats-new")).toHaveCount(0);
   await page.reload();
@@ -135,14 +145,15 @@ test("words typed just before the app closes are kept", async ({ page }) => {
 
 // ---------- Me chat ----------
 const PNG1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-test("Me chat: message yourself with text, photos and a PDF; select and forward into a space, sub-chat and page", async ({ page }) => {
+test("Me chat: message yourself with text, photos and a PDF; select and forward into a collection, section and page", async ({ page }) => {
   // A space with a page to forward into.
   await page.tap("#tab-bar [data-tab='groups']");
-  await page.locator(".gp-empty button", { hasText: "New space" }).tap();
+  await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).tap();
   await page.fill("#gp-new-name", "Bike");
-  await page.tap(".gp-sheet button:has-text('Create space')");
+  await page.tap(".gp-sheet button:has-text('Create collection')");
   await page.tap("#gp-text");
+  await page.tap("#gp-c-page");
   await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
   await page.fill("#gp-page-name", "Fz V3");
   await page.tap("#gp-page-create");
@@ -151,17 +162,19 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
 
   await page.tap("#tab-bar [data-tab='chat']");
   await expect(page.locator("#chat-pane")).toBeVisible();
-  await expect(page.locator(".cx-empty")).toContainText("Your own chat");
+  await expect(page.locator(".cx-empty")).toContainText("Drop anything here");
   await page.fill("#cx-input", "Tyre pressure 32 psi @fzv3");
   await page.tap("#cx-send");
   await page.tap("#cx-plus");
   const ch1 = page.waitForEvent("filechooser");
   await page.tap("#cx-gallery");
   await (await ch1).setFiles({ name: "receipt.png", mimeType: "image/png", buffer: PNG1 });
+  await page.tap("#cx-preview-send");
   await page.tap("#cx-plus");
   const ch2 = page.waitForEvent("filechooser");
   await page.tap("#cx-files");
   await (await ch2).setFiles({ name: "insurance.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
+  await page.tap("#cx-preview-send");
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(3);
   await expect(page.locator(".cx-file")).toContainText("insurance.pdf");
   await expect(page.locator("#chat-pane .cx-msg").first()).toContainText("Tyre pressure 32 psi");
@@ -173,7 +186,7 @@ test("Me chat: message yourself with text, photos and a PDF; select and forward 
   for (const i of [0, 1, 2]) await page.locator("#chat-pane .cx-msg").nth(i).tap();
   await expect(page.locator(".cx-count")).toHaveText("3 selected");
   await page.tap("#cx-forward");
-  await expect(page.locator(".gp-sheet")).toContainText("Forward 3 messages");
+  await expect(page.locator(".gp-sheet")).toContainText("Move 3 messages");
   await expect(page.locator("#gp-sort-spaces .gp-mini.active")).toContainText("Bike");
   await expect(page.locator(".gp-sort-row .gp-mini.active", { hasText: "Fz V3" })).toHaveCount(1);
   await page.locator("#gp-sort-subs .gp-mini", { hasText: "Insurance & papers" }).tap();
@@ -209,4 +222,147 @@ test("Me chat: hold a message to select it, delete with Undo; Back leaves the ch
   await page.goBack();
   await expect(page.locator("#chat-pane")).toBeHidden();
   await expect(page.locator(".item-row", { hasText: "Call the dentist" })).toHaveCount(0);
+});
+
+test("Inbox captions: photos and a file show first, get a caption, and go as one album; HD off keeps no originals; edit later", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  await page.tap("#cx-plus");
+  const ch = page.waitForEvent("filechooser");
+  await page.tap("#cx-gallery");
+  await (await ch).setFiles([{ name: "a.png", mimeType: "image/png", buffer: PNG1 }, { name: "b.png", mimeType: "image/png", buffer: PNG1 },
+    { name: "c.png", mimeType: "image/png", buffer: PNG1 }, { name: "bill.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 x") }]);
+  await expect(page.locator("#cx-preview")).toBeVisible();
+  await expect(page.locator(".cx-pv-title")).toHaveText("4 to send");
+  await expect(page.locator("#tab-bar")).toBeHidden();
+  // Drop one, turn HD off, write a caption.
+  await page.locator(".cx-pv-x").nth(2).tap();
+  await expect(page.locator(".cx-pv-title")).toHaveText("3 to send");
+  await page.tap("#cx-hd");
+  await page.fill("#cx-caption", "Matcha boba at the cafe");
+  await page.tap("#cx-preview-send");
+  await expect(page.locator("#cx-preview")).toBeHidden();
+  const msg = page.locator("#chat-pane .cx-msg");
+  await expect(msg).toHaveCount(1);
+  await expect(msg.locator(".cx-album img")).toHaveCount(2);
+  await expect(msg.locator(".cx-file")).toContainText("bill.pdf");
+  await expect(msg).toContainText("Matcha boba at the cafe");
+  const stored = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("items").objectStore("items").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); const n = all.find((i) => i.chat); return { images: n.images.length, captures: n.captures.length, original: n.capture.original, content: n.content };
+  });
+  expect(stored).toEqual({ images: 2, captures: 1, original: null, content: "Matcha boba at the cafe" });
+  // Edit the caption later: select it → Edit caption.
+  await page.tap("#cx-select");
+  await msg.tap();
+  await page.tap("#cx-edit");
+  await expect(page.locator(".cx-pv-title")).toHaveText("Edit caption");
+  await page.fill("#cx-caption", "Matcha boba, 250");
+  await page.tap("#cx-preview-send");
+  await expect(msg).toContainText("Matcha boba, 250");
+  // Back closes the preview before anything else.
+  await page.tap("#cx-plus");
+  const ch2 = page.waitForEvent("filechooser");
+  await page.tap("#cx-files");
+  await (await ch2).setFiles({ name: "x.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 y") });
+  await expect(page.locator("#cx-preview")).toBeVisible();
+  await page.goBack();
+  await expect(page.locator("#cx-preview")).toBeHidden();
+  await expect(page.locator("#chat-pane")).toBeVisible();
+  await expect(msg).toHaveCount(1);
+});
+
+test("Inbox tools: filters, search, select all, archive with Undo, clean up empty and repeated messages", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  for (const t of ["Buy milk", "https://example.com/recipe", "Buy milk"]) { await page.fill("#cx-input", t); await page.tap("#cx-send"); }
+  await page.tap("#cx-plus");
+  const ch = page.waitForEvent("filechooser");
+  await page.tap("#cx-gallery");
+  await (await ch).setFiles({ name: "a.png", mimeType: "image/png", buffer: PNG1 });
+  await page.tap("#cx-preview-send");
+  const msgs = page.locator("#chat-pane .cx-msg");
+  await expect(msgs).toHaveCount(4);
+  // Filters.
+  await page.locator(".cx-filter[data-filter='links']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='photos']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='all']").tap();
+  // Search.
+  await page.tap("#cx-search-btn");
+  await page.fill("#cx-q", "milk");
+  await expect(msgs).toHaveCount(2);
+  await page.goBack();
+  await expect(msgs).toHaveCount(4);
+  // Clean up: the second "Buy milk" is a repeat, picked already.
+  await page.tap("#cx-cleanup");
+  await expect(page.locator(".cx-clean-sec[data-group='dupes']")).toContainText("The same thing twice (1)");
+  await page.tap("#cx-clean-archive");
+  await expect(msgs).toHaveCount(3);
+  await page.locator(".cx-filter[data-filter='archived']").tap();
+  await expect(msgs).toHaveCount(1);
+  await page.locator(".cx-filter[data-filter='all']").tap();
+  // Select all → Archive → Undo.
+  await page.tap("#cx-select");
+  await page.tap("#cx-all");
+  await expect(page.locator(".cx-count")).toHaveText("3 selected");
+  await page.tap("#cx-archive");
+  await expect(msgs).toHaveCount(0);
+  await page.locator(".toast-item", { hasText: "Archived 3 messages" }).getByRole("button", { name: "Undo" }).tap();
+  await expect(msgs).toHaveCount(3);
+});
+
+test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap suggestion, Sort many; typed #words stay text", async ({ page }) => {
+  // A Food collection with a page "Nimrah Cafe".
+  await page.tap("#tab-bar [data-tab='groups']");
+  await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
+  await page.locator(".gp-tpl", { hasText: "Food" }).first().tap();
+  await page.tap(".gp-sheet button:has-text('Create collection')");
+  await page.tap("#gp-text");
+  await page.tap("#gp-c-page");
+  await page.locator(".gp-extras .gp-mini:has-text('New')").tap();
+  await page.fill("#gp-page-name", "Nimrah Cafe");
+  await page.tap("#gp-page-create");
+  // Saved and shown before the reload (a reload can cut off a save still in progress).
+  await expect(page.locator("#gp-c-page")).toContainText("Nimrah Cafe");
+  await openApp(page);
+  await page.tap("#tab-bar [data-tab='chat']");
+  // @ list: pick the page.
+  await page.locator("#cx-input").pressSequentially("Matcha boba ₹250 @nim");
+  await expect(page.locator("#cx-sug")).toBeVisible();
+  await expect(page.locator(".cx-sug-item").first()).toContainText("Nimrah Cafe");
+  await page.locator(".cx-sug-item").first().tap();
+  await expect(page.locator("#cx-input")).toHaveValue("Matcha boba ₹250 @NimrahCafe ");
+  await expect(page.locator("#cx-spots")).toContainText("₹250");
+  // # list offers a new tag; a typed #word that isn't picked stays text.
+  await page.locator("#cx-input").pressSequentially("#bobatea");
+  await expect(page.locator(".cx-sug-item").first()).toContainText("#bobatea");
+  await page.locator(".cx-sug-item").first().tap();
+  await page.tap("#cx-send");
+  const msg = page.locator("#chat-pane .cx-msg").last();
+  await expect(msg.locator(".cx-guess")).toContainText("Food");
+  await expect(msg.locator(".cx-guess")).toContainText("Nimrah Cafe");
+  // It says why, in plain words.
+  await expect(msg.locator(".cx-why")).toContainText("Because you picked it");
+  // One tap files it, with the amount and the tag.
+  await msg.locator(".cx-guess").tap();
+  await expect(page.locator(".toast-item").last()).toContainText("Filed to Food");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(0);
+  const e = await page.evaluate(async () => {
+    const db = await new Promise((r) => { const q = indexedDB.open("copypaster"); q.onsuccess = () => r(q.result); });
+    const all = await new Promise((r) => { const q = db.transaction("entries").objectStore("entries").getAll(); q.onsuccess = () => r(q.result); });
+    db.close(); return all.map((x) => ({ amount: x.amount, tags: x.tags, page: !!x.refs[0].tag }));
+  });
+  expect(e).toEqual([{ amount: 25000, tags: ["bobatea"], page: true }]);
+  // Sort many: two messages, one sure, one not.
+  for (const t of ["Biryani at Nimrah Cafe", "random thought"]) { await page.fill("#cx-input", t); await page.tap("#cx-send"); }
+  await page.tap("#cx-select");
+  await page.tap("#cx-all");
+  await page.tap("#cx-sort");
+  await expect(page.locator(".cx-sort-row")).toHaveCount(2);
+  await expect(page.locator(".cx-sort-row").first()).toContainText("→ Food");
+  await expect(page.locator(".cx-sort-row").last()).toContainText("stays in the Inbox");
+  await page.tap("#cx-sort-move");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
+  await expect(page.locator("#chat-pane .cx-msg")).toContainText("random thought");
 });

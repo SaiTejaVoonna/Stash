@@ -1,11 +1,17 @@
 {
   "name": "copypaster",
   "private": true,
-  "description": "Browser tests for CopyPaster. The app itself is index.html and needs no build.",
+  "description": "Stash: browser tests and the build for the published copy. The app itself is index.html and its files, no build needed to run it.",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "build": "node scripts/build.js",
+    "test:dist": "npm run build && STASH_ROOT=dist playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.56.1",
+    "clean-css": "^5.3.3",
+    "jszip": "^3.10.1",
+    "pdfjs-dist": "^3.11.174",
+    "terser": "^5.31.6"
   }
 }

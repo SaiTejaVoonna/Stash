@@ -208,6 +208,47 @@
     entities.forEach((x) => { delete x._from; });
     return { entities, links, review };
   }
+  // What a new name most likely is, from words in it: "Dr …" a doctor, "… Cafe" a
+  // restaurant, "… Hospital" a clinic, "Activa" a vehicle. Only a first guess;
+  // it's shown picked and changed in one tap. null when nothing fits.
+  const HINTS = [
+    [/^(dr|doctor|prof)\.?\s/i, "doctor"],
+    [/\b(hospitals?|clinics?|labs?|diagnostics?|pharmacy|medicals?|nursing home|dental care|eye care|scan centre|scan center)\b/i, "clinic"],
+    [/\b(cafe|café|caf|restaurant|room|bakery|bakers|dhaba|hotel|bar|kitchen|biryani|bistro|mess|canteen|tea|chai|coffee|boba|pizzeria|pizza|grill|diner|eatery|sweets|juice|tiffins?|bhavan|darbar|paradise|chutneys)\b/i, "restaurant"],
+    [/\b(store|stores|shop|mall|mart|market|bazaar|supermarket|salon|spa|gym|park|school|college|university|office|station|airport|temple|church|mosque|beach|bank|theatre|theater|cinema|museum|stadium|lake|hills?|fort|resort|home|house|apartments?)\b/i, "place"],
+    [/\b(bike|car|scooter|scooty|activa|splendor|pulsar|swift|creta|nexon|innova|fz|r15|duke|bullet|royal enfield|classic 350|jupiter|ntorq|ola|ather|tvs|honda|bajaj|yamaha|hero|maruti|hyundai|tata|mahindra|kia|toyota)\b/i, "vehicle"],
+    [/\b(mr|mrs|ms|miss|uncle|aunty|auntie|aunt|bro|sir|madam|amma|nanna|anna|akka|mama|papa|mom|mum|dad|grandma|grandpa|teacher|mechanic|driver|maid)\b/i, "person"],
+    [/\b(season|episode|movie|film|series|anime|book|novel|show)\b/i, "title"]
+  ];
+  function guessType(name) {
+    const n = String(name || "").trim();
+    if (!n) return null;
+    for (const [re, key] of HINTS) if (re.test(n)) return key;
+    return null;
+  }
+  // Medical departments: as a "doctor" page they're really a specialty.
+  const SPECIALTIES = [["dermatology", "Skin"], ["dermatologist", "Skin"], ["skin", "Skin"], ["ent", "ENT"], ["otolaryngology", "ENT"], ["gastroenterology", "Gastro"], ["gastro", "Gastro"],
+    ["surgical gastroenterology", "Gastro"], ["cardiology", "Heart"], ["cardiologist", "Heart"], ["orthopedics", "Ortho"], ["orthopaedics", "Ortho"], ["ortho", "Ortho"],
+    ["pediatrics", "Child"], ["paediatrics", "Child"], ["gynecology", "Gynae"], ["gynaecology", "Gynae"], ["obstetrics", "Gynae"], ["neurology", "Neuro"], ["ophthalmology", "Eye"],
+    ["eye", "Eye"], ["dental", "Dental"], ["dentistry", "Dental"], ["dentist", "Dental"], ["psychiatry", "Mind"], ["psychology", "Mind"], ["urology", "Urology"], ["oncology", "Cancer"],
+    ["pulmonology", "Lungs"], ["nephrology", "Kidney"], ["endocrinology", "Hormones"], ["general medicine", "General"], ["general surgery", "Surgery"], ["surgery", "Surgery"],
+    ["general surgeon", "Surgery"], ["radiology", "Scans"], ["physiotherapy", "Physio"], ["physio", "Physio"], ["diabetology", "Diabetes"], ["rheumatology", "Joints"]];
+  // "Dermatology" → { name: "Dermatology", short: "Skin" }; null for a person's name.
+  function specialtyOf(name) {
+    const n = fold(name).replace(/\b(dept|department|ward|opd|clinic|unit)\b/g, "").trim();
+    const hit = SPECIALTIES.find(([w]) => n === w);
+    return hit ? { name: tidy(String(name).trim()), short: hit[1] } : null;
+  }
+  // A short label for a doctor's specialty field ("Surgical Gastroenterology" → "Gastro").
+  function shortSpecialty(text) {
+    const n = fold(text);
+    if (!n) return "";
+    const hit = SPECIALTIES.slice().sort((a, b) => b[0].length - a[0].length).find(([w]) => new RegExp("\\b" + w + "\\b").test(n));
+    if (hit) return hit[1];
+    const w = String(text).trim().split(/\s+/).slice(-1)[0];
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
   // "asha verma" → "Asha Verma"; text with capitals stays as typed.
   function tidy(raw) {
     const s = String(raw || "").trim().replace(/\s+/g, " ");
@@ -216,5 +257,5 @@
   }
 
   window.CPEntities = { ENTITY_SCHEMA, KINDS, FIELD_TYPES, FIELD_TYPE_LABELS, BUILTIN_TYPES, MAX, uid, mergeTypes, typeOf, typeForLabel, normalizeEntity, normalizeField,
-    fieldsOf, showValue, summary, similar, dueDates, planMigration, tidy, fold };
+    fieldsOf, showValue, summary, similar, dueDates, planMigration, tidy, fold, guessType, specialtyOf, shortSpecialty };
 })();

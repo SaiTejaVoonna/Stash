@@ -23,9 +23,9 @@ test("Groups tab, a group screen, Snap, and back steps out one screen at a time"
   await expect(page.locator("#tab-bar [data-tab='groups']")).toBeVisible();
 
   await page.click("#tab-bar [data-tab='groups']");
-  await page.click(".gp-empty button:has-text('New space')");
+  await page.click(".gp-empty button:has-text('New collection')");
   await page.locator(".gp-tpl", { hasText: "Bike" }).click();
-  await page.click(".gp-sheet button:has-text('Create space')");
+  await page.click(".gp-sheet button:has-text('Create collection')");
   await expect(page.locator(".gp-id h1")).toHaveText("Vehicles");
   await expect(page.locator("#tab-bar")).toBeHidden();
 
@@ -40,7 +40,7 @@ test("Groups tab, a group screen, Snap, and back steps out one screen at a time"
 
   // Back: group → Groups list (tab bar returns).
   await page.goBack();
-  await expect(page.locator(".gp-home-title h1")).toHaveText("Spaces");
+  await expect(page.locator(".gp-home-title h1")).toHaveText("Collections");
   await expect(page.locator("#tab-bar")).toBeVisible();
 
   // Snap from the dock's middle button with no space open: saved into the Me chat at once, no questions.

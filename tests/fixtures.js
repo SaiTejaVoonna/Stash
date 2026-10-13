@@ -3,15 +3,59 @@
 const base = require("@playwright/test");
 const { expect } = base;
 
+const path = require("path");
+// Libraries the app loads from a CDN the first time they're needed, served from
+// node_modules instead (tests run offline).
+const CDN = [
+  [/^https:\/\/cdn\.jsdelivr\.net\/npm\/pdfjs-dist@3\.11\.174\/build\/(pdf(?:\.worker)?\.min\.js)$/, (m) => path.join(__dirname, "..", "node_modules", "pdfjs-dist", "build", m[1])],
+  [/^https:\/\/cdn\.jsdelivr\.net\/npm\/jszip@3\.10\.1\/dist\/jszip\.min\.js$/, () => path.join(__dirname, "..", "node_modules", "jszip", "dist", "jszip.min.js")]
+];
+async function routeCdn(page) {
+  await page.route(/^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//, (route) => {
+    const url = route.request().url();
+    for (const [re, file] of CDN) { const m = url.match(re); if (m) return route.fulfill({ path: file(m), contentType: "application/javascript" }); }
+    // The text reader: a stand-in that "reads" whatever the test sets in window.__ocrText.
+    if (/tesseract\.js@/.test(url)) return route.fulfill({ contentType: "application/javascript",
+      body: "window.Tesseract={createWorker:async function(){return{recognize:async function(){return{data:{text:window.__ocrText||'TOTAL 450'}}}}}};" });
+    return route.abort();
+  });
+}
+// A one-page PDF that says "Hello Stash".
+function samplePdf(text = "Hello Stash") {
+  const stream = "BT /F1 18 Tf 20 100 Td (" + text + ") Tj ET";
+  return Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
+    "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n" +
+    "4 0 obj<</Length " + stream.length + ">>stream\n" + stream + "\nendstream endobj\n5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n");
+}
+
 const test = base.test.extend({
   page: async ({ page }, use) => {
+    await routeCdn(page);
+    // The text reader: a stand-in that "reads" whatever the test sets in window.__ocrText.
+    // Set up before the page loads, since the real download is integrity-checked.
+    await page.addInitScript(() => { window.Tesseract = { createWorker: async () => ({ recognize: async () => ({ data: { text: window.__ocrText || "TOTAL 450" } }) }) }; });
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
+    // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
+    // Tests type into the plain-text editor; the rich editor has its own tests.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && !localStorage.getItem("copypaster-editor")) localStorage.setItem("copypaster-editor", "plain"); } catch {} });
+    // Older tests expect Organise open on computers (it now starts folded; rich.spec checks that).
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && screen.width > 720 && localStorage.getItem("copypaster-details-open") === null) localStorage.setItem("copypaster-details-open", "1"); } catch {} });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.stack || e.message));
     page.on("dialog", (d) => d.accept()); // confirm() prompts: say OK
     await use(page);
     expect(errors, "uncaught page errors").toEqual([]);
+    // A missing value must never show up as the word "null" or "undefined".
+    if (!page.isClosed()) {
+      const stray = await page.evaluate(() => {
+        const out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        while (w.nextNode()) { const t = w.currentNode.nodeValue.trim(); if ((t === "null" || t === "undefined" || /\bundefined\b|\bNaN\b/.test(t)) && w.currentNode.parentElement && !w.currentNode.parentElement.closest("script,style,textarea,[contenteditable]")) out.push(t + " in <" + w.currentNode.parentElement.tagName.toLowerCase() + " " + (w.currentNode.parentElement.id || w.currentNode.parentElement.className) + ">"); }
+        return out;
+      }).catch(() => []);
+      expect(stray, "stray null/undefined text on screen").toEqual([]);
+    }
   },
 });
 
@@ -78,4 +122,4 @@ const rowTexts = async (page) => page.locator(".item-row .item-text").allInnerTe
 const lastToast = (page) => page.locator(".toast-item").last();
 const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name });
 
-module.exports = { test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
+module.exports = { routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
