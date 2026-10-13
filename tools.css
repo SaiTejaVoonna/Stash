@@ -399,7 +399,7 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 .cx-title small { color: var(--text-3); font-size: var(--fs-xs); }
 .cx-body { flex: 1; overflow-y: auto; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 6px;
   background-image: radial-gradient(color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
-.cx-day { align-self: center; margin: 10px 0 4px; position: sticky; top: 6px; z-index: 2; }
+.cx-day { align-self: center; margin: 10px 0 4px; position: relative; z-index: 1; /* not sticky: it covered messages */ }
 .cx-day span { font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-2); background: var(--surface-2); padding: 4px 10px; border-radius: var(--r-full); box-shadow: var(--shadow-sm); }
 .cx-msg { position: relative; align-self: flex-end; max-width: min(78%, 460px); display: flex; flex-direction: column; gap: 6px; padding: 6px 8px 5px; border-radius: 16px 16px 4px 16px;
   background: color-mix(in srgb, var(--accent) 20%, var(--surface-1)); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }

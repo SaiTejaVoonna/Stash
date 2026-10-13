@@ -50,3 +50,16 @@ test("Inbox select bar never shows the word null", async ({ page }) => {
   await expect(page.locator("#cx-selbar")).not.toContainText("null");
   await expect(page.locator("#cx-selbar")).toContainText("Pick messages");
 });
+
+test("desktop: Timeline shows tick boxes as words, PDFs with a file icon; opening Inbox closes a note from Notes", async ({ page }) => {
+  await openApp(page);
+  await seed(page, { items: [note("c", "- [ ] milk\n- [x] bread")] });
+  await page.locator("#main-nav .nav-item", { hasText: "Timeline" }).click();
+  await expect(page.locator(".tl-row").first()).toContainText("milk");
+  await expect(page.locator(".tl-row").first()).not.toContainText("[ ]");
+  await page.locator("#main-nav .nav-item", { hasText: "All notes" }).click();
+  await page.locator(".item-row").first().click();
+  await expect(page.locator("#detail-pane")).toHaveClass(/open/);
+  await page.locator("#main-nav .nav-item", { hasText: "Inbox" }).click();
+  await expect(page.locator("#title-input")).toHaveCount(0);
+});

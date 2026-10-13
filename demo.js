@@ -158,7 +158,7 @@
     ];
     const inbox = [
       { content: "Call City Clinic to book the follow-up", createdAt: ago(0, 8), updatedAt: ago(0, 8) },
-      { content: "Lunch with the team", images: [pic.cafe], createdAt: ago(1, 13), updatedAt: ago(1, 13) },
+      { content: "Bill from today, file it later", images: [pic.cafe], createdAt: ago(1, 13), updatedAt: ago(1, 13) },
       { title: "Prescription - Dr Asha Verma.pdf", files: [{ name: "Prescription - Dr Asha Verma.pdf", type: "application/pdf", size: rx.size, data: rx.data }], createdAt: ago(2, 18), updatedAt: ago(2, 18) },
       { content: "https://example.com/recipes/lemon-rice", createdAt: ago(3, 20), updatedAt: ago(3, 20) },
       { content: "Fuel 5.2 L ₹551 at 12,180 km", images: [pic.fuel], createdAt: ago(4, 9), updatedAt: ago(4, 9) }

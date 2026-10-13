@@ -10547,8 +10547,11 @@
       const tagObjs = i.tags.map((id) => tagById(id)).filter(Boolean);
       const lines = (i.content || "").split("\n").map((l) => l.trim()).filter(Boolean);
       const listText = i.checklist ? i.checklist.map((c) => c.text).join(" ") : "";
-      const title = i.title || lines[0] || (i.checklist && i.checklist[0] ? i.checklist[0].text : "") || (i.audio.length ? "Voice note" : i.images.length ? "Photo" : "Untitled");
-      let sub = i.title ? lines[0] || "" : lines.slice(1).join("  ");
+      // Words, not formatting marks (☐ milk, not "- [ ] milk").
+      const P = (t) => (window.CPFormat && i.type === "note" ? window.CPFormat.plain(t) : t);
+      const fileName = i.files && i.files[0] ? i.files[0].name : "";
+      const title = i.title || P(lines[0] || "").replace(/^[\u2610\u2611\u2022]\s*/, "") || fileName || (i.checklist && i.checklist[0] ? i.checklist[0].text : "") || (i.audio.length ? "Voice note" : i.images.length ? "Photo" : "Untitled");
+      let sub = P(i.title ? lines[0] || "" : lines.slice(1).join("  "));
       if (i.checklist && i.checklist.length) sub = i.checklist.filter((c) => c.done).length + " of " + i.checklist.length + " done";
       if (kind === "link") sub = hostOf(lines[0]) || sub;
       const folder = i.folderId && folderById(i.folderId);
@@ -10558,7 +10561,7 @@
       const st = i.type === "note" && statusOf(i.status);
       out.push({
         kind: "note", id: i.id, at: i.createdAt, edited: i.updatedAt,
-        title, sub: sub.slice(0, 160), icon: i.checklist ? "checklist" : i.audio.length && !i.images.length ? "mic" : KIND_ICONS[kind],
+        title, sub: sub.slice(0, 160), icon: i.checklist ? "checklist" : fileName ? "file" : i.audio.length && !i.images.length ? "mic" : KIND_ICONS[kind],
         color: "var(--" + (kind === "image" ? "image" : kind) + ")", photo: i.images[0] || null,
         tags: tagObjs.map((t) => tagKey(t.name)), tagLabels: tagObjs.map((t) => ({ key: tagKey(t.name), label: t.name })),
         where, status: st ? { label: st.label, color: st.color } : null,
@@ -10583,6 +10586,9 @@
   async function openChat() {
     if (!chatApi) return;
     if (timelineApi && timelineApi.isOpen()) timelineApi.close();
+    // A note left open from Notes doesn't belong beside the Inbox.
+    const open = currentId && cache.find((i) => i.id === currentId);
+    if (open && !open.chat) await closeDetail();
     await chatApi.open();
     renderNav();
     renderTabBar();

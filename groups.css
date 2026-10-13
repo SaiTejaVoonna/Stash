@@ -385,7 +385,7 @@ body.group-mode #toast { top: calc(14px + env(safe-area-inset-top)); bottom: aut
 .gp-people { display: flex; gap: var(--s-2); overflow-x: auto; flex: 1 1 100%; min-width: 0; padding: 2px 2px 4px; scrollbar-width: none; }
 .gp-people::-webkit-scrollbar { display: none; }
 .gp-person { flex: none; width: 68px; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; color: var(--text); cursor: pointer; padding: 2px 0; font: inherit; }
-.gp-person-name { max-width: 66px; font-size: var(--fs-2xs); line-height: 1.25; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-person-name { max-width: 84px; font-size: var(--fs-2xs); line-height: 1.25; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .gp-person .num { font-size: var(--fs-2xs); color: var(--text-3); font-variant-numeric: tabular-nums; line-height: 1; }
 .gp-person.active .gp-person-name { font-weight: var(--fw-semibold); }
 .gp-person.active .gp-ava { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--c, var(--accent)); }

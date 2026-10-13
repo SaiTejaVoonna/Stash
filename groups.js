@@ -423,8 +423,11 @@
       list.append(row);
       if (!collapsed && g.subs.length) {
         const cnt = C.counts(entries, g, "all");
+        const any = C.inGroup(entries, g.id).length > 0;
         for (const s of g.subs) {
           const active = ui.screen === "group" && ui.g === g.id && ui.s === s.id;
+          // Empty sections stay out of the sidebar once the collection is in use (they're in its tabs).
+          if (any && !cnt.bySub[s.id] && !active) continue;
           list.append(h("div", { class: "nav-item gp-nav-sub" + (active ? " active" : ""), title: s.name, onclick: () => openGroup(g.id, s.id) },
             h("span", { class: "nav-label" }, tile(s.icon, s.color, true, "xs"), h("span", { class: "nav-text" }, s.name)),
             h("span", { class: "count" }, cnt.bySub[s.id] || 0)));
