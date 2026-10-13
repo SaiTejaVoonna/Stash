@@ -1,7 +1,7 @@
 // Cloudflare: serves the built app (dist/) as static files. No server code,
 // no database: Stash keeps everything on the person's own device.
 {
-  "name": "copypaster",
+  "name": "stash",
   "compatibility_date": "2025-09-01",
   "assets": { "directory": "./dist" }
 }
