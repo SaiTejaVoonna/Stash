@@ -145,3 +145,19 @@ test("rich editor: \"/\" commands make a tick box and a heading", async ({ page 
   await expect(rich.locator("ul.fm-tasks li")).toHaveText(["milk"]);
   await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("- [ ] milk");
 });
+
+test("rich editor: a heading or a list changes only the line it's on (also after Shift+Enter)", async ({ page }) => {
+  const rich = await newRichNote(page);
+  await rich.type("one");
+  await page.keyboard.press("Shift+Enter");
+  await rich.type("two");
+  await page.keyboard.press("Shift+Enter");
+  await rich.type("three");
+  await page.keyboard.press("ArrowUp");
+  await page.click("#fmt-heading");
+  await expect(rich.locator("h2")).toHaveText("two");
+  await page.click("#fmt-bullets"); // a heading turned into a list item
+  await expect(rich.locator("h2")).toHaveCount(0);
+  await expect(rich.locator("li")).toHaveText(["two"]);
+  await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("one\n- two\nthree");
+});
