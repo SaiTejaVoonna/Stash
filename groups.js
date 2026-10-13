@@ -1902,6 +1902,55 @@
     api.showToast("This is an example. Keep it, change it, or remove it");
   }
 
+  // ---------- Demo data (Settings → Your data) ----------
+  // spec: [{ template, name, pages: [{ name, type }], entries: [{ s, page, title, note, amount, at, photos, fields: { Odometer: 12000 }, rating }] }]
+  // Returns the ids it made, so removing takes exactly those away.
+  async function addDemo(spec) {
+    if (!enabled) setEnabled(true);
+    const made = { groups: [], entries: [], entities: [] };
+    for (const gs of spec) {
+      const t = C.TEMPLATES.find((x) => x.key === gs.template) || C.TEMPLATES[0];
+      const g = C.groupFromTemplate(t, gs.name);
+      g.order = Date.now() + made.groups.length;
+      const pageId = {};
+      for (const p of gs.pages || []) {
+        let ent = entities.find((x) => E.fold(x.name) === E.fold(p.name));
+        if (!ent) { ent = E.normalizeEntity({ name: p.name, type: p.type || t.mainType }, types); await saveEntity(ent); made.entities.push(ent.id); }
+        pageId[p.name] = pageFor(g, ent).id;
+      }
+      await saveGroup(g);
+      groups.push(g);
+      made.groups.push(g.id);
+      for (const x of gs.entries || []) {
+        const sub = typeof x.s === "string" ? g.subs.find((s) => s.name === x.s) : g.subs[x.s];
+        const fields = {};
+        for (const [name, v] of Object.entries(x.fields || {})) { const f = g.fields.custom.find((f) => f.name === name); if (f) fields[f.id] = String(v); }
+        const e = C.normalizeEntry({ refs: [{ g: g.id, s: sub ? sub.id : null, tag: x.page ? pageId[x.page] || null : null }], title: x.title, note: x.note || "",
+          amount: x.amount || null, currency: "INR", happenedOn: x.at, addedOn: x.at, photos: x.photos || [], fields, rating: x.rating || null, tags: x.tags || [] });
+        await saveEntry(e);
+        entries.push(e);
+        made.entries.push(e.id);
+      }
+    }
+    changed();
+    render();
+    return made;
+  }
+  async function removeDemo(made) {
+    if (!made) return;
+    for (const id of made.entries || []) { const e = entries.find((x) => x.id === id); if (e) await deleteEntry(e); }
+    for (const id of made.groups || []) { const g = groupById(id); if (!g) continue; groups = groups.filter((x) => x !== g); await api.remove(GROUPS_STORE, g.id); }
+    // People and places it added, unless something else now uses them.
+    for (const id of made.entities || []) {
+      if (groups.some((g) => g.mainTags.some((t) => t.entity === id))) continue;
+      entities = entities.filter((x) => x.id !== id);
+      await api.remove(ENTITIES_STORE, id);
+    }
+    if (ui.screen === "group" && !curGroup()) ui.screen = "home";
+    changed();
+    render();
+  }
+
   // What a template gives you, filled with examples, before you add it.
   function previewTemplate(t, onTry) {
     sheet("Preview: " + t.name, (body, close) => {
@@ -2737,7 +2786,7 @@
     onHome: () => ui.screen === "home",
     stepBack, exit, showHome, snapContext, snapHere, openNewGroup, paletteItems, exportData, importData, moveNoteToGroup, focusComposer,
     timelineRows, openEntry, tagCounts, renameTag, removeTag, openComposer, groupList, setEnabled,
-    dueRows, takeDue, sortSnap, reload, tryExample, brainLabel: (d) => { const ix = brainIndex(); return ix ? window.CPBrain.label(ix, d) : ""; }, brainComplete, brainUnderstand, fileInto, unfile,
+    dueRows, takeDue, sortSnap, reload, tryExample, addDemo, removeDemo, brainLabel: (d) => { const ix = brainIndex(); return ix ? window.CPBrain.label(ix, d) : ""; }, brainComplete, brainUnderstand, fileInto, unfile,
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.

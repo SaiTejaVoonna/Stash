@@ -781,3 +781,4 @@ body.cx-previewing #tab-bar { display: none !important; }
 /* The + in the formatting bar adds photos, so the empty "Add photo" button isn't needed. */
 #detail-main:has(#note-add-btn) #add-image-btn.empty { display: none; }
 #detail-main:has(#note-add-btn) #gallery-row:not(:has(img)) { display: none; }
+.settings-buttons { display: inline-flex; gap: 8px; flex-wrap: wrap; } .settings-buttons .btn[hidden] { display: none; }

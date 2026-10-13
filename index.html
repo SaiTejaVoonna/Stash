@@ -1867,6 +1867,13 @@
               <select id="backup-remind" class="settings-inline-select"><option value="7">Every week</option><option value="14">Every 2 weeks</option><option value="30">Every month</option><option value="0">Never</option></select></div>
           </div>
           <div class="settings-section">
+            <div class="settings-section-title">Demo data</div>
+            <div class="settings-group">
+              <div class="settings-line"><span>Try Stash with made-up things<small id="demo-status">Notes, Inbox messages and four collections with bills, a prescription, a lab report and photos. All invented; drawn on this device. Remove it in one tap.</small></span>
+                <span class="settings-buttons"><button id="demo-load" class="btn" type="button">Add demo data</button><button id="demo-remove" class="btn danger" type="button" hidden>Remove demo data</button></span></div>
+            </div>
+          </div>
+          <div class="settings-section">
             <div class="settings-section-title">Storage on this device</div>
             <div class="settings-group padded" id="storage-box"><div class="settings-hint">Working it out…</div></div>
           </div>
@@ -10484,6 +10491,58 @@
   function readFileData(file) {
     return new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(typeof r.result === "string" ? r.result : null); r.onerror = () => resolve(null); r.readAsDataURL(file); });
   }
+  // ---------- Demo data (demo.js, loaded only when asked for) ----------
+  const DEMO_KEY = () => profileKey("copypaster-demo");
+  function demoIds() { try { return JSON.parse(localStorage.getItem(DEMO_KEY()) || "null"); } catch { return null; } }
+  function loadScriptOnce(src) {
+    if (document.querySelector('script[data-src="' + src + '"]')) return Promise.resolve();
+    return new Promise((ok, fail) => { const t = document.createElement("script"); t.src = src; t.dataset.src = src; t.onload = ok; t.onerror = fail; document.head.appendChild(t); });
+  }
+  function renderDemoLine() {
+    const on = !!demoIds();
+    const add = document.getElementById("demo-load"), rm = document.getElementById("demo-remove");
+    if (add) add.hidden = on;
+    if (rm) rm.hidden = !on;
+  }
+  async function loadDemo() {
+    if (demoIds()) { showToast("Demo data is already here"); return; }
+    try { await loadScriptOnce("demo.js"); } catch { showToast("Couldn't load the demo. Check your connection and try again."); return; }
+    const P = window.CPDemo.pack(Date.now());
+    const ids = { items: [], made: null };
+    for (const n of P.notes) {
+      const it = normalize({ id: uuid(), type: "note", content: "", ...n });
+      await saveItem(it);
+      ids.items.push(it.id);
+    }
+    const d = P.files.discharge;
+    for (const m of [...P.inbox, { title: "Discharge summary.pdf", files: [{ name: "Discharge summary.pdf", type: "application/pdf", size: d.size, data: d.data }], createdAt: Date.now() - 59 * 86400000, updatedAt: Date.now() - 59 * 86400000 }]) {
+      const it = await chatAdd(m);
+      ids.items.push(it.id);
+    }
+    if (groupsApi && groupsApi.addDemo) ids.made = await groupsApi.addDemo(P.collections);
+    try { localStorage.setItem(DEMO_KEY(), JSON.stringify(ids)); } catch {}
+    renderAllViews();
+    if (chatApi) chatApi.render();
+    renderDemoLine();
+    showToast("Demo data added: notes, Inbox and 4 collections. Remove it any time in Settings → Your data");
+  }
+  async function removeDemo() {
+    const ids = demoIds();
+    if (!ids) return;
+    if (currentId && ids.items.includes(currentId)) await closeDetail();
+    const here = ids.items.filter((id) => cache.some((i) => i.id === id));
+    if (here.length) await deleteItems(here);
+    if (groupsApi && groupsApi.removeDemo) await groupsApi.removeDemo(ids.made);
+    try { localStorage.removeItem(DEMO_KEY()); } catch {}
+    renderAllViews();
+    if (chatApi) chatApi.render();
+    renderDemoLine();
+    showToast("Demo data removed. Your own things weren't touched.");
+  }
+  document.getElementById("demo-load").addEventListener("click", loadDemo);
+  document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
+  renderDemoLine();
+
   async function chatAdd(fields) {
     const now = Date.now();
     const item = normalize({ id: uuid(), type: "note", title: "", content: "", chat: true, createdAt: now, updatedAt: now, ...fields });
