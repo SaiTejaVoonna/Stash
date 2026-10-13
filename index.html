@@ -5920,6 +5920,9 @@
     });
     rich.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.types.includes("text/html")) { e.preventDefault(); } });
     rich.addEventListener("keydown", (e) => {
+      // Shift+Enter makes a new line too: every line is its own line (like Keep
+      // and Notes), so a heading or list never swallows the lines around it.
+      if (e.key === "Enter" && e.shiftKey && !e.isComposing) { e.preventDefault(); document.execCommand("insertParagraph"); return; }
       if (e.key === "Tab" && rich.contains(getSelection().anchorNode) && getSelection().anchorNode.parentElement.closest("li")) {
         e.preventDefault(); document.execCommand(e.shiftKey ? "outdent" : "indent");
       }
@@ -5942,6 +5945,8 @@
         document.execCommand("insertHTML", false, "<mark>" + escapeHtml(txt).replace(/\n/g, "<br>") + "</mark>");
       }
     } else if (cmd === "heading") {
+      const li = blockOf() && blockOf().closest("li");
+      if (li) document.execCommand(li.parentElement.tagName === "OL" ? "insertOrderedList" : "insertUnorderedList"); // out of the list first
       const b = blockOf();
       document.execCommand("formatBlock", false, b && /^H\d$/.test(b.tagName) ? "p" : "h2");
     } else if (cmd === "tasks") {
@@ -5951,6 +5956,9 @@
       if (ul && rich.contains(ul)) ul.classList.add("fm-tasks");
     } else {
       if (cmd === "insertUnorderedList") { const b = blockOf(); const ul = b && b.closest("ul.fm-tasks"); if (ul) ul.classList.remove("fm-tasks"); }
+      // A heading becomes a plain line first, so the list doesn't end up inside it.
+      const hb = blockOf();
+      if (hb && /^H\d$/.test(hb.tagName)) document.execCommand("formatBlock", false, "p");
       document.execCommand(cmd);
     }
     rich.dispatchEvent(new Event("input", { bubbles: true }));
