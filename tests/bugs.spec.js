@@ -12,7 +12,8 @@ test("tick boxes: numbered lines lose their numbers; typing an item then tapping
   await openApp(page);
   await seed(page, { items: [note("b", "1. Create\n2. Dog")] });
   await page.locator(".item-row").first().click();
-  await page.click("#checklist-btn");
+  await page.click("#note-add-btn");
+  await page.locator(".context-menu .popover-list-item", { hasText: "Make the whole note a checklist" }).click();
   await expect(page.locator(".cl-text")).toHaveCount(2);
   expect(await page.locator(".cl-text").evaluateAll((els) => els.map((e) => e.value))).toEqual(["Create", "Dog"]);
   await page.fill("#cl-add", "Milk");
@@ -75,4 +76,17 @@ test("a plain test message gets no 'lab reports' suggestion; a real lab report s
   });
   expect(r.plain).toEqual([]);
   expect(r.real).toContain("lab");
+});
+
+test("plain text mode: the tick-box button adds a box only to the selected line", async ({ page }) => {
+  await openApp(page);
+  await seed(page, { items: [note("d", "First ordinary line\nOnly selected line")] });
+  await page.locator(".item-row").first().click();
+  const ta = page.locator("#content-input");
+  await ta.evaluate((t) => { const i = t.value.indexOf("Only"); t.focus(); t.setSelectionRange(i, t.value.length); });
+  await page.click("#checklist-btn");
+  await expect(ta).toHaveValue("First ordinary line\n- [ ] Only selected line");
+  await expect(page.locator("#checklist")).toHaveCount(0);
+  await page.click("#checklist-btn"); // and off again
+  await expect(ta).toHaveValue("First ordinary line\nOnly selected line");
 });

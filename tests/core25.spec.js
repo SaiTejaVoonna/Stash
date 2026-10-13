@@ -202,7 +202,8 @@ test("a checklist: add with Enter, tick, progress, turn back into text, copy", a
   await expect(page.locator("#content-input")).toHaveValue("☐ Milk\n☑ Eggs\n☐ Bread");
   await expect(page.locator("#checklist")).toHaveCount(0);
   // And back again: the ticks are kept.
-  await page.click("#checklist-btn");
+  await page.click("#note-add-btn"); // the whole note becomes a checklist from the + menu
+  await page.locator(".context-menu .popover-list-item", { hasText: "Make the whole note a checklist" }).click();
   await expect(page.locator(".cl-row.done .cl-text")).toHaveValue("Eggs");
 });
 
