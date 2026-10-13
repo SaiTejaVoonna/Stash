@@ -16,7 +16,7 @@ Stash remembers, connects and finds. Promise: "Capture today. Find it tomorrow."
 Everything is stored on the person's own phone (no account, no company server).
 Any AI the person chooses (Claude, ChatGPT, Gemini) can help, but only with
 what they allow.
-Live test version (example data only): https://raw.githack.com/SaiTejaVoonna/copypaster/claude/copypaster-status-update-k85h5c/index.html
+Live test version (example data only): https://stash.stvoonna.workers.dev
 
 WHO IT'S FOR
 Everyday people in India, phone-first, busy, not technical: a parent keeping

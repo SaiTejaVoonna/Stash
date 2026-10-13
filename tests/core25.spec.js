@@ -84,10 +84,10 @@ test("2FA codes match the RFC 6238 test values, and otpauth links are read", asy
     }
     let bad = null;
     try { T.parse("not a key!"); } catch (e) { bad = e.message; }
-    return { out, parsed: T.parse("otpauth://totp/GitHub:sai%40mail.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"), loose: T.parse("jbsw y3dp ehpk 3pxp").secret, bad };
+    return { out, parsed: T.parse("otpauth://totp/GitHub:asha%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"), loose: T.parse("jbsw y3dp ehpk 3pxp").secret, bad };
   });
   expect(r.out.every(Boolean)).toBe(true);
-  expect(r.parsed).toMatchObject({ secret: "JBSWY3DPEHPK3PXP", issuer: "GitHub", account: "sai@mail.com", digits: 6, period: 30 });
+  expect(r.parsed).toMatchObject({ secret: "JBSWY3DPEHPK3PXP", issuer: "GitHub", account: "asha@example.com", digits: 6, period: 30 });
   expect(r.loose).toBe("JBSWY3DPEHPK3PXP");
   expect(r.bad).toContain("doesn't belong");
 });
@@ -158,7 +158,7 @@ test("2FA in a Vault login: the code shows, copies, and the key is stored encryp
   await page.locator('#new-menu [data-new="password"]').click();
   await page.fill("#title-input", "GitHub");
   await page.getByRole("button", { name: "Add two-step login codes for this site" }).click();
-  await page.fill("#otp-key", "otpauth://totp/GitHub:sai%40mail.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub");
+  await page.fill("#otp-key", "otpauth://totp/GitHub:asha%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub");
   await expect(page.locator(".otp-preview .otp-code")).toHaveText(/^\d{3} \d{3}$/);
   await page.click("#otp-save");
   await expect(lastToast(page)).toContainText("2FA added");
@@ -171,7 +171,7 @@ test("2FA in a Vault login: the code shows, copies, and the key is stored encryp
   await page.waitForTimeout(900);
   expect(JSON.stringify(await storedItems(page))).not.toContain("JBSWY3DPEHPK3PXP");
   // Still there after typing in another field (autosave keeps it).
-  await page.fill("#login-username", "sai@mail.com");
+  await page.fill("#login-username", "asha@example.com");
   await page.dispatchEvent("#login-username", "input");
   await page.waitForTimeout(900);
   await page.locator(".item-row", { hasText: "GitHub" }).click();

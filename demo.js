@@ -1,7 +1,7 @@
 // Stash demo data: made-up notes, Inbox messages and collections, with bills,
 // receipts, a prescription and a lab report drawn right here on the device,
 // and a small PDF. Nothing is downloaded and nothing real is in it: every
-// name is invented (Dr Asha Verma, City Clinic, Nimrah Cafe, My scooter).
+// name is invented (Dr Asha Verma, City Clinic, Corner Tea House, My scooter).
 // Loaded and removed from Settings → Your data. window.CPDemo
 (function () {
   "use strict";
@@ -130,7 +130,7 @@
   function pack(now = Date.now()) {
     const ago = (d, h = 10) => { const t = new Date(now - d * DAY); t.setHours(h, 15, 0, 0); return t.getTime(); };
     const pic = {
-      cafe: slip({ title: "NIMRAH CAFE", sub: ["Charminar Road · Hyderabad", "Table 6 · Bill #2231"], lines: [["Irani chai x2", inr(60)], ["Osmania biscuits", inr(80)], ["Chicken sandwich", inr(220)], ["Lemon soda", inr(70)], ["Bun maska x2", inr(120)], ["GST 5%", inr(28)], ["Round off", inr(2)]], total: inr(580), foot: ["Thank you! Visit again"] }),
+      cafe: slip({ title: "CORNER TEA HOUSE", sub: ["Main Road", "Table 6 · Bill #2231"], lines: [["Irani chai x2", inr(60)], ["Osmania biscuits", inr(80)], ["Chicken sandwich", inr(220)], ["Lemon soda", inr(70)], ["Bun maska x2", inr(120)], ["GST 5%", inr(28)], ["Round off", inr(2)]], total: inr(580), foot: ["Thank you! Visit again"] }),
       pharmacy: slip({ title: "CITY CLINIC PHARMACY", sub: ["Ground floor, City Clinic", "Bill #P-77812"], lines: [["Vitamin D3 60K x4", inr(240)], ["Calcium tabs x30", inr(310)], ["Cough syrup 100ml", inr(145)], ["Bandage roll", inr(60)], ["Thermometer", inr(1095)]], total: inr(1850), foot: ["Keep this bill for your records"], table: "#4b5b6b", tilt: 0.02 }),
       fuel: slip({ title: "HIGHWAY FUELS", sub: ["Outer Ring Road", "Pump 3 · Petrol"], lines: [["Rate / L", inr(106)], ["Litres", "5.20"], ["Amount", inr(551)]], total: inr(551), foot: ["Vehicle: My scooter"], table: "#3f4a3f", tilt: -0.04 }),
       prescription: letter({ head: "Dr Asha Verma", sub: ["MBBS, MD (General Medicine)", "City Clinic · Reg. no. DEMO-0000"], accent: "#16a34a",
@@ -179,9 +179,9 @@
         { s: "Insurance & papers", page: "My scooter", title: "Insurance renewed", note: "Policy for one year.", amount: 198000, at: ago(70, 12) },
         { s: "Photos", page: "My scooter", title: "Washed and shiny", at: ago(8, 16), photos: [pic.scooter] }
       ] },
-      { template: "food", name: "Food", pages: [{ name: "Nimrah Cafe", type: "restaurant" }], entries: [
-        { s: "Bills", page: "Nimrah Cafe", title: "Lunch with the team", amount: 58000, at: ago(1, 13), photos: [pic.cafe], rating: 4 },
-        { s: "Dishes", page: "Nimrah Cafe", title: "Irani chai", note: "Best with Osmania biscuits.", rating: 5, at: ago(15, 17), photos: [pic.coffee] },
+      { template: "food", name: "Food", pages: [{ name: "Corner Tea House", type: "restaurant" }], entries: [
+        { s: "Bills", page: "Corner Tea House", title: "Lunch with the team", amount: 58000, at: ago(1, 13), photos: [pic.cafe], rating: 4 },
+        { s: "Dishes", page: "Corner Tea House", title: "Irani chai", note: "Best with Osmania biscuits.", rating: 5, at: ago(15, 17), photos: [pic.coffee] },
         { s: "Wishlist", title: "Masala dosa near the station", at: ago(3, 20) }
       ] },
       { template: "trips", name: "Trips", pages: [{ name: "Mysore", type: "place" }], entries: [
