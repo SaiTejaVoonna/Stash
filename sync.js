@@ -21,7 +21,7 @@
   // Stash's own Google client ID, so connecting is one tap. It isn't a secret:
   // it only names the app on Google's sign-in screen, and Google only accepts
   // it from Stash's own web addresses. Anyone can still use their own below.
-  const BUILT_IN_CLIENT_ID = "";
+  const BUILT_IN_CLIENT_ID = "133678676972-71lss9mp0gt256559v5fkihf8eg9cpes.apps.googleusercontent.com";
 
   let api = null;
   let state = { busy: false, pending: false, timer: null, status: "" };

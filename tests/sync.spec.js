@@ -79,6 +79,7 @@ test.beforeEach(async ({ page }) => { await openApp(page); await fakeDrive(page)
 
 test("connect writes a readable file per collection, notes, Me and a backup; unchanged files aren't sent again", async ({ page }) => {
   await newNote(page, "Gate code is 4521", { title: "Flat" });
+  await page.evaluate(() => { window.CPSync._test.clientId = ""; }); // as if no ID were built in: type your own
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="sync"]');
   // A wrong client ID is caught before anything opens.
