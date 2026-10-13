@@ -152,13 +152,13 @@
     const a = v.lastIndexOf("\n", ta.selectionStart - 1) + 1;
     let b = v.indexOf("\n", ta.selectionEnd); if (b < 0) b = v.length;
     const ls = v.slice(a, b).split("\n");
-    const re = { heading: /^#{1,3}\s+/, bullet: /^\s*[-*•]\s+/, number: /^\s*\d+[.)]\s+/ }[kind];
+    const re = { heading: /^#{1,3}\s+/, bullet: /^\s*[-*•]\s+(?!\[[ x]\])/i, number: /^\s*\d+[.)]\s+/, task: /^\s*[-*•]\s+\[[ x]\]\s+/i }[kind];
     const all = ls.every((l) => re.test(l) || !l.trim());
     const out = ls.map((l, i) => {
-      const bare = l.replace(/^#{1,3}\s+/, "").replace(/^\s*[-*•]\s+/, "").replace(/^\s*\d+[.)]\s+/, "");
+      const bare = l.replace(/^#{1,3}\s+/, "").replace(/^\s*[-*•]\s+(\[[ x]\]\s+)?/i, "").replace(/^\s*\d+[.)]\s+/, "");
       if (all) return l.replace(re, "");
       if (!l.trim() && ls.length > 1) return l;
-      return (kind === "heading" ? "# " : kind === "bullet" ? "- " : i + 1 + ". ") + bare;
+      return (kind === "heading" ? "# " : kind === "bullet" ? "- " : kind === "task" ? "- [ ] " : i + 1 + ". ") + bare;
     }).join("\n");
     ta.value = v.slice(0, a) + out + v.slice(b);
     ta.focus();

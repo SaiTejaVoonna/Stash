@@ -5612,7 +5612,7 @@
           tb("fmt-numbers", "1.\u2009\u2014", "Numbered list", blk("insertOrderedList", "number")),
           // Formatted: the line you're on (or the lines you picked) become tick boxes.
           // Plain text: the whole note becomes a checklist, as before.
-          tb("checklist-btn", icon("checklist"), item.checklist ? "Turn the tick boxes back into text" : rich ? "Tick boxes for these lines" : "Turn the lines into tick boxes", () => (rich && !item.checklist ? richCommand(rich, "tasks") : toggleChecklist(ed))));
+          tb("checklist-btn", icon("checklist"), item.checklist ? "Turn the tick boxes back into text" : "Tick boxes for these lines", () => (item.checklist ? toggleChecklist(ed) : rich ? richCommand(rich, "tasks") : window.CPFormat.lines(textarea, "task"))));
         if (item.checklist) editToolbar.querySelector("#checklist-btn").classList.add("on");
         if (!rich) {
           editToolbar.append(tb("fmt-preview", icon("eye"), "See it formatted", () => {
