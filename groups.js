@@ -537,16 +537,18 @@
     const list = listFor(g);
     renderHead(g, list);
     renderFilters(g);
-    const view = viewOf(g);
-    if (view === "photos") renderPhotoWall(g, list);
-    else if (view === "table") renderTable(g, list);
-    else renderTimeline(g, list);
+    renderView(g, list);
     renderComposer(g);
     // Each collection keeps its own colour, softly, so Health and Bike look different.
     mainEl.style.setProperty("--gp-tint", g.color || "transparent");
   }
 
   // ---------- Photos and Table views ----------
+  // Whatever redraws the list (an edit, a search, a new entry) draws the view you're on.
+  function renderView(g, list) {
+    const v = viewOf(g);
+    if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list);
+  }
   function viewSwitch(g) {
     const cur = viewOf(g);
     const sw = h("div", { class: "gp-views", role: "tablist", "aria-label": "Show as", id: "gp-views" });
@@ -713,7 +715,7 @@
     line.append(viewSwitch(g));
     const tools = h("div", { class: "gp-tools" });
     const search = h("input", { class: "input gp-search", id: "gp-search", type: "search", placeholder: "Search " + g.name, "aria-label": "Search in " + g.name, value: ui.q,
-      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); const v = viewOf(g); if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list); }, 150); } });
+      oninput: (e) => { ui.q = e.target.value; clearTimeout(search._t); search._t = setTimeout(() => { const list = listFor(g); headEl.replaceChildren(); renderHead(g, list); timelineEl.replaceChildren(); renderView(g, list); }, 150); } });
     tools.append(search);
     const sortSel = h("select", { class: "input gp-select", "aria-label": "Sort", onchange: (e) => { setSort(g, e.target.value); render(); } });
     const sorts = [["newest", "Newest first"], ["oldest", "Oldest first"]];
@@ -1511,7 +1513,7 @@
     if (g) {
       const st = timelineEl.scrollTop, v = viewOf(g), list = listFor(g);
       timelineEl.replaceChildren();
-      if (v === "photos") renderPhotoWall(g, list); else if (v === "table") renderTable(g, list); else renderTimeline(g, list);
+      renderView(g, list);
       timelineEl.scrollTop = st;
     }
   }
@@ -1521,7 +1523,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       await saveEntry(e);
-      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = listFor(g); renderHead(g, list); renderTimeline(g, list); timelineEl.scrollTop = st; renderSidebar(); }
+      if (rerender) { const st = timelineEl.scrollTop; headEl.replaceChildren(); timelineEl.replaceChildren(); const list = listFor(g); renderHead(g, list); renderView(g, list); timelineEl.scrollTop = st; renderSidebar(); }
     }, 350);
   }
 

@@ -47,6 +47,15 @@ const test = base.test.extend({
     page.on("dialog", (d) => d.accept()); // confirm() prompts: say OK
     await use(page);
     expect(errors, "uncaught page errors").toEqual([]);
+    // A missing value must never show up as the word "null" or "undefined".
+    if (!page.isClosed()) {
+      const stray = await page.evaluate(() => {
+        const out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        while (w.nextNode()) { const t = w.currentNode.nodeValue.trim(); if ((t === "null" || t === "undefined" || /\bundefined\b|\bNaN\b/.test(t)) && w.currentNode.parentElement && !w.currentNode.parentElement.closest("script,style,textarea,[contenteditable]")) out.push(t + " in <" + w.currentNode.parentElement.tagName.toLowerCase() + " " + (w.currentNode.parentElement.id || w.currentNode.parentElement.className) + ">"); }
+        return out;
+      }).catch(() => []);
+      expect(stray, "stray null/undefined text on screen").toEqual([]);
+    }
   },
 });
 

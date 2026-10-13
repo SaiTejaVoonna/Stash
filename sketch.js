@@ -146,7 +146,7 @@
         const items = []; // strokes and text, in order
         const redoStack = [];
         let tool = "pen", pen = "pen", ink = INKS[0], size = 4, paper = opts.background ? "plain" : (localStorage.getItem("copypaster-paper") || "plain");
-        let penOnly = false, eraseWhole = false;
+        let penOnly = false, eraseWhole = false, autoPen = false;
         let view = { s: 1, x: 0, y: 0 }; // zoom and pan
         let bg = null, W = 0, H = 0, dpr = 1;
         let drawing = null, lasso = null, selection = null, dragFrom = null, holdTimer = null, shapeStart = null;
@@ -239,6 +239,7 @@
             pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, view: { ...view } };
             return;
           }
+          if (e.pointerType === "pen" && !penOnly && !autoPen) { autoPen = true; setPenOnly(true, true); toast("Stylus found: it draws, fingers move the page. Pen only is at the top."); }
           if (penOnly && e.pointerType === "touch") { dragFrom = { pan: true, x: e.clientX, y: e.clientY, view: { ...view } }; return; }
           const p = point(e);
           if (tool === "text") { startText(p); return; }
@@ -358,6 +359,15 @@
         let shapeKind = "rect";
         const bar = h("div", { class: "sk-tools", id: "sk-tools" });
         const sub = h("div", { class: "sk-sub", id: "sk-sub" });
+        // Pen only (like Apple Notes): the stylus draws, fingers move the page.
+        // Turns on by itself the first time a stylus touches the page.
+        const penOnlyBtn = h("button", { class: "btn ghost sk-penonly", id: "sk-penonly", "aria-pressed": "false", title: "Pen only: your stylus draws, fingers move the page", onclick: () => setPenOnly(!penOnly) }, ic("pen"), h("span", null, "Pen only"));
+        function setPenOnly(v, quiet) {
+          penOnly = v;
+          penOnlyBtn.classList.toggle("on", v);
+          penOnlyBtn.setAttribute("aria-pressed", String(v));
+          if (!quiet) toast(v ? "Pen only: fingers move the page" : "Fingers draw again");
+        }
         const btn = (key, label, icon, onclick, extra = {}) => h("button", { class: "btn icon ghost sk-tool", "data-tool": key, "aria-label": label, title: label, onclick, ...extra }, ic(icon));
         const undoBtn = btn("undo", "Undo", "undo", () => { if (selection) selection = null; const it = items.pop(); if (it) redoStack.push(it); redraw(); sync(); }, { id: "sk-undo" });
         const redoBtn = btn("redo", "Redo", "redo", () => { const it = redoStack.pop(); if (it) items.push(it); redraw(); sync(); }, { id: "sk-redo" });
@@ -393,15 +403,16 @@
           btn("shape", "Shapes", "shapes", () => setTool("shape")),
           btn("text", "Text", "type", () => setTool("text")),
           btn("lasso", "Select", "lasso", () => setTool("lasso")),
-          btn("eraser", "Eraser", "eraser", () => setTool("eraser")));
+          btn("eraser", "Eraser", "eraser", () => setTool("eraser")),
+          h("span", { class: "sk-sep" }), penOnlyBtn);
         // Paper and pen-only, tucked in a small menu.
         const more = h("select", { class: "sk-more", id: "sk-paper", "aria-label": "Paper", onchange: (e) => {
           const v = e.target.value;
-          if (v === "pen-only") { penOnly = !penOnly; toast(penOnly ? "Pen only: fingers move the page" : "Fingers draw again"); }
+          if (v === "pen-only") setPenOnly(!penOnly);
           else if (v === "fit") { view = { s: 1, x: 0, y: 0 }; }
           else { paper = v; try { localStorage.setItem("copypaster-paper", v); } catch {} }
           e.target.value = ""; redraw();
-        } }, h("option", { value: "" }, "Page…"), ...PAPERS.map(([k, l]) => h("option", { value: k }, "Paper: " + l)), h("option", { value: "pen-only" }, "Pen only on/off (stylus)"), h("option", { value: "fit" }, "Fit to screen"));
+        } }, h("option", { value: "" }, "Page…"), ...PAPERS.map(([k, l]) => h("option", { value: k }, "Paper: " + l)), h("option", { value: "fit" }, "Fit to screen"));
         body.append(bar, sub, wrap, h("div", { class: "gp-sheet-actions sk-actions" },
           h("div", { class: "sk-left" }, undoBtn, redoBtn, clearBtn, opts.background ? null : more),
           h("button", { class: "btn", onclick: finish }, "Cancel"),

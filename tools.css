@@ -427,6 +427,13 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 #cx-input { flex: 1; resize: none; border: none; background: none; color: var(--text); font: inherit; font-size: 16px; line-height: 1.35; padding: 8px 0; max-height: 140px; outline: none; }
 .cx-selbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
 .cx-count { flex: 1; font-size: var(--fs-sm); color: var(--text-2); }
+/* Phones: one line that scrolls sideways; the count stays short. */
+@media (max-width: 720px) {
+  .cx-selbar { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  .cx-selbar::-webkit-scrollbar { display: none; }
+  .cx-selbar > * { flex: none; white-space: nowrap; }
+  .cx-count { flex: none; min-width: 0; font-weight: 600; color: var(--text); }
+}
 .cx-plus-menu { position: absolute; left: 10px; bottom: 72px; z-index: 20; display: flex; flex-direction: column; gap: 2px; padding: 6px; min-width: 250px; border-radius: 18px; background: var(--elevated); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
 .cx-plus-menu button { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: none; background: none; color: var(--text); border-radius: 12px; text-align: left; cursor: pointer; font-size: 15px; }
 .cx-plus-menu button:hover { background: var(--surface-2); }
@@ -796,3 +803,10 @@ body.cx-previewing #tab-bar { display: none !important; }
 @keyframes cp-burst { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } 100% { transform: translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--r)); opacity: 0; } }
 .cp-roll { animation: cp-roll 1.2s ease-in-out; }
 @keyframes cp-roll { to { transform: rotate(360deg); } }
+
+/* Plain text mode: says so, with the way back. */
+.plain-mode-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: var(--r-md); background: var(--surface-2); color: var(--text-3); font-size: var(--fs-xs); }
+.plain-mode-note button { border: none; background: transparent; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 4px; }
+.sk-penonly { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 10px; border-radius: var(--r-full); font-size: var(--fs-sm); flex: none; }
+.sk-penonly.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.shortcut-hint { color: var(--text-3); font-size: var(--fs-sm); text-align: right; max-width: 60%; }

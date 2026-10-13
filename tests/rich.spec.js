@@ -65,7 +65,8 @@ test("rich editor: an old plain-text note opens formatted; highlight and tick bo
   await expect(rich.locator("mark")).toHaveText("remember");
   await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("- [x] milk\n- [ ] bread\n==remember==");
   // Switch to plain text and back: same words.
-  await page.click("#fmt-mode");
+  await page.click("#detail-pane .icon-toggle.more");
+  await page.locator(".context-menu .popover-list-item", { hasText: "Write in plain text" }).click();
   await expect(page.locator("#content-input")).toHaveValue("- [x] milk\n- [ ] bread\n==remember==");
   await page.click("#fmt-mode");
   await expect(page.locator("#rich-input mark")).toHaveText("remember");

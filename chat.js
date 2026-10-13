@@ -606,15 +606,15 @@
     if (!ui.selecting) return;
     const n = ui.picked.size;
     const list = () => api.items().filter((x) => ui.picked.has(x.id));
-    selBar.replaceChildren(
-      h("span", { class: "cx-count" }, n ? n + " selected" : "Tap messages to pick them"),
+    selBar.replaceChildren(...[
+      h("span", { class: "cx-count" }, n ? n + " selected" : "Pick messages"),
       h("button", { class: "btn ghost gp-small", id: "cx-all", onclick: () => { const vis = api.items().filter(passes); if (vis.every((x) => ui.picked.has(x.id))) ui.picked.clear(); else vis.forEach((x) => ui.picked.add(x.id)); render(); } }, "All"),
       h("button", { class: "btn ghost gp-small", id: "cx-archive", disabled: !n, onclick: async () => { const l = list(); const on = ui.filter !== "archived"; await api.archive(l, on); setSelecting(false); } }, ic("archive"), ui.filter === "archived" ? "Unarchive" : "Archive"),
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),
       api.understand ? h("button", { class: "btn gp-small", id: "cx-sort", disabled: !n, onclick: () => openSort(list()) }, ic("sparkle"), "Sort") : null,
       api.copyForAI ? h("button", { class: "btn ghost gp-small", id: "cx-ai", disabled: !n, title: "Copy as text to paste into any AI chat", onclick: () => { api.copyForAI(list()); setSelecting(false); } }, ic("copy"), "Copy for AI") : null,
-      h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Move to…"));
+      h("button", { class: "btn primary", id: "cx-forward", disabled: !n, onclick: () => api.forward(list(), () => setSelecting(false)) }, ic("forward"), "Move to…")].filter(Boolean)); // an empty slot would print "null"
   }
   function render() {
     if (!pane) return;

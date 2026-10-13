@@ -1451,6 +1451,8 @@
   }
   @media (pointer: coarse) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(#title-input), textarea:not(#content-input), select { font-size: 16px !important; }
+    /* The note itself too (the rich editor and the plain box), or iPhone zooms in and stays zoomed. */
+    .rich-input, [contenteditable="true"], #content-input.prose { font-size: max(17px, var(--fs-lg)) !important; }
     #content-input.terminal, #content-input.login-notes { font-size: 16px !important; }
   }
 
@@ -3790,6 +3792,8 @@
       renderAllViews();
     });
 
+    input.enterKeyHint = "done";
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); saveBtn.click(); } });
     pop.insertBefore(input, pop.querySelector(".pop-head").nextSibling);
     pop.appendChild(saveBtn);
     document.body.appendChild(pop);
@@ -4438,7 +4442,9 @@
         { label: "Print or save as PDF", icon: "download", run: () => {
           if (editor && currentId === item.id) editor.flush();
           if (!window.CPFormat.print(item)) showToast("Allow pop-ups for Stash to print");
-        } }] : []),
+        } },
+        ...(currentId === item.id ? [{ label: richEditorOn() ? "Write in plain text (Markdown)" : "Show formatting as I write", icon: "note", run: () => switchEditorMode(item) },
+          { label: "Shortcuts and tips", icon: "keyboard", run: () => openSettings("shortcuts") }] : [])] : []),
       { label: item.unread ? "Mark as read" : "Mark as unread", run: async () => {
         item.unread = !item.unread;
         await saveItem(item);
@@ -4969,7 +4975,8 @@
           text.textContent = item.captured ? "Snap" : item.images && item.images.length ? "Photo" : "Untitled";
           if (!(item.images && item.images.length)) text.classList.add("untitled");
         } else {
-          text.textContent = primaryText;
+          // A first line of text shows its words, not its formatting marks.
+          text.textContent = item.type === "note" && !item.title && window.CPFormat ? window.CPFormat.plain(primaryText).replace(/^[\u2610\u2611\u2022]\s*/, "") || primaryText : primaryText;
         }
         const time = document.createElement("span");
         time.className = "item-time";
@@ -5654,15 +5661,6 @@
         openCleanupMenu(cleanBtn, textarea);
       }, "Clean up");
       editToolbar.append(cleanBtn);
-      if (item.type === "note") {
-        // Rich or plain text (Markdown): your choice, remembered.
-        editToolbar.append(tb("fmt-mode", '<span class="tb-aa">' + (rich ? "M\u2193" : "Aa") + "</span>", rich ? "Write in plain text (Markdown)" : "Write with formatting shown", () => {
-          ed.flush();
-          setRichEditor(!rich);
-          openDetail(item.id);
-          showToast(rich ? "Plain text: **bold**, *italic*, # heading" : "Formatting shown as you write");
-        }));
-      }
       // Phones: the bar rides above the keyboard while you write.
       if (window.visualViewport) keepAboveKeyboard(editToolbar);
     }
@@ -5725,6 +5723,17 @@
       }
     }
     if (editToolbar) body.appendChild(editToolbar);
+    // Plain text mode says so, with the way back, so marks like **this** aren't a surprise.
+    if (item.type === "note" && !rich && !textarea.disabled && window.CPFormat) {
+      const note = document.createElement("div");
+      note.className = "plain-mode-note";
+      note.innerHTML = "<span>Plain text: **bold**, *italic*, ==highlight==</span>";
+      const back = document.createElement("button");
+      back.type = "button"; back.id = "fmt-mode"; back.textContent = "Show formatting";
+      back.addEventListener("click", () => switchEditorMode(item));
+      note.appendChild(back);
+      textarea.before(note);
+    }
     if (window.CPSlash && item.type === "note" && !textarea.disabled) window.CPSlash.attach(rich || textarea, () => noteSlashCommands(ed));
 
     const varsRow = document.createElement("div");
@@ -5830,6 +5839,13 @@
   const EDITOR_KEY = "copypaster-editor";
   function richEditorOn() { try { return localStorage.getItem(EDITOR_KEY) !== "plain"; } catch { return true; } }
   function setRichEditor(on) { try { localStorage.setItem(EDITOR_KEY, on ? "rich" : "plain"); } catch {} }
+  function switchEditorMode(item) {
+    const toRich = !richEditorOn();
+    if (editor) editor.flush();
+    setRichEditor(toRich);
+    openDetail(item.id);
+    showToast(toRich ? "Formatting shown as you write" : "Plain text: **bold**, *italic*, # heading");
+  }
 
   // A writing surface that shows formatting. Every change is turned back into
   // the note's plain text (in the hidden textarea), so autosave and everything
@@ -5843,7 +5859,7 @@
     rich.setAttribute("role", "textbox");
     rich.setAttribute("aria-multiline", "true");
     rich.setAttribute("aria-label", "Note");
-    rich.dataset.placeholder = ed.item.checklist ? "Notes (optional)" : "Note";
+    rich.dataset.placeholder = ed.item.checklist ? "Notes (optional)" : window.CPSlash && window.CPSlash.on() ? "Note  \u00b7  type / for commands" : "Note";
     rich.spellcheck = true;
     // Escaped by toHtml. Always at least one paragraph, so lines stay lines.
     rich.innerHTML = F.toHtml(textarea.value, { editable: true }) || "<p><br></p>";
@@ -6412,7 +6428,7 @@
   // A note can carry a checklist ({ id, text, done }) above its text.
   // Turning it on makes each line an item; turning it off writes the items
   // back as ☐ / ☑ lines, so nothing is ever lost either way.
-  const CHECK_LINE = /^\s*(?:[-*•]\s*)?(?:\[( |x|X)\]\s*|([☐☑✓✔]\s*))?(.*)$/;
+  const CHECK_LINE = /^\s*(?:[-*•]\s*|\d+[.)]\s+)?(?:\[( |x|X)\]\s*|([☐☑✓✔]\s*))?(.*)$/;
   function linesToChecklist(text) {
     return (text || "").split("\n").map((l) => l.trim()).filter(Boolean).map((line) => {
       const m = line.match(CHECK_LINE);
@@ -6525,11 +6541,23 @@
         input.id = "cl-add";
         input.placeholder = "Add item";
         input.setAttribute("aria-label", "Add a checklist item");
+        input.setAttribute("enterkeyhint", "next");
+        // Typing then tapping away still adds it (on phones there's often no Enter).
+        input.addEventListener("blur", async () => {
+          const v = input.value.trim();
+          if (!v || !input.isConnected) return;
+          input.value = "";
+          v.split("\n").map((x) => x.trim()).filter(Boolean).forEach((t) => list.push({ id: uuid(), text: t, done: false }));
+          await saveNow();
+          draw();
+          renderList();
+        });
         input.addEventListener("keydown", async (e) => {
           if (e.key !== "Enter" || e.isComposing) return;
           e.preventDefault();
           const v = input.value.trim();
           if (!v) return;
+          input.value = "";
           // Pasting several lines adds several items.
           v.split("\n").map((x) => x.trim()).filter(Boolean).forEach((t) => list.push({ id: uuid(), text: t, done: false }));
           await saveNow();
@@ -8825,6 +8853,21 @@
   const kbdHtml = (keys) => '<span class="shortcut-keys">' + keys.map((k) => '<span class="kbd">' + escapeHtml(k) + "</span>").join("") + "</span>";
   document.getElementById("shortcut-list").innerHTML = SHORTCUTS.map(([label, keys]) =>
     '<div class="shortcut-row"><span>' + escapeHtml(label) + "</span>" + kbdHtml(keys) + "</div>").join("");
+  // What "/" can do, and the gestures, so nothing useful stays hidden.
+  (function () {
+    const list = document.getElementById("shortcut-list");
+    const tips = [
+      ["Make a list as you type", "- or 1. then space"], ["Heading as you type", "# then space"], ["Tick box as you type", "[] then space"],
+      ["Bold / italic / underline", MOD + " B / I / U"], ["/ commands (turn on above)", "/tag /folder /todo /date /time /remind /photo /draw /record /colour /pin /star /ai"],
+      ["Phone: swipe a note", "left for Trash, right to archive"], ["Phone: hold a note", "every action for it"], ["Phone: hold an icon", "its name"],
+      ["A few surprises are hidden", "have fun looking"]
+    ];
+    const box = document.createElement("div");
+    box.className = "settings-group";
+    box.id = "tips-list";
+    box.innerHTML = '<div class="settings-section-title">Tips</div>' + tips.map(([a, b]) => '<div class="shortcut-row"><span>' + escapeHtml(a) + '</span><span class="shortcut-hint">' + escapeHtml(b) + "</span></div>").join("");
+    list.after(box);
+  })();
   document.getElementById("palette-kbd").textContent = MOD + " K";
   document.getElementById("sidebar-search").addEventListener("click", () => { closeSidebarOnMobile(); openPalette(); });
   function renderPlaceholder() {

@@ -237,9 +237,9 @@
               h("button", { class: "btn icon", "aria-label": "More " + label, disabled: isFill || null, onclick: () => set(plan.counts[k] + 1) }, "+")),
             h("button", { class: "pw-fill" + (isFill ? " on" : ""), "aria-pressed": String(isFill), title: "This one fills whatever is left", onclick: change(() => { o.fill = isFill ? null : k; }) }, isFill ? "Auto" : "Fill")));
         });
-        optsBox.append(rows, total, o.counts.symbols || o.fill === "symbols" ? symbolsBox(o) : null,
+        optsBox.append(...[rows, total, o.counts.symbols || o.fill === "symbols" ? symbolsBox(o) : null,
           toggle("Avoid look-alikes", o.avoidSimilar, (v) => change(() => { o.avoidSimilar = v; })(), "No 0 O o l 1 I |"),
-          h("p", { class: "gp-hint" }, "Characters land in random places, never in order."));
+          h("p", { class: "gp-hint" }, "Characters land in random places, never in order.")].filter(Boolean));
         drawExactTotal();
       };
 
