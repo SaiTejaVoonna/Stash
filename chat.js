@@ -608,7 +608,7 @@
     const list = () => api.items().filter((x) => ui.picked.has(x.id));
     selBar.replaceChildren(...[
       h("span", { class: "cx-count" }, n ? n + " selected" : "Pick messages"),
-      h("button", { class: "btn ghost gp-small", id: "cx-all", onclick: () => { const vis = api.items().filter(passes); if (vis.every((x) => ui.picked.has(x.id))) ui.picked.clear(); else vis.forEach((x) => ui.picked.add(x.id)); render(); } }, "All"),
+      h("button", { class: "btn ghost gp-small", id: "cx-all", onclick: () => { const vis = api.items().filter(passes); if (vis.every((x) => ui.picked.has(x.id))) ui.picked.clear(); else vis.forEach((x) => ui.picked.add(x.id)); render(); } }, "Select all"),
       h("button", { class: "btn ghost gp-small", id: "cx-archive", disabled: !n, onclick: async () => { const l = list(); const on = ui.filter !== "archived"; await api.archive(l, on); setSelecting(false); } }, ic("archive"), ui.filter === "archived" ? "Unarchive" : "Archive"),
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),

@@ -151,7 +151,7 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 - [x] "/" commands for quick hands (off by default); a few hidden surprises.
 - [x] Settings grouped (Your things · Privacy · Organising · More); one spelling of "colour" across the app.
 - [ ] Split `index.html` into modules; type checking through JSDoc comments.
-- [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things (done: Settings, colour; next: Inbox, Collections, note editor).
+- [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things (done: Settings, Inbox, colour; next: Collections, note editor).
 - [ ] Collections next: people and place cards across collections, a monthly summary card, reminders from an entry (insurance, PUC, service at km), a PDF report of one collection.
 - [ ] Search by meaning on the device (a small model, about 25 MB): "doctor" finds "Dr Asha".
 

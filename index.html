@@ -7444,7 +7444,7 @@
     }
     if (!inVault) {
       const here = groupsApi && groupsApi.snapContext();
-      entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
+      entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to your Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
     }
     if (!inVault && window.CPScan && addonOn("scanner")) entries.push({ key: "scan", label: "Scan document", hint: "Paper to a clean PDF", icon: "file", cls: "cm-image", letter: "D", run: () => openScanner({ camera: true }) });
     // Switched-off add-ons aren't offered.
