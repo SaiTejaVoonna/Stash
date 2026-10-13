@@ -1177,6 +1177,8 @@
     color: var(--text-2); font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; text-align: left; width: 100%;
   }
   .settings-nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .settings-nav-group { display: flex; flex-direction: column; gap: 1px; }
+  .settings-nav-label { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; padding: 14px 10px 4px; }
   .settings-nav-item.active { background: var(--surface-3); color: var(--text); }
   html[data-theme="light"] .settings-nav-item.active { background: var(--surface-1); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
   .settings-nav-item .sn-icon { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: #fff; flex-shrink: 0; }
@@ -1305,6 +1307,8 @@
     #settings-nav .settings-nav-item:first-child { border-radius: var(--r-lg) var(--r-lg) 0 0; }
     #settings-nav .settings-nav-item:last-child { border-radius: 0 0 var(--r-lg) var(--r-lg); }
     #settings-nav .settings-nav-item + .settings-nav-item { box-shadow: inset 0 1px 0 var(--line); }
+    #settings-nav .settings-nav-group { gap: 0; }
+    #settings-nav .settings-nav-label { padding: 18px var(--s-3) 6px; }
     #settings-nav .settings-nav-item.active { background: var(--surface-1); box-shadow: none; }
     #settings-nav .settings-nav-item + .settings-nav-item.active { box-shadow: inset 0 1px 0 var(--line); }
     #settings-nav .sn-chevron { display: inline-flex; }
@@ -1735,19 +1739,33 @@
     </div>
     <div id="settings-layout">
       <div id="settings-nav" role="tablist" aria-label="Settings sections">
-        <button class="settings-nav-item" data-page="appearance"><span class="sn-icon" style="background:#5b8cff"><svg class="icon"><use href="#icon-palette"></use></svg></span>Appearance<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="profiles"><span class="sn-icon" style="background:#34c759"><svg class="icon"><use href="#icon-users"></use></svg></span>Profiles<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="vault"><span class="sn-icon" style="background:#14b8a6"><svg class="icon"><use href="#icon-vault"></use></svg></span>Vault<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="lock"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-lock-closed"></use></svg></span>App lock<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Collections<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="addons"><span class="sn-icon" style="background:#10b981"><svg class="icon"><use href="#icon-grid"></use></svg></span>Add-ons<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="learning"><span class="sn-icon" style="background:#7b61ff"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Your words<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="sync"><span class="sn-icon" style="background:#0ea5e9"><svg class="icon"><use href="#icon-cloud"></use></svg></span>Sync<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="shortcuts"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-keyboard"></use></svg></span>Shortcuts<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-        <button class="settings-nav-item" data-page="about"><span class="sn-icon" style="background:#8e8e93"><svg class="icon"><use href="#icon-info"></use></svg></span>About<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        <div class="settings-nav-group">
+          <button class="settings-nav-item" data-page="appearance"><span class="sn-icon" style="background:#5b8cff"><svg class="icon"><use href="#icon-palette"></use></svg></span>Appearance<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        </div>
+        <div class="settings-nav-label">Your things</div>
+        <div class="settings-nav-group">
+          <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="sync"><span class="sn-icon" style="background:#0ea5e9"><svg class="icon"><use href="#icon-cloud"></use></svg></span>Sync<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="profiles"><span class="sn-icon" style="background:#34c759"><svg class="icon"><use href="#icon-users"></use></svg></span>Profiles<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        </div>
+        <div class="settings-nav-label">Privacy</div>
+        <div class="settings-nav-group">
+          <button class="settings-nav-item" data-page="vault"><span class="sn-icon" style="background:#14b8a6"><svg class="icon"><use href="#icon-vault"></use></svg></span>Vault<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="lock"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-lock-closed"></use></svg></span>App lock<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        </div>
+        <div class="settings-nav-label">Organising</div>
+        <div class="settings-nav-group">
+          <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Collections<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="learning"><span class="sn-icon" style="background:#7b61ff"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Your words<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        </div>
+        <div class="settings-nav-label">More</div>
+        <div class="settings-nav-group">
+          <button class="settings-nav-item" data-page="addons"><span class="sn-icon" style="background:#10b981"><svg class="icon"><use href="#icon-grid"></use></svg></span>Add-ons<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="shortcuts"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-keyboard"></use></svg></span>Shortcuts<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="about"><span class="sn-icon" style="background:#8e8e93"><svg class="icon"><use href="#icon-info"></use></svg></span>About<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+        </div>
         <div id="settings-footer"></div>
       </div>
       <div id="settings-pages">
@@ -1765,8 +1783,8 @@
                   <button class="theme-opt" data-theme-pick="system" role="radio"><svg class="icon"><use href="#icon-monitor"></use></svg>Auto</button>
                 </div>
               </div>
-              <div class="settings-line"><span>Color<small>Buttons, the dock and highlights.</small></span>
-                <div id="accent-picker" role="radiogroup" aria-label="Color"></div>
+              <div class="settings-line"><span>Colour<small>Buttons, the dock and highlights.</small></span>
+                <div id="accent-picker" role="radiogroup" aria-label="Colour"></div>
               </div>
               <div class="settings-line"><span>Glass<small>See-through, blurred dock and pop-ups. Off is solid and lightest on battery.</small></span>
                 <div id="glass-picker" class="segmented" role="radiogroup" aria-label="Glass">
@@ -1963,7 +1981,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "3.0";
+  const APP_VERSION = "3.1";
 
   // ---------- Profiles ----------
   // Each profile is its own IndexedDB database, so notes, folders, tags and
@@ -2659,8 +2677,8 @@
     // Any color: the phone's own color picker.
     const custom = document.createElement("label");
     custom.className = "accent-opt custom" + (isHex(pick) ? " active" : "");
-    custom.title = "Pick any color";
-    custom.setAttribute("aria-label", "Pick any color");
+    custom.title = "Pick any colour";
+    custom.setAttribute("aria-label", "Pick any colour");
     if (isHex(pick)) custom.style.setProperty("--sw", pick);
     const input = document.createElement("input");
     input.type = "color";
@@ -3944,7 +3962,7 @@
 
     const colorLabel = document.createElement("span");
     colorLabel.className = "popover-label";
-    colorLabel.textContent = "Color";
+    colorLabel.textContent = "Colour";
 
     const swatches = document.createElement("div");
     swatches.className = "swatches";
@@ -3964,7 +3982,7 @@
     colorInput.type = "color";
     colorInput.className = "color-input";
     colorInput.value = selectedColor;
-    colorInput.title = "Custom color";
+    colorInput.title = "Custom colour";
     colorInput.addEventListener("input", () => {
       selectedColor = colorInput.value;
       swatches.querySelectorAll(".swatch").forEach((s) => s.classList.remove("selected"));
@@ -3973,7 +3991,7 @@
 
     const emojiLabel = document.createElement("span");
     emojiLabel.className = "popover-label";
-    emojiLabel.textContent = "Icon (optional, overrides color dot)";
+    emojiLabel.textContent = "Icon (optional, overrides the colour dot)";
 
     const emojiGrid = document.createElement("div");
     emojiGrid.className = "emoji-grid";
@@ -6093,7 +6111,7 @@
       renderExpireRow(item, expireRow, false);
     }
     if (!inTrash) {
-      const value = propRow("Color", "palette");
+      const value = propRow("Colour", "palette");
       const row = value.parentElement;
       const current = SWATCHES.indexOf(item.color);
       const toggle = document.createElement("button");
@@ -6117,13 +6135,13 @@
         item.updatedAt = Date.now();
         await saveItem(item);
         redrawDetail("properties");
-        showToast(color ? "Color set" : "Color removed");
+        showToast(color ? "Colour set" : "Colour removed");
       };
       const noneSwatch = document.createElement("button");
       noneSwatch.type = "button";
       noneSwatch.className = "swatch color-none" + (!item.color ? " selected" : "");
-      noneSwatch.title = "No color";
-      noneSwatch.setAttribute("aria-label", "No color");
+      noneSwatch.title = "No colour";
+      noneSwatch.setAttribute("aria-label", "No colour");
       noneSwatch.addEventListener("click", () => setColor(null));
       picker.appendChild(noneSwatch);
       SWATCHES.forEach((color, i) => {
@@ -6193,8 +6211,8 @@
     if (st) parts.push(st.label);
     if (item.remindAt) parts.push("\u23f0 " + (item.remindAt <= Date.now() ? "Due" : shortWhen(item.remindAt)));
     if (item.autoExpireAt && !item.deletedAt) parts.push(timeLeft(item.autoExpireAt).replace(/^in /, "In "));
-    if (item.color) parts.push(SWATCH_NAMES[SWATCHES.indexOf(item.color)] || "Color");
-    return parts.join(" \u00b7 ") || "Folder, tags, status, reminder, color";
+    if (item.color) parts.push(SWATCH_NAMES[SWATCHES.indexOf(item.color)] || "Colour");
+    return parts.join(" \u00b7 ") || "Folder, tags, status, reminder, colour";
   }
 
   function buildDetailFooter(ed) {
@@ -8823,6 +8841,12 @@
   // ---------- What's new: shown once after an update ----------
   const SEEN_VERSION_KEY = "copypaster-seen-version";
   const WHATS_NEW = [
+    ["note", "Notes like Keep and Apple Notes", "Bold, italic, underline and highlight show as you write. The formatting bar sits above your keyboard, with one + for photos, drawings, recordings and tick boxes. Undo and Redo are up top."],
+    ["grid", "Notes as cards", "Tap the grid button for Keep-style cards. Give a note a background colour and its card and page take it on."],
+    ["layers", "Collections as Photos or a Table", "Every bill and prescription as a wall of photos, or a table with totals you can copy into a spreadsheet."],
+    ["palette", "Looks", "One tap sets the app icon, colours and background together. New: true black and warm paper."],
+    ["database", "Demo data", "Try everything with made-up notes, bills and a prescription: Settings \u2192 Your data. Removed in one tap."],
+    ["command-key", "\"/\" commands", "For quick hands: turn them on in Settings \u2192 Shortcuts, then type / in a note."],
     ["sparkle", "Suggestions that say why", "Each suggestion tells you why, in plain words. Tap Not this and Stash learns. Settings \u2192 Your words shows what it has learned, and forgets it if you like."],
     ["search", "Find it the way you remember it", "Search \u201chospital bill last week\u201d or \u201crent in March\u201d. Teach Stash your own words, like PUC or Amma, and search finds either."],
     ["copy", "Copy for AI", "Select notes, messages or a collection and copy them as clean text for any AI chat. The Vault is never included."],

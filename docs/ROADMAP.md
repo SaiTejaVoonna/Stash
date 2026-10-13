@@ -143,8 +143,16 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 - [x] Calm first run: a short menu (empty views appear when used), a friendly empty Inbox with one action, phones start in the Inbox.
 - [x] Copy for AI from notes, the Inbox and collections (never the Vault); the data format written down (`docs/DATA_FORMAT.md`).
 - [x] Earlier in this phase: one picker, calm composer, sidebar states, hints, app lock, text size, accessibility, speed, security fixes.
+- [x] Notes like Keep and Apple Notes: formatting shown as you write (kept as plain Markdown), the bar above the keyboard, one + (photo, camera, drawing, recording, tick boxes), Undo / Redo up top, opens calm with Organise folded, Done instead of Save.
+- [x] Notes as cards (grid) or a list; a note's background colour tints its card and page.
+- [x] Collections as Timeline, Photos or Table (totals, Copy table); unused sections wait behind "+N more"; each collection's colour washes its page.
+- [x] Looks: icon + theme + colour + background in one tap; true black and warm paper.
+- [x] Demo data: made-up notes, bills, prescription, lab report and PDFs, added and removed in one tap.
+- [x] "/" commands for quick hands (off by default); a few hidden surprises.
+- [x] Settings grouped (Your things · Privacy · Organising · More); one spelling of "colour" across the app.
 - [ ] Split `index.html` into modules; type checking through JSDoc comments.
-- [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things.
+- [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things (started: Settings and colour).
+- [ ] Collections next: people and place cards across collections, a monthly summary card, reminders from an entry (insurance, PUC, service at km), a PDF report of one collection.
 - [ ] Search by meaning on the device (a small model, about 25 MB): "doctor" finds "Dr Asha".
 
 ## Phase 2: Connected [you · about 30 minutes · free (domain optional)]

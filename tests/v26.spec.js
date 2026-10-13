@@ -264,7 +264,7 @@ test("Snap saves into the Inbox at once, keeps the original and when and where i
   // Shown with the message, with the original one tap away.
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("17.385");
   await page.locator("#chat-pane .cx-msg").last().click();
-  await page.locator("#detail-properties .props-head").click().catch(() => {});
+  await openOrganiseIfFolded(page);
   await expect(page.locator("#capture-meta")).toContainText("Camera · IMG_0042.png");
   await expect(page.locator("#capture-meta")).toContainText("17.3850, 78.4867 (±12 m)");
   await expect(page.locator("#open-original")).toBeVisible();
@@ -341,7 +341,7 @@ test("a snap gets a guess made on the device; it's only a suggestion and can be 
   await pickFile(page, () => page.click('#new-menu [data-new="snap"]'));
   await expect(page.locator("#chat-pane .cx-msg").last()).toContainText("Looks like food (trifle)");
   await page.locator("#chat-pane .cx-msg").last().click();
-  await page.locator("#detail-properties .props-head").click().catch(() => {});
+  await openOrganiseIfFolded(page);
   await expect(page.locator("#see-text")).toContainText("a guess made on this phone");
   // Nothing was filed or renamed because of it.
   const stored = await page.evaluate(async () => {
@@ -379,6 +379,12 @@ test("guesses: kinds come from the model's labels, and an unsure answer gives no
   expect(r).toEqual({ food: "Food", dog: "Dog", screen: "screen", unsure: null, weak: null });
 });
 
+// Opens Organise only when it's folded (clicking an open one would close it).
+async function openOrganiseIfFolded(page) {
+  const head = page.locator("#detail-properties .props-head");
+  await expect(page.locator("#detail-properties")).toBeAttached();
+  if (await head.isVisible() && (await head.getAttribute("aria-expanded")) !== "true") await head.click();
+}
 async function openOrganise(page) {
   const head = page.locator("#detail-properties .props-head");
   await expect(head).toBeVisible();

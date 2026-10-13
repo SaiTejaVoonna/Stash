@@ -69,6 +69,13 @@ Coach B2, seat 41. Leaves 6:15 am.
 
 Never included: Vault items, photos and files themselves (only mentioned).
 
+## Note text
+
+A note's text is plain Markdown, whatever editor you write it in: `**bold**`,
+`*italic*`, `++underline++`, `~~strike~~`, `==highlight==`, `` `code` ``,
+`# heading`, `- list`, `1. list`, `- [ ] tick box` / `- [x] done`, `> quote`.
+The rich editor shows these formatted and saves the same text back.
+
 ## Next: a connector any AI can use (MCP)
 
 The plan (Phase 3) is a Model Context Protocol connector that runs on the
