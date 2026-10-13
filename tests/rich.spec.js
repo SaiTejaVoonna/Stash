@@ -133,3 +133,14 @@ test("Looks: one tap sets the icon, theme, colour and background; true black and
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-surface", "paper");
 });
+
+test("rich editor: \"/\" commands make a tick box and a heading", async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem("copypaster-slash", "1"));
+  const rich = await newRichNote(page);
+  await rich.type("/todo");
+  await expect(page.locator("#slash-menu .slash-item.active")).toContainText("/todo");
+  await page.keyboard.press("Enter");
+  await rich.type("milk");
+  await expect(rich.locator("ul.fm-tasks li")).toHaveText(["milk"]);
+  await expect.poll(async () => (await saved(page) || {}).content, { timeout: 4000 }).toBe("- [ ] milk");
+});

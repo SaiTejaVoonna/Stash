@@ -93,6 +93,12 @@
       e.preventDefault();
       openPreview(files, "file");
     });
+    // "/" commands (on in Settings → Shortcuts): today's date, the time, a tick box.
+    if (window.CPSlash) window.CPSlash.attach(input, () => [
+      { key: "date", label: "Today's date", also: ["today"], run: (el) => window.CPSlash.insert(el, window.CPSlash.today()) },
+      { key: "time", label: "The time now", also: ["now"], run: (el) => window.CPSlash.insert(el, window.CPSlash.now()) },
+      { key: "todo", label: "Tick box", also: ["check"], run: (el) => window.CPSlash.insert(el, "- [ ] ") }
+    ]);
     input.addEventListener("paste", (e) => {
       const files = Array.from((e.clipboardData && e.clipboardData.files) || []);
       if (!files.length) return;

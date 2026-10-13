@@ -1900,6 +1900,9 @@
 
         <section class="settings-page" data-page="shortcuts">
           <h2 class="settings-page-title">Shortcuts</h2>
+          <div class="settings-group">
+            <label class="settings-line"><span>"/" commands<small>Type / in a note or the Inbox for a quick menu: tag, folder, tick box, heading, today's date, remind me and more. Off keeps Stash simple.</small></span><input type="checkbox" id="slash-on"></label>
+          </div>
           <div class="settings-group" id="shortcut-list"></div>
         </section>
 
@@ -1949,6 +1952,7 @@
 <script src="brain.js"></script>
 <script src="words.js"></script>
 <script src="ai.js"></script>
+<script src="power.js"></script>
 <script src="importer.js"></script>
 <script src="hints.js"></script>
 <script src="applock.js"></script>
@@ -5703,6 +5707,7 @@
       }
     }
     if (editToolbar) body.appendChild(editToolbar);
+    if (window.CPSlash && item.type === "note" && !textarea.disabled) window.CPSlash.attach(rich || textarea, () => noteSlashCommands(ed));
 
     const varsRow = document.createElement("div");
     varsRow.id = "vars-row";
@@ -5774,6 +5779,33 @@
     }
     if (!titleInput.disabled) titleInput.addEventListener("input", scheduleAutosave);
     if (!textarea.disabled) textarea.addEventListener("input", scheduleAutosave);
+  }
+
+  // "/" commands in a note (on in Settings → Shortcuts).
+  function noteSlashCommands(ed) {
+    const { item } = ed;
+    const S = window.CPSlash;
+    const t = () => ed.rich || ed.textarea;
+    const organise = (id) => { setOrganiseOpen(true); setTimeout(() => { const el = document.getElementById(id); if (el) { el.scrollIntoView({ block: "center" }); el.click ? el.click() : el.focus(); } }, 60); };
+    const fmt = (cmd, kind) => () => (ed.rich ? richCommand(ed.rich, cmd) : window.CPFormat.lines(ed.textarea, kind));
+    return [
+      { key: "tag", label: "Add a tag", run: () => organise("add-tag-to-item-btn") },
+      { key: "folder", label: "Move to a folder", run: () => { setOrganiseOpen(true); setTimeout(() => { const s = document.querySelector("#detail-properties .field-row select"); if (s) { s.focus(); if (s.showPicker) try { s.showPicker(); } catch {} } }, 60); } },
+      { key: "todo", label: "Tick box", also: ["check", "tick"], run: () => (ed.rich ? richCommand(ed.rich, "tasks") : S.insert(ed.textarea, "- [ ] ")) },
+      { key: "heading", label: "Heading", also: ["h1", "title"], run: fmt("heading", "heading") },
+      { key: "list", label: "Bullet list", also: ["bullet"], run: fmt("insertUnorderedList", "bullet") },
+      { key: "number", label: "Numbered list", run: fmt("insertOrderedList", "number") },
+      { key: "date", label: "Today's date", also: ["today"], run: () => S.insert(t(), S.today()) },
+      { key: "time", label: "The time now", also: ["now"], run: () => S.insert(t(), S.now()) },
+      { key: "remind", label: "Remind me", also: ["reminder", "alarm"], run: () => { setOrganiseOpen(true); setTimeout(() => { const b = document.querySelector("#remind-row button"); if (b) b.click(); }, 60); } },
+      { key: "photo", label: "Add a photo", also: ["image", "picture"], run: () => document.getElementById("attach-image-file").click() },
+      ...(addonOn("sketch") ? [{ key: "draw", label: "Drawing", also: ["sketch"], run: () => addSketch(item) }] : []),
+      ...(addonOn("voice") ? [{ key: "record", label: "Recording", also: ["voice", "audio"], run: () => addVoiceNote(item) }] : []),
+      { key: "colour", label: "Background colour", also: ["color", "background"], run: () => { const b = document.getElementById("fmt-color"); if (b) b.click(); } },
+      { key: "pin", label: item.pinned ? "Unpin" : "Pin to top", run: () => { const b = document.querySelector("#detail-pane .icon-toggle.pin"); if (b) b.click(); } },
+      { key: "star", label: item.starred ? "Remove from Favorites" : "Add to Favorites", also: ["fav"], run: () => { const b = document.querySelector("#detail-pane .icon-toggle.star"); if (b) b.click(); } },
+      { key: "ai", label: "Copy for AI", run: () => { ed.flush(); copyForAI([item], item.title || "Note"); } }
+    ];
   }
 
   // ---------- Rich editor (notes) ----------
@@ -7425,6 +7457,7 @@
     const item = normalize({ id: uuid(), type, content: "", createdAt: Date.now(), updatedAt: Date.now() });
     if (intoVault) item.vaulted = true; // encrypted from the first save
     await saveItem(item);
+    milestone();
     renderAllViews();
     openDetail(item.id);
     const first = type === "password" ? document.getElementById("title-input") : editor && editor.rich || document.getElementById("content-input");
@@ -10504,8 +10537,13 @@
     if (add) add.hidden = on;
     if (rm) rm.hidden = !on;
   }
+  let demoLoading = false;
   async function loadDemo() {
     if (demoIds()) { showToast("Demo data is already here"); return; }
+    demoLoading = true;
+    try { await loadDemoNow(); } finally { demoLoading = false; }
+  }
+  async function loadDemoNow() {
     try { await loadScriptOnce("demo.js"); } catch { showToast("Couldn't load the demo. Check your connection and try again."); return; }
     const P = window.CPDemo.pack(Date.now());
     const ids = { items: [], made: null };
@@ -10543,10 +10581,54 @@
   document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   renderDemoLine();
 
+  // "/" commands switch (Settings → Shortcuts).
+  (function () {
+    const cb = document.getElementById("slash-on");
+    if (!cb || !window.CPSlash) return;
+    cb.checked = window.CPSlash.on();
+    cb.addEventListener("change", () => { window.CPSlash.set(cb.checked); showToast(cb.checked ? "Type / in a note or the Inbox for quick commands" : "\"/\" commands off"); });
+  })();
+
+  // ---------- Small surprises ----------
+  (function () {
+    const E = window.CPEggs;
+    if (!E) return;
+    // Aurora: tap the logo seven times, or the old ↑↑↓↓←→←→BA.
+    const aurora = () => {
+      const first = !auroraFound();
+      try { localStorage.setItem(LOOK_SECRET_KEY, "1"); } catch {}
+      E.confetti();
+      applyLook("aurora", true);
+      showToast(first ? "You found Aurora. It lives in Settings \u2192 Appearance \u2192 Looks now." : "Aurora");
+    };
+    E.taps(document.getElementById("brand-dot"), 7, aurora);
+    E.konami(aurora);
+    // "do a barrel roll" in search.
+    document.getElementById("search-input").addEventListener("input", (e) => { if (/^do a barrel roll$/i.test(e.target.value.trim())) E.roll(document.getElementById("items")); });
+    // New year's day: a little hello, once a year.
+    const d = new Date(), y = String(d.getFullYear());
+    try {
+      if (d.getMonth() === 0 && d.getDate() === 1 && localStorage.getItem("copypaster-newyear") !== y) {
+        localStorage.setItem("copypaster-newyear", y);
+        setTimeout(() => { E.confetti(); showToast("Happy new year from Stash"); }, 1200);
+      }
+    } catch {}
+  })();
+  // The 100th thing you save gets a little celebration (once).
+  function milestone() {
+    try {
+      if (localStorage.getItem(profileKey("copypaster-100")) || cache.filter((i) => !i.deletedAt).length < 100) return;
+      localStorage.setItem(profileKey("copypaster-100"), "1");
+    } catch { return; }
+    if (window.CPEggs) window.CPEggs.confetti();
+    showToast("That's 100 things in your Stash.");
+  }
+
   async function chatAdd(fields) {
     const now = Date.now();
     const item = normalize({ id: uuid(), type: "note", title: "", content: "", chat: true, createdAt: now, updatedAt: now, ...fields });
     await saveItem(item);
+    if (!demoLoading) milestone();
     return item;
   }
   // Sync to your own Google Drive (sync.js).

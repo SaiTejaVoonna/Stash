@@ -782,3 +782,17 @@ body.cx-previewing #tab-bar { display: none !important; }
 #detail-main:has(#note-add-btn) #add-image-btn.empty { display: none; }
 #detail-main:has(#note-add-btn) #gallery-row:not(:has(img)) { display: none; }
 .settings-buttons { display: inline-flex; gap: 8px; flex-wrap: wrap; } .settings-buttons .btn[hidden] { display: none; }
+
+/* ---------- "/" commands ---------- */
+.slash-menu { position: fixed; width: 240px; padding: 6px; z-index: 90; }
+.slash-item { display: flex; align-items: center; gap: 10px; }
+.slash-item.active { background: var(--accent-soft); }
+.slash-key { font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 64px; }
+.slash-label { font-size: var(--fs-sm); color: var(--text); }
+
+/* ---------- Small surprises ---------- */
+.cp-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
+.cp-confetti i { position: absolute; width: 8px; height: 12px; border-radius: 2px; animation: cp-burst 1.3s cubic-bezier(.2,.7,.3,1) forwards; }
+@keyframes cp-burst { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } 100% { transform: translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--r)); opacity: 0; } }
+.cp-roll { animation: cp-roll 1.2s ease-in-out; }
+@keyframes cp-roll { to { transform: rotate(360deg); } }
