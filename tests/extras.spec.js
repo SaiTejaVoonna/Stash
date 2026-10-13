@@ -7,15 +7,15 @@ test.beforeEach(async ({ page }) => { await openApp(page); });
 test("reading codes and calendar events", async ({ page }) => {
   const r = await page.evaluate(() => {
     const X = window.CPExtras;
-    return { wifi: X.parseCode("WIFI:S:Home Net;T:WPA;P:pa\\;55;;"), link: X.parseCode("https://example.com/a").kind, phone: X.parseCode("+91 98480 22338").kind,
-      card: X.parseCode("BEGIN:VCARD\nFN:Asha Verma\nTEL;TYPE=CELL:+911234567890\nEND:VCARD"), wa: X.waUrl("98480 22338"),
+    return { wifi: X.parseCode("WIFI:S:Home Net;T:WPA;P:pa\\;55;;"), link: X.parseCode("https://example.com/a").kind, phone: X.parseCode("+91 98765 43210").kind,
+      card: X.parseCode("BEGIN:VCARD\nFN:Asha Verma\nTEL;TYPE=CELL:+911234567890\nEND:VCARD"), wa: X.waUrl("98765 43210"),
       ics: X.ics({ title: "Dentist, 5pm", start: Date.UTC(2026, 9, 20, 11, 30), minutes: 30 }) };
   });
   expect(r.wifi).toMatchObject({ kind: "wifi", ssid: "Home Net", password: "pa;55", security: "WPA" });
   expect(r.link).toBe("link");
   expect(r.phone).toBe("phone");
   expect(r.card).toMatchObject({ kind: "contact", name: "Asha Verma", phone: "+911234567890" });
-  expect(r.wa).toBe("https://wa.me/919848022338");
+  expect(r.wa).toBe("https://wa.me/919876543210");
   expect(r.ics).toContain("DTSTART:20261020T113000Z");
   expect(r.ics).toContain("SUMMARY:Dentist\\, 5pm");
 });
@@ -41,12 +41,12 @@ test("Inbox + menu: scan a Wi-Fi QR from a photo, send a contact and a location 
   await page.click("#cx-plus");
   await page.click("#cx-contact");
   await page.fill("#dialog-name", "Ravi Mechanic");
-  await page.fill("#dialog-phone", "9848022338");
+  await page.fill("#dialog-phone", "9876543210");
   await page.click("#dialog button[type=submit]");
   const card = page.locator(".cx-contact").last();
   await expect(card).toContainText("Ravi Mechanic");
-  await expect(card.locator("a", { hasText: "Call" })).toHaveAttribute("href", "tel:9848022338");
-  await expect(card.locator("a", { hasText: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/919848022338");
+  await expect(card.locator("a", { hasText: "Call" })).toHaveAttribute("href", "tel:9876543210");
+  await expect(card.locator("a", { hasText: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/919876543210");
   // Location pin.
   await page.click("#cx-plus");
   await page.click("#cx-location");

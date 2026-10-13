@@ -79,7 +79,7 @@ All of these are part of the note, so they're encrypted in the Vault, exported i
 
 ## About
 
-Settings → About shows "© 2026 Sai Teja Voonna. All rights reserved." and that nothing is collected. The repository has a `LICENSE` file saying the same.
+Settings → About shows "© 2026 Stash. All rights reserved." and that nothing is collected. The repository has a `LICENSE` file saying the same.
 
 ## Tests
 

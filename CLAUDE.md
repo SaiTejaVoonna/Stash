@@ -4,7 +4,7 @@ Stash is a local-first notes, Inbox and collections app (vanilla JS PWA, no fram
 
 ## Rules from the owner
 - Nothing is stored by us: data stays on the person's device, optional sync to *their* Google Drive (`drive.file` only).
-- Never put real personal or medical data in the repo. Fake names only (Dr Asha Verma, City Clinic, Nimrah Cafe, My scooter).
+- Never put real personal or medical data in the repo. Fake names only (Dr Asha Verma, City Clinic, Corner Tea House, My scooter); never a real person, phone number or business on a fake bill.
 - No secrets or AI keys in code. No medical advice. Don't claim "100% private".
 - Work on the branch you're given; merge to `main` only when the owner says so.
 - Plain, friendly words in the UI; spelling "colour" (Indian English).
