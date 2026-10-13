@@ -15,6 +15,7 @@
   const stem = (w) => w.replace(/(ies)$/, "y").replace(/(es|s)$/, "");
 
   // Words that hint at a kind of section (matched against your section names).
+  const WEAK_HINTS = new Set(["test", "tests", "report", "reports", "scan", "part", "parts", "service", "policy", "chain", "battery", "paid", "payment", "watch", "series", "photo", "photos", "pic", "pics", "ate", "eat", "tea", "cook", "train", "bus", "filled", "rc", "ct", "cream", "dose"]);
   const SECTION_HINTS = [
     [/\b(bill|bills|invoice|receipt|paid|payment|gst)\b/, /bill|receipt|invoice|expense|payment/i],
     [/\b(prescription|prescriptions|rx|prescribed)\b/, /prescription/i],
@@ -220,9 +221,13 @@
       for (const s of g.subs) for (const w of words(s.name)) if (w.length >= 3 && ws.some((x) => stem(x) === stem(w))) add(g.id, 18, "it mentions " + s.name, s.id);
     }
     // 3. Hint words → a section with a matching name.
+    // Everyday words ("test", "report", "service", "part"…) only count with
+    // another clue, so "round 1 test message" isn't filed as a lab report.
     for (const [re, sub] of SECTION_HINTS) {
-      if (!re.test(low)) continue;
-      for (const g of ix.groups) for (const s of g.subs) if (sub.test(s.name)) add(g.id, 10, "it sounds like " + s.name.toLowerCase(), s.id);
+      const m = low.match(re);
+      if (!m) continue;
+      const weak = WEAK_HINTS.has(m[1]);
+      for (const g of ix.groups) for (const s of g.subs) if (sub.test(s.name)) add(g.id, weak ? 5 : 10, weak ? null : "it sounds like " + s.name.toLowerCase(), s.id);
     }
     // 4. Files and photos.
     if ((msg.files || []).some((f) => /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || ""))) for (const g of ix.groups) for (const s of g.subs) if (/report|document|bill|prescription|paper/i.test(s.name)) add(g.id, 4, null, s.id);
