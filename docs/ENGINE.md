@@ -1,8 +1,8 @@
-# CopyPaster engine
+# Stash engine
 
-**CopyPaster stores original evidence first, then builds a replaceable layer of understanding around it.**
+**Stash stores original evidence first, then builds a replaceable layer of understanding around it.**
 
-This file sets out what CopyPaster's data means and what the code is allowed to do with it. Every feature has to fit these rules. The plan for building them lives in [PLAN.md](PLAN.md).
+This file sets out what Stash's data means and what the code is allowed to do with it. Every feature has to fit these rules. The plan for building them lives in [the roadmap](ROADMAP.md).
 
 ## Words
 
@@ -40,7 +40,7 @@ People see these simply as *Personal → Health → Dr X → Prescriptions*. The
 11. Outside services enrich or import; they are never the source of truth.
 12. AI asks the engine; it doesn't own the memory. It receives only the records a request needs.
 13. OCR text is a throwaway search index. Search helps you find it; the original tells you what it is.
-14. Private by default. Nothing leaves the device unless the person turns on a destination. Before sensitive data is sent, CopyPaster shows what will be sent and where.
+14. Private by default. Nothing leaves the device unless the person turns on a destination. Before sensitive data is sent, Stash shows what will be sent and where.
 15. Nothing is discoverable: no public pages, no directory of people.
 16. Sharing is explicit, per person, time-limited and revocable. A Card is a copy, not a published page.
 17. Deleting here is not deleting there: data already sent to an outside service may still exist there.

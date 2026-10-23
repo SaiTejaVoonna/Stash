@@ -12,7 +12,8 @@ Stash is a local-first notes, Inbox and collections app (vanilla JS PWA, no fram
 ## Layout
 - `index.html`: the app shell and most UI. `groups.js`/`groups-core.js`: collections. `chat.js`: Inbox. `timeline.js`, `search-core.js`, `brain.js` (suggestions), `format.js` (Markdown ↔ rich editor), `sync.js` (Drive), `sw.js` (bump `CACHE` when files change), `demo.js` (demo data).
 - Notes are stored as Markdown (`**bold**`, `++underline++`, `==highlight==`, `- [ ] task`).
-- `docs/ROADMAP.md` (phases), `docs/DATA_FORMAT.md`.
+- `README.md` (what Stash is, file map); `docs/README.md` (which doc is which); `docs/ROADMAP.md` (phases); `docs/DATA_FORMAT.md`.
+- Naming: the app is Stash. Stored names (the `copypaster` database, `copypaster-*` saved keys, Vault encryption labels, `CP…` globals) keep the first-version spelling on purpose; renaming them would hide people's data.
 
 ## Test before every push
 ```bash

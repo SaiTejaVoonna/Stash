@@ -9,7 +9,7 @@ const CleanCSS = require("clean-css");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "dist");
-const SKIP = new Set(["node_modules", "dist", "tests", "test-results", "playwright-report", "scripts", "docs", ".git", ".github", "package.json", "package-lock.json", "playwright.config.js", "wrangler.jsonc", ".claude", ".agents", "CLAUDE.md", "AGENTS.md", "LICENSE"]);
+const SKIP = new Set(["node_modules", "dist", "tests", "test-results", "playwright-report", "scripts", "docs", ".git", ".github", "package.json", "package-lock.json", "playwright.config.js", "wrangler.jsonc", ".claude", ".agents", "CLAUDE.md", "AGENTS.md", "README.md", "LICENSE"]);
 
 const css = new CleanCSS({ level: 1 });
 const jsOptions = { compress: { passes: 2 }, mangle: true, format: { comments: false } };

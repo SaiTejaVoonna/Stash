@@ -1993,6 +1993,7 @@
   const PROFILES_KEY = "copypaster-profiles";
   const CURRENT_PROFILE_KEY = "copypaster-current-profile";
   const PROFILE_COLORS = ["#4f8cff", "#3fb27f", "#e0843a", "#b061e6", "#e5484d", "#2bb3c0", "#d9a441", "#7a8599"];
+  // The stored name keeps its first-version spelling on purpose: renaming a database or a saved key would hide people's existing data.
   const profileDbName = (id) => (id === "default" ? "copypaster" : "copypaster-" + id);
   // Per-profile keys for per-device settings that belong to one profile.
   const profileKey = (key) => (currentProfile.id === "default" ? key : key + ":" + currentProfile.id);
@@ -7935,7 +7936,7 @@
   function imageFileName(dataUrl, item, idx) {
     const mime = (dataUrl.match(/^data:([^;,]+)/) || [])[1] || "image/png";
     const ext = { "image/jpeg": "jpg", "image/svg+xml": "svg" }[mime] || mime.split("/")[1] || "png";
-    const base = ((item && item.title) || "copypaster-image").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "-").slice(0, 60) || "copypaster-image";
+    const base = ((item && item.title) || "stash-image").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "-").slice(0, 60) || "stash-image";
     const suffix = item && item.images && item.images.length > 1 ? "-" + (idx + 1) : "";
     return base + suffix + "." + ext;
   }
@@ -9251,7 +9252,7 @@
           const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
           const a = document.createElement("a");
           a.href = url;
-          a.download = "copypaster-recovery-key.txt";
+          a.download = "stash-recovery-key.txt";
           document.body.appendChild(a);
           a.click();
           a.remove();

@@ -1,6 +1,6 @@
-# CopyPaster 2.6: the foundation
+# Stash 2.6: the foundation
 
-*Phase 1 of the plan in [PLAN.md](PLAN.md). The rules behind it are in [ENGINE.md](ENGINE.md). Everything still works offline and keeps data on the device.*
+*Phase 1 of the plan in [PLAN.md](PLAN.md). The rules behind it are in [ENGINE.md](../ENGINE.md). Everything still works offline and keeps data on the device.*
 
 ## Files
 
@@ -92,7 +92,7 @@ Starting templates are now **Health** (was Hospital), Food, **Trips** (new), **V
 
 ## New name: Stash
 
-CopyPaster is now **Stash**, with a new icon (a card going into a box). Only the name you see changed: stored data, backups (.cps) and settings carry on as before, and old backups still import.
+Stash got its current name and a new icon (a card going into a box). Only the name you see changed: stored data, backups (.cps) and settings carry on as before, and old backups still import.
 
 ## Me: message yourself
 

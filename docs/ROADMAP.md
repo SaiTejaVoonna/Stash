@@ -150,6 +150,7 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 - [x] Demo data: made-up notes, bills, prescription, lab report and PDFs, added and removed in one tap.
 - [x] "/" commands for quick hands (off by default); a few hidden surprises.
 - [x] Settings grouped (Your things · Privacy · Organising · More); one spelling of "colour" across the app.
+- [x] Repo tidy: a real README, a docs index, build-history docs moved to `docs/history/`, the old name removed from the app, docs and package.
 - [ ] Split `index.html` into modules; type checking through JSDoc comments.
 - [ ] Consistency pass, screen by screen: one button style, one spacing scale, the same words for the same things (done: Settings, Inbox, colour; next: Collections, note editor).
 - [ ] Collections next: people and place cards across collections, a monthly summary card, reminders from an entry (insurance, PUC, service at km), a PDF report of one collection.
@@ -157,9 +158,9 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 
 ## Phase 2: Connected [you · about 30 minutes · free (domain optional)]
 
-- [ ] **[you]** Pick hosting: Firebase (Google) or Cloudflare Pages, both free, each gives Stash its own safe address. Optional own domain (about ₹1,000 a year).
-- [ ] **[you]** Create the Google client ID for Drive sync (guided).
-- [ ] Hosting set up; the test link becomes "fake data only" history.
+- [x] **[you]** Pick hosting: Cloudflare Workers serves the built copy at stash.stvoonna.workers.dev and updates when `main` changes. Optional own domain (about ₹1,000 a year) still open.
+- [x] **[you]** Create the Google client ID for Drive sync (a built-in client ID is in `sync.js`; it is a public identifier, not a secret).
+- [x] Hosting set up. (Keep the site to fake data only.)
 - [ ] Security headers (Content Security Policy, no framing, strict referrer), checked on real devices.
 - [ ] Self-host the on-device libraries (photo guesser, text reader), so nothing runs from a CDN.
 - [ ] Updates that always arrive ("New version, tap to update").
@@ -199,9 +200,9 @@ Human-AI Interaction* (CHI 2019) · Risko and Gilbert, *Cognitive offloading*
 ## What the outside assessments said, checked against the code
 
 Useful, and now in the plan above:
-- Clipboard history and a global shortcut need a real app → Phase 4 (computers).
-- Built-in AI → Phase 5.
-- Notes outside the Vault aren't encrypted on the device → Phase 6.
+- Clipboard history and a global shortcut need a real app → Phase 3 (computer apps).
+- Built-in AI → Phase 3 (open to any AI through MCP).
+- Notes outside the Vault aren't encrypted on the device → Phase 3.
 - Data can be lost if the browser clears it → already asks the browser to keep it (`navigator.storage.persist()`); on iPhone in a Safari tab that isn't enough, so Stash now reminds people to add it to the Home Screen (at most weekly), and the backup reminder stays.
 
 Security review (ChatGPT, October 2026), checked and fixed:
@@ -209,7 +210,7 @@ Security review (ChatGPT, October 2026), checked and fixed:
 - HTML file import used innerHTML (an `<img onerror>` would run): fixed with DOMParser; regression test.
 - Print view put image sources into HTML unchecked: fixed; regression test.
 - CDN libraries had no integrity check: JSZip, jsQR, Tesseract and pdf.js now do (highlight.js already did). The on-device photo guesser (MediaPipe) loads as a module, which browsers can't integrity-check; self-hosting it is the fix, with hosting.
-- Shared test-link address: correct and serious; Phase 3 item above.
+- Shared test-link address: correct and serious; fixed by hosting in Phase 2.
 - The failing phone test: a test that reloaded before a save finished; fixed. CI now also tests the minified build.
 
 Not quite right:

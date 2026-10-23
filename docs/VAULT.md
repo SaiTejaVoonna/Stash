@@ -41,5 +41,5 @@ A third item type, **Password**, that only exists in the Vault. It has a name, w
 - Lost password and lost recovery key means the items are gone. That's the design.
 - Protects data at rest: a stolen device, a copied backup, someone reading browser storage. It doesn't protect against malware on the device while the Vault is unlocked.
 - **Moving an existing note into the Vault:** the browser may keep old unencrypted copies in its storage files until it compacts them. For real secrets, create or paste them inside the Vault view, so they're encrypted from the first save.
-- Clipboard clearing only works while CopyPaster is in front; browsers block clipboard writes from the background.
+- Clipboard clearing only works while Stash is in front; browsers block clipboard writes from the background.
 - Face ID / fingerprint unlock needs passkeys with the PRF extension: recent Chrome/Edge/Android, Safari 18+ on iPhone/Mac. Elsewhere the setting either doesn't show, or explains it can't be turned on.
