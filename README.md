@@ -91,6 +91,7 @@ The files sit side by side in the repo root because `index.html`, `sw.js` and th
 | `snap.js`, `scanner.js`, `ocr.js`, `documents.js` | Camera capture, document scanner and signature, text reading, the Documents list and PDF viewer. |
 | `sync-core.js`, `sync.js` | Google Drive sync: readable files, and the connection. |
 | `applock.js`, `password-core.js`, `totp-core.js` | App lock, password builder, 2FA codes. |
+| `icons.js`, `fonts/` | Every icon: one place that maps icon names to Material Symbols (outlined), and the icon font itself (Apache 2.0 licence, see `fonts/LICENSE-material-symbols.txt`). |
 | `tools.js`, `tools.css` | Tool sheets (password builder, 2FA, recorder, sketch) and the Timeline and tool styles. |
 | `extras.js`, `power.js`, `hints.js` | QR, contacts, location pins; "/" commands; tooltips and previews. |
 | `importer.js`, `ai.js`, `demo.js` | Import from other apps; "Copy for AI"; made-up demo data. |
