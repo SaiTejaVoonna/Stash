@@ -251,3 +251,14 @@ test("Library shows 'Sorted for you' with counts; a chip opens that view", async
   await expect(page.locator("#tl-pane")).toBeVisible();
   await expect(page.locator("#tl-search")).toHaveValue("type:link");
 });
+
+test("Me lights its own tab and lists five places; each opens its Settings page", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="search"]');
+  await page.tap('.tab-btn[data-tab="more"]');
+  await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
+  await expect(page.locator('.tab-btn[data-tab="search"]')).not.toHaveClass(/active/);
+  await expect(page.locator("#me-rows .me-row")).toHaveCount(5);
+  await expect(page.locator("#me-rows .me-row b")).toHaveText(["Look", "Your data", "Privacy and Vault", "Add-ons", "Help and about"]);
+  await page.locator('#me-rows .me-row[data-page="addons"]').tap();
+  await expect(page.locator("#addons-settings")).toBeVisible();
+});
