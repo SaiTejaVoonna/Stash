@@ -184,8 +184,16 @@
   /* Library: Collections | Notes | Documents (phones only). */
   .library-seg { display: none; }
   @media (max-width: 720px) {
-    .library-seg { align-self: stretch; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 var(--s-4) var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
+    .library-seg { width: 100%; flex: 0 0 auto; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 0 var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
     .library-seg-btn { min-height: 36px; border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; transition: background var(--t-med) var(--ease), color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+    .library-quick { width: 100%; flex: 0 0 auto; box-sizing: border-box; margin: 0 0 var(--s-3); }
+    .docs-pane .library-seg { width: calc(100% - 2 * var(--s-4)); margin: 0 var(--s-4) var(--s-3); }
+    .library-quick-title { margin: 0 var(--s-1) var(--s-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+    .library-quick-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s-2); }
+    .library-quick-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s-2) var(--s-1); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-1); color: var(--text); font: inherit; cursor: pointer; }
+    .library-quick-chip .icon { color: var(--accent); }
+    .library-quick-chip b { font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: 1.2; }
+    .library-quick-chip small { font-size: var(--fs-xs); color: var(--text-2); }
     .library-seg-btn.on { background: var(--surface-1); color: var(--text); font-weight: var(--fw-semibold); box-shadow: var(--shadow-sm); }
     #library-seg-slot:empty { display: none; }
   }
@@ -2098,11 +2106,23 @@
     { key: "sketch", name: "Sketch", hint: "Drawing pad with pens, shapes and text." },
     { key: "voice", name: "Voice notes", hint: "Record voice notes in notes." },
     { key: "commands", name: "Commands", hint: "Terminal commands with {{blanks}} to fill in." },
-    { key: "passwords", name: "Passwords and 2FA", hint: "Logins and 2FA codes, kept in the Vault." }
+    { key: "passwords", name: "Passwords and 2FA", hint: "Logins and 2FA codes, kept in the Vault." },
+    { key: "templates", name: "Template store", hint: "Browse every ready-made collection layout, with previews. The first dozen are always there." }
   ];
+  // Quiet by default: off for a new person, on for anyone who already has some. (Nothing is deleted; switch them on any time.)
+  const QUIET_BY_DEFAULT = {
+    passwords: () => cache.some((i) => i.type === "password" && !i.deletedAt),
+    commands: () => cache.some((i) => i.type === "command" && !i.deletedAt),
+    templates: () => false
+  };
   const ADDONS_KEY = "copypaster-addons";
   function addonOn(key) {
-    try { const m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}"); return m[key] !== false; } catch { return true; }
+    let m = {};
+    try { m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}") || {}; } catch {}
+    if (m[key] !== undefined) return m[key] !== false;
+    const quiet = QUIET_BY_DEFAULT[key];
+    if (!quiet) return true;
+    try { return !!quiet(); } catch { return false; }
   }
   function setAddon(key, on) {
     let m = {};
@@ -3700,6 +3720,17 @@
       bar.appendChild(b);
     }
     return bar;
+  }
+  // "Sorted for you": things Stash grouped by what they are, one tap to see them.
+  function libraryQuick() {
+    const n = (q) => (timelineApi && timelineApi.count ? timelineApi.count(q) : 0);
+    const out = [
+      { key: "photos", label: "Photos", icon: "image", n: n("type:photo"), run: () => { timelineTab = "search"; openTimeline({ q: "type:photo" }); } },
+      { key: "links", label: "Links", icon: "link", n: n("type:link"), run: () => { timelineTab = "search"; openTimeline({ q: "type:link" }); } },
+      { key: "lists", label: "Checklists", icon: "checklist", n: n("type:checklist"), run: () => { timelineTab = "search"; openTimeline({ q: "type:checklist" }); } }
+    ];
+    if (docsApi && addonOn("documents")) out.push({ key: "docs", label: "Documents", icon: "file", n: allDocuments().length, run: () => openDocuments() });
+    return out;
   }
   function renderLibrarySlot() {
     const slot = document.getElementById("library-seg-slot");
@@ -11282,7 +11313,7 @@
     if (!window.CPGroups) return;
     try {
       groupsApi = await window.CPGroups.init({
-        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn, libraryBar,
+        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn, libraryBar, libraryQuick, addonOn,
         capturedNotes: () => cache.filter((i) => i.captured && !i.deletedAt && !i._locked && !i.vaulted).sort((a, b) => b.createdAt - a.createdAt),
         closeSidebarOnMobile, openSidebarDrawer, renderTabBar, renderAllViews, closeSettings,
         tags: tagsWithCounts, ensureTag, tagLabel, openTag, renderNav,

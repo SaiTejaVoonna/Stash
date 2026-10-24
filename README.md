@@ -20,6 +20,11 @@ Stash remembers them, suggests where they belong, and finds them again.
 
 ## What works today
 
+**Four tabs and one +** (on phones)
+- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (backup and App lock cards, then everything else). The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
+- Keys, passwords and card numbers you drop into the Inbox are spotted, and Stash offers to move them to the Vault. It only suggests.
+- Commands, Passwords and 2FA, and the Template store are off for new people. They are one switch away in Me › Add-ons, and anyone who already uses them keeps them.
+
 **Capture**
 - Inbox: a chat with yourself. Text, photos, files, albums, Snap (camera first, caption after), drag and drop, paste.
 - Filters, search, select, archive, Trash with Undo, and a clean-up tool for blanks, duplicates and old files.
@@ -51,7 +56,7 @@ Stash remembers them, suggests where they belong, and finds them again.
 - Optional Google Drive sync, light and dark themes, true black and warm paper, text size, reduced motion, screen-reader labels, works offline.
 - Add-ons you can switch off (audio, video, QR scanner, contacts, location pins, password builder, 2FA codes).
 
-**Not done yet** (see the roadmap): search by meaning, more sync choices (OneDrive, Dropbox, WebDAV), conflict-free sync across devices, Android and iPhone apps, computer apps with clipboard history, an MCP connector for AI assistants, whole-app encryption, app languages, and live-camera scanning. Phase 1's "one look everywhere" pass is partly done (Settings and Inbox).
+**Not done yet** (see the roadmap): the same one-look polish on every screen, merging Folders and Tags into Collections, search by meaning, more sync choices (OneDrive, Dropbox, WebDAV), conflict-free sync across devices, Android and iPhone apps, computer apps with clipboard history, an MCP connector for AI assistants, whole-app encryption, app languages, and live-camera scanning. Phase 1's "one look everywhere" pass is partly done (Settings and Inbox).
 
 ## Run it
 

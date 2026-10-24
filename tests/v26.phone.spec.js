@@ -394,3 +394,18 @@ test("Inbox: a message that looks like a key or a card number offers the Vault",
   await page.locator("#chat-pane .cx-vault").first().tap();
   await expect(page.locator("#dialog")).toContainText("Set up your Vault"); // the Vault asks to be set up first
 });
+
+test("A new person doesn't get Commands, Passwords or the Template store until they switch them on", async ({ page }) => {
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-addondefault", "1"); sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-addons"); localStorage.removeItem("copypaster-dock-middle"); });
+  await page.reload();
+  await page.tap("#tab-bar [data-tab='new']");
+  await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='command']")).toHaveCount(0);
+  await expect(page.locator("#new-menu [data-new='password']")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.tap("#tab-bar [data-tab='more']");
+  await page.tap("#settings-btn");
+  await page.tap('.settings-nav-item[data-page="addons"]');
+  await expect(page.locator('#addons-settings [data-addon="passwords"]')).not.toBeChecked();
+  await expect(page.locator('#addons-settings [data-addon="templates"]')).not.toBeChecked();
+});

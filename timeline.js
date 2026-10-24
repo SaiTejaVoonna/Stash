@@ -495,7 +495,9 @@
     isOpen: () => ui.open,
     focusSearch: () => { searchEl.focus(); searchEl.select(); },
     openFilters: () => (isPhone() ? openAllFilters() : menu(barEl.querySelector('[data-filter="type"]'), "Type", (b, d) => typeMenu(b, d))),
-    query: () => ui.q
+    query: () => ui.q,
+    // How many things match a search like "type:photo" (without opening the Timeline).
+    count: (q) => { try { const p = S.parse(q, ctx()); return allRows().filter((r) => matches(r, p)).length; } catch { return 0; } }
   };
   window.CPTimeline = { init };
 })();

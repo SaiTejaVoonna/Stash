@@ -241,3 +241,13 @@ test("One highlight slides between the dock tabs and ends under the chosen one",
   expect(r.key).toBe("chat");
   expect(Math.abs(r.pill - r.tab)).toBeLessThanOrEqual(1);
 });
+
+test("Library shows 'Sorted for you' with counts; a chip opens that view", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await expect(page.locator(".library-quick-title")).toHaveText("Sorted for you");
+  await expect(page.locator('.library-quick-chip[data-quick="photos"] small')).toHaveText("Photos");
+  await expect(page.locator('.library-quick-chip[data-quick="photos"] b')).toHaveText("0");
+  await page.locator('.library-quick-chip[data-quick="links"]').tap();
+  await expect(page.locator("#tl-pane")).toBeVisible();
+  await expect(page.locator("#tl-search")).toHaveValue("type:link");
+});
