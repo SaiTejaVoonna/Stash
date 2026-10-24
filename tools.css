@@ -797,12 +797,6 @@ body.cx-previewing #tab-bar { display: none !important; }
 .slash-key { font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 64px; }
 .slash-label { font-size: var(--fs-sm); color: var(--text); }
 
-/* ---------- Small surprises ---------- */
-.cp-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
-.cp-confetti i { position: absolute; width: 8px; height: 12px; border-radius: 2px; animation: cp-burst 1.3s cubic-bezier(.2,.7,.3,1) forwards; }
-@keyframes cp-burst { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 80% { opacity: 1; } 100% { transform: translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--r)); opacity: 0; } }
-.cp-roll { animation: cp-roll 1.2s ease-in-out; }
-@keyframes cp-roll { to { transform: rotate(360deg); } }
 
 /* Plain text mode: says so, with the way back. */
 .plain-mode-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: var(--r-md); background: var(--surface-2); color: var(--text-3); font-size: var(--fs-xs); }

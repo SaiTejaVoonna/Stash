@@ -120,7 +120,6 @@ test("Looks: one tap sets the icon, theme, colour and background; true black and
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="appearance"]');
   await expect(page.locator('#look-picker [data-look="stash"]')).toHaveClass(/active/);
-  await expect(page.locator('#look-picker [data-look="aurora"]')).toHaveCount(0); // not found yet
   await page.click('#look-picker [data-look="midnight"]');
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-surface", "black");

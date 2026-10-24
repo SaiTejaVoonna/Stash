@@ -1,4 +1,4 @@
-// "/" commands (off by default) and a couple of surprises.
+// "/" commands (off by default).
 const { test, expect, openApp, newNote, storedItems } = require("./fixtures");
 
 test("\"/\" commands are off by default; on, they insert today's date and make a tick box", async ({ page }) => {
@@ -26,14 +26,4 @@ test("\"/\" commands are off by default; on, they insert today's date and make a
   await ta.type("milk");
   await expect(ta).toHaveValue(new RegExp("\\n- \\[ \\] milk$"));
   await expect(page.locator("#slash-menu")).toHaveCount(0);
-});
-
-test("seven taps on the logo find Aurora, and it stays in Looks", async ({ page }) => {
-  await openApp(page);
-  for (let i = 0; i < 7; i++) await page.click("#brand-dot");
-  await expect(page.locator(".toast-item").last()).toContainText("You found Aurora");
-  await expect(page.locator("html")).toHaveAttribute("data-surface", "aurora");
-  await page.click("#settings-btn");
-  await page.click('.settings-nav-item[data-page="appearance"]');
-  await expect(page.locator('#look-picker [data-look="aurora"]')).toHaveClass(/active/);
 });

@@ -148,7 +148,7 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 - [x] Collections as Timeline, Photos or Table (totals, Copy table); unused sections wait behind "+N more"; each collection's colour washes its page.
 - [x] Looks: icon + theme + colour + background in one tap; true black and warm paper.
 - [x] Demo data: made-up notes, bills, prescription, lab report and PDFs, added and removed in one tap.
-- [x] "/" commands for quick hands (off by default); a few hidden surprises.
+- [x] "/" commands for quick hands (off by default). (The hidden surprises were removed in the calm redesign.)
 - [x] Settings grouped (Your things · Privacy · Organising · More); one spelling of "colour" across the app.
 - [x] Repo tidy: a real README, a docs index, build-history docs moved to `docs/history/`, the old name removed from the app, docs and package.
 - [ ] Split `index.html` into modules; type checking through JSDoc comments.

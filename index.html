@@ -122,8 +122,7 @@
     --primary-shadow: 0 4px 12px -4px rgba(10, 108, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     --glass: rgba(255, 255, 255, 0.8);
   }
-  /* Backgrounds: true black (dark, kind to OLED screens), warm paper (light),
-     and Aurora (a dark night sky; found, not shown). */
+  /* Backgrounds: true black (dark, kind to OLED screens) and warm paper (light). */
   html[data-theme="dark"][data-surface="black"] {
     --bg: #000000; --bg-sidebar: #050506; --surface-1: #0b0b0d; --surface-2: #141418; --surface-3: #1e1f24; --elevated: #121215;
     --code-bg: #000000; --glass: rgba(10, 10, 12, 0.8);
@@ -133,12 +132,6 @@
     --line: rgba(80, 60, 20, 0.1); --line-strong: rgba(80, 60, 20, 0.17);
     --text: #2a2419; --text-2: #5f5546; --text-3: #6d6352; --glass: rgba(251, 247, 239, 0.84);
   }
-  html[data-theme="dark"][data-surface="aurora"] {
-    --bg: #0b0b1a; --bg-sidebar: #0e0d20; --surface-1: #14132a; --surface-2: #1b1a36; --surface-3: #252347; --elevated: #191833;
-    --line: rgba(190, 180, 255, 0.09); --line-strong: rgba(190, 180, 255, 0.16); --glass: rgba(20, 19, 42, 0.74);
-  }
-  html[data-surface="aurora"] body { background: radial-gradient(1200px 500px at 15% -10%, rgba(39, 213, 255, .14), transparent 60%), radial-gradient(900px 500px at 90% 0%, rgba(255, 93, 184, .13), transparent 60%), var(--bg); }
-  html[data-surface="aurora"] #app > * { background-color: transparent; }
 
   /* Looks: one tap for icon, theme, colour and background together. */
   #look-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; width: 100%; }
@@ -2757,10 +2750,10 @@
   document.querySelectorAll("[data-glass-pick]").forEach((b) => b.addEventListener("click", () => applyGlass(b.dataset.glassPick)));
   try { applyGlass(localStorage.getItem(GLASS_KEY)); } catch { applyGlass("subtle"); }
 
-  // Background: normal, true black (dark), warm paper (light), or Aurora (found, not shown).
+  // Background: normal, true black (dark), or warm paper (light).
   const SURFACE_KEY = "copypaster-surface";
   function applySurface(value) {
-    const pick = ["black", "paper", "aurora"].includes(value) ? value : "normal";
+    const pick = ["black", "paper"].includes(value) ? value : "normal";
     if (pick === "normal") delete document.documentElement.dataset.surface; else document.documentElement.dataset.surface = pick;
     try { localStorage.setItem(SURFACE_KEY, pick); } catch {}
     document.querySelectorAll("[data-surface-pick]").forEach((b) => {
@@ -2786,10 +2779,7 @@
     { key: "glass", name: "Glass", hint: "Clear and airy", icon: "glass", theme: "system", accent: "cyan", surface: "normal", glass: "strong", bg: "#eef7fb", text: "#17181c", bar: "#06b6d4" },
     { key: "graphite", name: "Graphite", hint: "Quiet, no colour", icon: "mono", theme: "dark", accent: "mono", surface: "normal", glass: "subtle", bg: "#0d0e11", text: "#ececf0", bar: "#9ca3af" },
     { key: "snow", name: "Snow", hint: "Light and plain", icon: "mono-light", theme: "light", accent: "mono", surface: "normal", glass: "off", bg: "#ffffff", text: "#17181c", bar: "#9ca3af" },
-    { key: "aurora", name: "Aurora", hint: "You found it", secret: true, icon: "glass", theme: "dark", accent: "stash", surface: "aurora", glass: "strong", bg: "#0b0b1a", text: "#ececf0", bar: STASH_GRAD }
   ];
-  const LOOK_SECRET_KEY = "copypaster-aurora";
-  function auroraFound() { try { return localStorage.getItem(LOOK_SECRET_KEY) === "1"; } catch { return false; } }
   function currentLook() {
     let st = {};
     try { st = { icon: localStorage.getItem(ICON_STYLE_KEY) || "default", theme: localStorage.getItem(THEME_KEY) || "system", accent: localStorage.getItem(ACCENT_KEY) || "stash", surface: localStorage.getItem(SURFACE_KEY) || "normal" }; } catch {}
@@ -2808,7 +2798,6 @@
     const cur = currentLook();
     box.replaceChildren();
     for (const l of LOOKS) {
-      if (l.secret && !auroraFound()) continue;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "look-opt" + (cur === l.key ? " active" : "");
@@ -8876,8 +8865,7 @@
     const tips = [
       ["Make a list as you type", "- or 1. then space"], ["Heading as you type", "# then space"], ["Tick box as you type", "[] then space"],
       ["Bold / italic / underline", MOD + " B / I / U"], ["/ commands (turn on above)", "/tag /folder /todo /date /time /remind /photo /draw /record /colour /pin /star /ai"],
-      ["Phone: swipe a note", "left for Trash, right to archive"], ["Phone: hold a note", "every action for it"], ["Phone: hold an icon", "its name"],
-      ["A few surprises are hidden", "have fun looking"]
+      ["Phone: swipe a note", "left for Trash, right to archive"], ["Phone: hold a note", "every action for it"], ["Phone: hold an icon", "its name"]
     ];
     const box = document.createElement("div");
     box.className = "settings-group";
@@ -10679,38 +10667,12 @@
     cb.addEventListener("change", () => { window.CPSlash.set(cb.checked); showToast(cb.checked ? "Type / in a note or the Inbox for quick commands" : "\"/\" commands off"); });
   })();
 
-  // ---------- Small surprises ----------
-  (function () {
-    const E = window.CPEggs;
-    if (!E) return;
-    // Aurora: tap the logo seven times, or the old ↑↑↓↓←→←→BA.
-    const aurora = () => {
-      const first = !auroraFound();
-      try { localStorage.setItem(LOOK_SECRET_KEY, "1"); } catch {}
-      E.confetti();
-      applyLook("aurora", true);
-      showToast(first ? "You found Aurora. It lives in Settings \u2192 Appearance \u2192 Looks now." : "Aurora");
-    };
-    E.taps(document.getElementById("brand-dot"), 7, aurora);
-    E.konami(aurora);
-    // "do a barrel roll" in search.
-    document.getElementById("search-input").addEventListener("input", (e) => { if (/^do a barrel roll$/i.test(e.target.value.trim())) E.roll(document.getElementById("items")); });
-    // New year's day: a little hello, once a year.
-    const d = new Date(), y = String(d.getFullYear());
-    try {
-      if (d.getMonth() === 0 && d.getDate() === 1 && localStorage.getItem("copypaster-newyear") !== y) {
-        localStorage.setItem("copypaster-newyear", y);
-        setTimeout(() => { E.confetti(); showToast("Happy new year from Stash"); }, 1200);
-      }
-    } catch {}
-  })();
-  // The 100th thing you save gets a little celebration (once).
+  // The 100th thing you save gets a small thank-you (once).
   function milestone() {
     try {
       if (localStorage.getItem(profileKey("copypaster-100")) || cache.filter((i) => !i.deletedAt).length < 100) return;
       localStorage.setItem(profileKey("copypaster-100"), "1");
     } catch { return; }
-    if (window.CPEggs) window.CPEggs.confetti();
     showToast("That's 100 things in your Stash.");
   }
 
