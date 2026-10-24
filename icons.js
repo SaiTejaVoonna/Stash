@@ -75,6 +75,7 @@
     "keyboard": "keyboard",
     "lasso": "lasso_select",
     "layers": "layers",
+    "library": "folder_open",
     "leaf": "eco",
     "link": "link",
     "list-ul": "format_list_bulleted",

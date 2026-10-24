@@ -165,6 +165,14 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+  /* Library: Collections | Notes | Documents (phones only). */
+  .library-seg { display: none; }
+  @media (max-width: 720px) {
+    .library-seg { align-self: stretch; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 var(--s-4) var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
+    .library-seg-btn { min-height: 36px; border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; transition: background var(--t-med) var(--ease), color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+    .library-seg-btn.on { background: var(--surface-1); color: var(--text); font-weight: var(--fw-semibold); box-shadow: var(--shadow-sm); }
+    #library-seg-slot:empty { display: none; }
+  }
   /* Icons: Material Symbols (outlined), served from fonts/. The name sits in data-ms so it is never read as text. */
   @font-face { font-family: "Material Symbols Outlined"; font-style: normal; font-weight: 100 700; font-display: block; src: url("fonts/material-symbols-outlined.woff2") format("woff2"); }
   .ms {
@@ -1707,6 +1715,7 @@
         <button id="paste-btn" title="Paste from clipboard — attaches to the open item, or creates a new one"><svg class="icon"><use href="#icon-paste"></use></svg></button>
         <button id="new-btn" title="New item"><svg class="icon"><use href="#icon-plus"></use></svg><span class="new-label">New</span></button>
       </div>
+      <div id="library-seg-slot"></div>
       <div id="search-sort-row">
         <label class="search-wrap"><svg class="icon"><use href="#icon-search"></use></svg>
           <input id="search-input" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search items"><span class="kbd">/</span></label>
@@ -3492,7 +3501,7 @@
   const DOCK_CHOICES = [
     { key: "chat", label: "Inbox", icon: "inbox" },
     { key: "all", label: "All notes", icon: "note" },
-    { key: "groups", label: "Collections", icon: "layers", needsGroups: true },
+    { key: "groups", label: "Library", icon: "library", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
     { key: "saved", label: "Favorites", icon: "star" },
@@ -3514,9 +3523,9 @@
     const mid = dockMiddle() === "new" ? { key: "new", label: "New", icon: "plus" } : { key: "snap", label: "Snap", icon: "camera" };
     return [picked[0], picked[1], mid, picked[2], { key: "more", label: "Me", icon: "user" }];
   }
-  // The big middle button: Snap (default; hold it for the New menu) or New.
+  // The big middle button: New (default: one sheet for text, photo, scan, drawing) or Snap (one tap to the camera; hold it for the New menu).
   const DOCK_MID_KEY = "copypaster-dock-middle";
-  function dockMiddle() { try { return localStorage.getItem(DOCK_MID_KEY) === "new" ? "new" : "snap"; } catch { return "snap"; } }
+  function dockMiddle() { try { return localStorage.getItem(DOCK_MID_KEY) === "snap" ? "snap" : "new"; } catch { return "new"; } }
   let timelineTab = "search"; // which dock tab opened the Timeline
   function renderDockSettings() {
     const box = document.getElementById("dock-picker");
@@ -3579,7 +3588,10 @@
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const tabs = dockTabs();
     const chatOpen = !!(chatApi && chatApi.isOpen());
-    const activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
+    let activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
+    // Library covers Collections, Notes (All notes) and Documents.
+    if (!chatOpen && !tlOpen && tabs.some((t) => t.key === "groups") && !tabs.some((t) => t.key === "all") &&
+        (inGroups || (docsApi && docsApi.isOpen()) || currentView === "all")) activeKey = "groups";
     const onTab = tabs.some((tab) => tab.key === activeKey);
     bar.innerHTML = "";
     for (const tab of tabs) {
@@ -3618,6 +3630,42 @@
       });
       bar.appendChild(b);
     }
+  }
+
+  // Library: Collections, Notes and Documents are three views of one place. On a
+  // phone each of them shows this bar at the top, to hop between them.
+  function libraryBar(active) {
+    const parts = [["collections", "Collections"], ["notes", "Notes"]];
+    if (window.CPDocs && addonOn("documents")) parts.push(["docs", "Documents"]);
+    const bar = document.createElement("div");
+    bar.className = "library-seg";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Library");
+    for (const [key, label] of parts) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.dataset.lib = key;
+      b.setAttribute("aria-selected", key === active ? "true" : "false");
+      b.className = "library-seg-btn" + (key === active ? " on" : "");
+      b.textContent = label;
+      b.addEventListener("click", () => {
+        if (key === active) return;
+        if (docsApi && docsApi.isOpen()) docsApi.close();
+        if (chatApi && chatApi.isOpen()) chatApi.close();
+        if (key === "collections") { closeTimeline(); groupsApi.showHome(); }
+        else if (key === "notes") { if (groupsApi && groupsApi.isActive()) groupsApi.exit(); switchView("all"); }
+        else openDocuments();
+        renderTabBar();
+      });
+      bar.appendChild(b);
+    }
+    return bar;
+  }
+  function renderLibrarySlot() {
+    const slot = document.getElementById("library-seg-slot");
+    if (!slot) return;
+    slot.replaceChildren(...(currentView === "all" ? [libraryBar("notes")] : []));
   }
 
   // Changing views cross-fades the list where the browser supports the
@@ -4808,6 +4856,7 @@
 
   function renderList() {
     document.getElementById("list-title").textContent = currentViewLabel();
+    renderLibrarySlot();
     // The Me chat shows the same items; keep it current (a guess or a location arriving, an edit).
     if (chatApi && chatApi.isOpen()) chatApi.render();
 
@@ -10941,7 +10990,7 @@
 
   function startDocs() {
     if (!window.CPDocs) return;
-    docsApi = window.CPDocs.init({ icon, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav(),
+    docsApi = window.CPDocs.init({ icon, libraryBar, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav(),
       scan: window.CPScan && addonOn("scanner") ? () => openScanner() : null,
       sign: window.CPScan ? (f) => signPdf(f) : null });
   }
@@ -10949,6 +10998,7 @@
     if (!docsApi) return;
     closeSidebarOnMobile();
     docsApi.open();
+    renderTabBar();
   }
 
   function startChat() {
@@ -11154,7 +11204,7 @@
     if (!window.CPGroups) return;
     try {
       groupsApi = await window.CPGroups.init({
-        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn,
+        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn, libraryBar,
         capturedNotes: () => cache.filter((i) => i.captured && !i.deletedAt && !i._locked && !i.vaulted).sort((a, b) => b.createdAt - a.createdAt),
         closeSidebarOnMobile, openSidebarDrawer, renderTabBar, renderAllViews, closeSettings,
         tags: tagsWithCounts, ensureTag, tagLabel, openTag, renderNav,

@@ -68,7 +68,7 @@ test("the phone Filter sheet and dock settings say Collection, never group", asy
   await page.tap("#settings-btn");
   await page.tap('.settings-nav-item[data-page="appearance"]');
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
-  expect(options).toContain("Collections");
+  expect(options).toContain("Library");
   expect(options.join(" ")).not.toMatch(/group/i);
 });
 
@@ -365,4 +365,16 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   await page.tap("#cx-sort-move");
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("random thought");
+});
+
+test("The dock's middle button is + by default: one sheet to add text, a photo, a scan or a drawing", async ({ page }) => {
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-dock-middle"); });
+  await page.reload();
+  await expect(page.locator("#tab-bar [data-tab='new']")).toBeVisible();
+  await expect(page.locator("#tab-bar [data-tab='snap']")).toHaveCount(0);
+  await page.tap("#tab-bar [data-tab='new']");
+  await expect(page.locator("#new-menu")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='snap']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='sketch']")).toBeVisible();
 });

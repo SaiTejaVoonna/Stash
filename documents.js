@@ -141,6 +141,7 @@
         h("button", { class: "btn icon ghost", id: "docs-close", "aria-label": "Back", onclick: close }, ic("chevron-left", "icon-lg")),
         h("div", { class: "docs-title" }, h("b", null, "Documents"), h("small", null, "Every PDF and file, wherever it lives.")),
         api.scan ? h("button", { class: "btn primary gp-small", id: "docs-scan", onclick: () => api.scan() }, ic("camera"), "Scan") : null),
+      api.libraryBar ? api.libraryBar("docs") : null,
       h("div", { class: "docs-tools" }, searchEl, sort),
       h("div", { class: "docs-where", id: "docs-where" }),
       listEl);

@@ -137,7 +137,7 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
 });
 
 test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "Me"]);
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Library", "Snap", "Search", "Me"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -198,4 +198,22 @@ test("Me opens as a full page above the dock, with no dark layer behind it; Sear
   expect(field.y).toBeGreaterThan(body.y + body.height - 4); // the search field is under the results
   const dock = await page.locator("#tab-bar").boundingBox();
   expect(field.y + field.height).toBeLessThanOrEqual(dock.y + 2); // and above the dock
+});
+
+test("Library: Collections, Notes and Documents are one place, with one bar to hop between them", async ({ page }) => {
+  const seg = (key) => page.locator('.library-seg-btn[data-lib="' + key + '"]:visible').first();
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await expect(page.locator("#tab-bar .tab-btn[data-tab='groups']")).toHaveText("Library");
+  await expect(page.locator(".gp-home-title h1")).toHaveText("Collections");
+  await expect(seg("collections")).toHaveClass(/on/);
+  await seg("notes").tap();
+  await expect(page.locator("#list-title")).toHaveText("All notes");
+  await expect(seg("notes")).toHaveClass(/on/);
+  await expect(page.locator('.tab-btn[data-tab="groups"]')).toHaveClass(/active/); // the Library tab stays lit
+  await seg("docs").tap();
+  await expect(page.locator("#docs-pane")).toBeVisible();
+  await expect(page.locator('#docs-pane .library-seg-btn[data-lib="docs"]')).toHaveClass(/on/);
+  await page.locator('#docs-pane .library-seg-btn[data-lib="collections"]').tap();
+  await expect(page.locator("#docs-pane")).toBeHidden();
+  await expect(page.locator(".gp-home-title h1")).toBeVisible();
 });

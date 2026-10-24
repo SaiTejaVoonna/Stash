@@ -602,6 +602,7 @@
   function renderHome() {
     headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
       h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
+    if (api.libraryBar) headEl.append(api.libraryBar("collections"));
     const wrap = h("div", { class: "gp-home" });
     if (!groups.length) {
       wrap.append(h("div", { class: "gp-empty" }, h("span", { class: "gp-tile big", style: "--c:var(--accent)" }, ic("layers")),

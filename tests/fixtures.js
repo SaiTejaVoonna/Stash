@@ -36,6 +36,8 @@ const test = base.test.extend({
     await page.addInitScript(() => { window.Tesseract = { createWorker: async () => ({ recognize: async () => ({ data: { text: window.__ocrText || "TOTAL 450" } }) }) }; });
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
+    // Tests start with Snap as the dock's middle button (the default is New); one test checks the default.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-dockdefault")) localStorage.setItem("copypaster-dock-middle", "snap"); } catch {} });
     // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
     // Tests type into the plain-text editor; the rich editor has its own tests.
