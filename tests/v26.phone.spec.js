@@ -378,3 +378,19 @@ test("The dock's middle button is + by default: one sheet to add text, a photo, 
   await expect(page.locator("#new-menu [data-new='snap']")).toBeVisible();
   await expect(page.locator("#new-menu [data-new='sketch']")).toBeVisible();
 });
+
+test("Inbox: a message that looks like a key or a card number offers the Vault", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  await page.fill("#cx-input", "my google key " + "AIza" + "x".repeat(35));
+  await page.tap("#cx-send");
+  await page.fill("#cx-input", "card 4242 4242 4242 4242 for the trip");
+  await page.tap("#cx-send");
+  await page.fill("#cx-input", "dinner at 7 with Dr Asha Verma");
+  await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(3);
+  await expect(page.locator("#chat-pane .cx-secret")).toHaveCount(2);
+  await expect(page.locator("#chat-pane .cx-secret").first()).toContainText("a Google API key");
+  await expect(page.locator("#chat-pane .cx-secret").nth(1)).toContainText("a card number");
+  await page.locator("#chat-pane .cx-vault").first().tap();
+  await expect(page.locator("#dialog")).toContainText("Set up your Vault"); // the Vault asks to be set up first
+});

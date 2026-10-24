@@ -524,6 +524,13 @@
         h("small", { class: "cx-why" }, whyText(d),
           h("button", { class: "cx-not", type: "button", onclick: (e) => { e.stopPropagation(); notThis(n, d); } }, "Not this"))));
     }
+    // Keys, passwords and card numbers: offer the Vault (it only suggests; nothing moves until you tap).
+    if (!ui.selecting && !n.archivedAt && api.secretOf && api.toVault) {
+      const sec = api.secretOf(n);
+      if (sec) b.append(h("div", { class: "cx-sugg cx-secret" },
+        h("button", { class: "cx-guess cx-vault", "data-vault": "1", "aria-label": "Move to the Vault", onclick: (e) => { e.stopPropagation(); api.toVault(n); } }, ic("vault"), "Move to Vault"),
+        h("small", { class: "cx-why" }, "Looks like " + sec + ".")));
+    }
     if (ui.selecting) b.prepend(h("span", { class: "cx-check" + (picked ? " on" : "") }, picked ? ic("check") : null));
     // Tap: open it (or pick it while selecting). Hold: start selecting.
     let timer = null, held = false;

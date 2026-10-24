@@ -304,7 +304,11 @@ body.timeline-mode:not(.detail-open) #detail-pane { display: none !important; }
     box-shadow: 0 12px 34px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
   }
   body.has-dock .tab-btn { min-height: 52px; padding: 4px 0 2px; border-radius: 24px; justify-content: center; gap: 2px; }
-  body.has-dock .tab-btn.active:not(.plus) { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  /* The chosen tab is lit by one highlight (.tab-pill) that slides between tabs. */
+  body.has-dock .tab-btn.active:not(.plus) { background: transparent; }
+  body.has-dock #tab-bar .tab-btn { position: relative; z-index: 1; }
+  .tab-pill { position: absolute; top: 5px; bottom: 5px; z-index: 0; border-radius: 24px; background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; transition: left var(--t-slow) var(--ease), width var(--t-slow) var(--ease), opacity var(--t-med) ease; }
+  @media (prefers-reduced-motion: reduce) { .tab-pill { transition: none; } }
   body.has-dock .tab-btn .plus-ring { width: 46px; height: 46px; margin-top: 0; border-radius: 50%; box-shadow: 0 6px 16px -6px var(--accent-glow); }
   body.has-dock .tab-btn.plus span:last-child { display: none; }
   body.has-dock #items { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }

@@ -217,3 +217,27 @@ test("Library: Collections, Notes and Documents are one place, with one bar to h
   await expect(page.locator("#docs-pane")).toBeHidden();
   await expect(page.locator(".gp-home-title h1")).toBeVisible();
 });
+
+test("Me starts with a backup card and an App lock card", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="more"]');
+  await expect(page.locator("#me-backup")).toContainText("Back up your Stash");
+  await expect(page.locator("#me-backup")).toContainText("No backup yet");
+  await expect(page.locator("#me-lock")).toContainText("App lock is off");
+  await page.locator("#me-lock .me-go").tap();
+  await expect(page.locator("#lock-settings")).toBeVisible(); // Turn on opens the App lock page
+});
+
+test("One highlight slides between the dock tabs and ends under the chosen one", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="search"]');
+  await page.waitForTimeout(500);
+  await page.tap('.tab-btn[data-tab="chat"]');
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(() => {
+    const pills = document.querySelectorAll("#tab-bar .tab-pill");
+    const act = document.querySelector("#tab-bar .tab-btn.active:not(.plus)");
+    return { n: pills.length, pill: Math.round(pills[0].getBoundingClientRect().left), tab: Math.round(act.getBoundingClientRect().left), key: act.dataset.tab };
+  });
+  expect(r.n).toBe(1);
+  expect(r.key).toBe("chat");
+  expect(Math.abs(r.pill - r.tab)).toBeLessThanOrEqual(1);
+});

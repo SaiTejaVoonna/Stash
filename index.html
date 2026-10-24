@@ -165,6 +165,22 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+  /* Me (phones): a backup card and an App lock card at the top. */
+  #me-cards { display: none; }
+  @media (max-width: 720px) {
+    #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
+    #me-cards:empty { display: none; }
+    .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
+    .me-card.soft { background: var(--accent-soft, var(--surface-2)); border-color: transparent; }
+    .me-card-ic { width: 40px; height: 40px; border-radius: var(--r-md); display: grid; place-items: center; background: var(--surface-2); color: var(--text-2); flex-shrink: 0; }
+    .me-card.soft .me-card-ic { background: var(--surface-1); color: var(--accent); }
+    .me-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .me-card-text b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+    .me-card-text small { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
+    .me-card button.me-go { min-height: 40px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
+    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent); }
+  }
+
   /* Library: Collections | Notes | Documents (phones only). */
   .library-seg { display: none; }
   @media (max-width: 720px) {
@@ -1670,6 +1686,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
+    <div id="me-cards"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -3447,6 +3464,7 @@
   function renderNav() {
     const nav = document.getElementById("main-nav");
     nav.innerHTML = "";
+    try { renderMeCards(); } catch {}
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const elsewhere = tlOpen || !!(groupsApi && groupsApi.isActive());
     for (const item of NAV_ITEMS) {
@@ -3580,6 +3598,26 @@
       if (slot === 1) box.appendChild(midWrap);
     });
   }
+  // One highlight slides from the old tab to the new one. The bar is redrawn on every
+  // change, so the highlight is kept in the page and only the tabs are replaced.
+  function slideTabPill(bar) {
+    let pill = bar.querySelector(".tab-pill");
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "tab-pill";
+      pill.setAttribute("aria-hidden", "true");
+      pill.style.opacity = "0";
+      bar.prepend(pill);
+    }
+    const act = bar.querySelector(".tab-btn.active:not(.plus)");
+    if (!act || !act.offsetWidth) { pill.style.opacity = "0"; return; }
+    const first = pill.style.left === "";
+    if (first) pill.style.transition = "none";
+    pill.style.left = act.offsetLeft + "px";
+    pill.style.width = act.offsetWidth + "px";
+    pill.style.opacity = "1";
+    if (first) { void pill.offsetWidth; pill.style.transition = ""; }
+  }
   function renderTabBar() {
     const bar = document.getElementById("tab-bar");
     document.body.classList.add("has-dock");
@@ -3593,7 +3631,7 @@
     if (!chatOpen && !tlOpen && tabs.some((t) => t.key === "groups") && !tabs.some((t) => t.key === "all") &&
         (inGroups || (docsApi && docsApi.isOpen()) || currentView === "all")) activeKey = "groups";
     const onTab = tabs.some((tab) => tab.key === activeKey);
-    bar.innerHTML = "";
+    [...bar.children].forEach((c) => { if (!c.classList.contains("tab-pill")) c.remove(); });
     for (const tab of tabs) {
       const b = document.createElement("button");
       b.type = "button";
@@ -3630,6 +3668,7 @@
       });
       bar.appendChild(b);
     }
+    slideTabPill(bar);
   }
 
   // Library: Collections, Notes and Documents are three views of one place. On a
@@ -9824,8 +9863,20 @@
     [/\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, "a login token"],
     [/\b(?:password|passwd|pwd|passcode|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*\S{6,}/i, "a password"]
   ];
+  // A card number: 13 to 19 digits (spaces or dashes allowed) that pass the Luhn check.
+  function hasCardNumber(text) {
+    for (const m of String(text).matchAll(/\b\d(?:[ -]?\d){12,18}\b/g)) {
+      const digits = m[0].replace(/\D/g, "");
+      if (digits.length < 13 || digits.length > 19 || /^(\d)\1+$/.test(digits)) continue;
+      let sum = 0, dbl = false;
+      for (let i = digits.length - 1; i >= 0; i--) { let d = +digits[i]; if (dbl) { d *= 2; if (d > 9) d -= 9; } sum += d; dbl = !dbl; }
+      if (sum % 10 === 0) return true;
+    }
+    return false;
+  }
   function detectSecret(text) {
     for (const [re, label] of SECRET_PATTERNS) if (re.test(text)) return label;
+    if (hasCardNumber(text)) return "a card number";
     // One long, random-looking word mixing cases and digits: probably a key.
     const t = text.trim();
     if (/\s/.test(t) || t.length < 20 || t.length > 200) return null;
@@ -10286,7 +10337,32 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
+  // Me (phones): "Back up your Stash" and "App lock is off", shown at the top of the menu.
+  function renderMeCards() {
+    const box = document.getElementById("me-cards");
+    if (!box) return;
+    const make = (cls, iconName, title, sub, label, onClick, id) => {
+      const card = document.createElement("div");
+      card.className = "me-card " + cls;
+      card.id = id;
+      card.innerHTML = '<span class="me-card-ic">' + icon(iconName) + '</span><span class="me-card-text"><b></b><small></small></span>';
+      card.querySelector("b").textContent = title;
+      card.querySelector("small").textContent = sub;
+      const go = document.createElement("button");
+      go.type = "button"; go.className = "me-go"; go.textContent = label;
+      go.addEventListener("click", onClick);
+      card.appendChild(go);
+      return card;
+    };
+    const last = readNum(LAST_BACKUP_KEY);
+    const cards = [make("soft", "cloud", "Back up your Stash", last ? "Last backup " + daysAgoText(last) : "No backup yet. Browsers can clear saved data.", "Back up", () => document.getElementById("export-btn").click(), "me-backup")];
+    if (!(window.CPLock && window.CPLock.on())) {
+      cards.push(make("", "lock-open", "App lock is off", "A PIN or Face ID hides Stash. The Vault is what encrypts.", "Turn on", () => openSettings("lock"), "me-lock"));
+    }
+    box.replaceChildren(...cards);
+  }
   function renderBackupInfo() {
+    renderMeCards();
     const el = document.getElementById("last-backup");
     const last = readNum(LAST_BACKUP_KEY);
     if (el) el.textContent = last ? "Last backup " + daysAgoText(last) + " (" + new Date(last).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "). Vault items stay encrypted." : "Never backed up on this device. Download a .cps file with everything, Vault items still encrypted.";
@@ -11006,6 +11082,8 @@
     try {
       chatApi = window.CPChat.init({
         icon,
+        secretOf: (n) => detectSecret([n.title, n.content].filter(Boolean).join("\n")),
+        toVault: async (n) => { await moveToVault(n); if (chatApi) chatApi.render(); },
         items: () => cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted && !i._locked).sort((a, b) => a.createdAt - b.createdAt),
         addText: async (text, pick) => {
           const item = await chatAdd({ content: text, pick: pick && (pick.dest.length || pick.tags.length) ? pick : null });
