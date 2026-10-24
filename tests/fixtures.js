@@ -62,7 +62,7 @@ const test = base.test.extend({
 // The "+ New" button: in the list header on computers, the dock's middle
 // button on phones.
 const newBtn = (page) => page.locator("#new-btn:visible, #tab-bar .tab-btn[data-tab='new']:visible").first();
-// The full menu: the ☰ button on tablets, "More" in the dock on phones.
+// The full menu: the ☰ button on tablets, "Me" in the dock on phones.
 const menuBtn = (page) => page.locator("#menu-btn:visible, #tab-bar .tab-btn[data-tab='more']:visible").first();
 
 async function openApp(page) {

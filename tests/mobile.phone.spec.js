@@ -137,7 +137,7 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
 });
 
 test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "More"]);
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "Me"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -179,4 +179,23 @@ test("on a phone the tag picker slides up from the bottom", async ({ page }) => 
   expect(Math.round(box.y + box.height)).toBeGreaterThanOrEqual(vh - 2); // touches the bottom edge
   await page.tap(".popover-scrim", { position: { x: 20, y: 20 } });
   await expect(sheet).toHaveCount(0);
+});
+
+test("Me opens as a full page above the dock, with no dark layer behind it; Search sits at the bottom", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="more"]');
+  await expect(page.locator("#sidebar")).toHaveClass(/open/);
+  await expect(page.locator("#sidebar .nav-item").first()).toBeVisible();
+  await expect(page.locator("#sidebar-backdrop")).toBeHidden();
+  const box = await page.locator("#sidebar").boundingBox();
+  const view = page.viewportSize();
+  expect(box.x).toBeLessThanOrEqual(1);
+  expect(box.width).toBeGreaterThanOrEqual(view.width - 2);
+  // The dock stays reachable under it.
+  await page.tap('.tab-btn[data-tab="search"]');
+  await expect(page.locator("#tl-pane")).toBeVisible();
+  const body = await page.locator("#tl-body").boundingBox();
+  const field = await page.locator("#tl-search").boundingBox();
+  expect(field.y).toBeGreaterThan(body.y + body.height - 4); // the search field is under the results
+  const dock = await page.locator("#tab-bar").boundingBox();
+  expect(field.y + field.height).toBeLessThanOrEqual(dock.y + 2); // and above the dock
 });

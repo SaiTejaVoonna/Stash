@@ -232,6 +232,14 @@ body.timeline-mode:not(.detail-open) #detail-pane { display: none !important; }
   .tl-title h1 { font-size: var(--fs-3xl); letter-spacing: -0.03em; }
   .tl-body { padding: 0 var(--s-2) calc(110px + env(safe-area-inset-bottom)); }
   .tl-searchbar input { height: 40px; font-size: 16px; }
+  /* Search sits at the bottom, under your thumb (like Apple Notes), just above the dock. */
+  #tl-pane .tl-head { display: contents; }
+  #tl-pane .tl-title { order: 1; padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-4) var(--s-2); }
+  #tl-pane .tl-bar { order: 2; margin: 0 var(--s-4); }
+  #tl-pane .tl-active { order: 3; margin: 0 var(--s-4); }
+  #tl-pane .tl-body { order: 4; padding-bottom: var(--s-2); }
+  #tl-pane .tl-searchbar { order: 5; margin: var(--s-1) var(--s-4) calc(84px + env(safe-area-inset-bottom)); }
+  #tl-pane .tl-searchbar input { border-radius: var(--r-full); }
   .tl-filter-btn { display: inline-flex !important; }
   .tl-bar .tl-drop:not(.tl-filter-btn) { display: none; }
   .tl-sort { margin-left: 0; }
