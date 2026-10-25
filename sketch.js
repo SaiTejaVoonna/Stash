@@ -443,16 +443,5 @@
     });
   }
 
-  // Icons this file adds to the app's sprite.
-  const ICONS = {
-    pencil: '<path d="M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8zM13.5 7l3.5 3.5M5.2 15.4l3.4 3.4"/>',
-    marker: '<path d="M9 15l-3 3v2h4l3-3M9 15l7.5-7.5a2.1 2.1 0 0 1 3 3L12 18M9 15l3 3M14 9l3 3"/>',
-    highlighter: '<path d="M9 14l-4 4v2h6l2-2M9 14l8-8 3 3-8 8M9 14l3 3M4 22h16"/>',
-    nib: '<path d="M12 3l5 9-5 9-5-9zM12 3v8.5M12 11.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>',
-    shapes: '<rect x="3.5" y="12.5" width="8" height="8" rx="1"/><circle cx="16.5" cy="7.5" r="4"/><path d="M14 20.5l3.5-6 3.5 6z"/>',
-    type: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
-    lasso: '<path d="M7.5 17.5c-3-1-4.5-3-4.5-5.5C3 8 7 5 12 5s9 3 9 7-4 7-9 7c-1 0-2-.1-2.9-.3M7.5 17.5a2 2 0 1 0 2.6 1.2M8.8 21c-.6 0-1.3-.3-1.8-.8"/>'
-  };
-
-  window.CPSketch = { open, recognise, shapePoints, ICONS, PENS };
+  window.CPSketch = { open, recognise, shapePoints, PENS };
 })();

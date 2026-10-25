@@ -218,64 +218,6 @@
     });
   }
 
-  // ---------- Icons this feature adds to the app's sprite ----------
-  const ICON_PATHS = {
-    layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
-    cross: '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z"/>',
-    pill: '<path d="M4.9 19.1a3.5 3.5 0 0 1 0-5l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a3.5 3.5 0 0 1-5 0zM9.5 9.5l5 5"/>',
-    clipboard: '<rect x="5.5" y="4.5" width="13" height="16" rx="2"/><path d="M9 3.5h6v3H9zM9 11.5h6M9 15.5h4"/>',
-    flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9"/>',
-    receipt: '<path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21zM9 8h6M9 12h6M9 16h3"/>',
-    cup: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M11.5 3.5v2.5"/>',
-    utensils: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8h3.5"/>',
-    book: '<path d="M5 18V6a2 2 0 0 1 2-2h12v13H7a2 2 0 0 0-2 2 2 2 0 0 0 2 2h12"/>',
-    heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
-    film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
-    play: '<circle cx="12" cy="12" r="8.5"/><path d="M10 8.8l5 3.2-5 3.2z"/>',
-    bookmark: '<path d="M7 3.5h10v17l-5-4-5 4z"/>',
-    quote: '<path d="M5 11h4v6H5v-6c0-3 1-5 4-6M14 11h4v6h-4v-6c0-3 1-5 4-6"/>',
-    bike: '<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5l4-7h5l4 7M9.5 9.5L8 6.5H6M14.5 9.5l-2 7h-7M15 5.5h2.5l1 4"/>',
-    car: '<path d="M4 16v-4l2-5h12l2 5v4zM4 16v2.5M20 16v2.5M4 12h16"/><circle cx="7.5" cy="14" r=".6"/><circle cx="16.5" cy="14" r=".6"/>',
-    fuel: '<path d="M5 20V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15M4 20h11M5 10h9M14 8.5l3 2.5v6a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
-    wrench: '<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-2zM16 4.5l3.5 3.5"/>',
-    cog: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
-    route: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16"/>',
-    "map-pin": '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
-    plane: '<path d="M10.5 13.5L3 11l1.5-1.5 7.5 1 4-4.5a2 2 0 0 1 3 3l-4.5 4 1 7.5L14 22l-2.5-7.5L8 18v2.5L6.5 22 5 18.5 1.5 17 3 15.5h2.5z"/>',
-    home: '<path d="M4 11l8-7 8 7v9H4zM10 20v-5h4v5"/>',
-    briefcase: '<rect x="3.5" y="7" width="17" height="12" rx="2"/><path d="M9 7V5h6v2M3.5 12h17"/>',
-    paw: '<circle cx="7" cy="9" r="1.8"/><circle cx="17" cy="9" r="1.8"/><circle cx="10" cy="5.5" r="1.6"/><circle cx="14" cy="5.5" r="1.6"/><path d="M12 12c-3 0-5.5 3-5.5 5.2 0 1.8 1.5 2.8 3 2.3 1-.3 1.6-.6 2.5-.6s1.5.3 2.5.6c1.5.5 3-.5 3-2.3C17.5 15 15 12 12 12z"/>',
-    dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
-    gift: '<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6 0 6-1.5S14 5 12 9"/>',
-    cart: '<path d="M3 4h2.5l2.2 11h10.6L20.5 8H7"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
-    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
-    music: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
-    baby: '<circle cx="12" cy="13" r="7.5"/><path d="M9.5 12.5h.01M14.5 12.5h.01M10 16c1.2 1 2.8 1 4 0M12 5.5c0-1.5 1-2.5 2.5-2.5"/>',
-    school: '<path d="M2.5 9L12 4.5 21.5 9 12 13.5zM6 11v5c3 2.5 9 2.5 12 0v-5M21.5 9v6"/>',
-    wallet: '<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM4 7l11-3v3M16 13.5h.01"/>',
-    leaf: '<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15M5 19l7-7"/>',
-    send: '<path d="M5 12l15-7-5 15-3-6zM12 14l8-9"/>',
-    unlink: '<path d="M9 15l-2 2a3 3 0 0 1-4.2-4.2l2-2M15 9l2-2a3 3 0 0 1 4.2 4.2l-2 2M8 3.5v2M3.5 8h2M16 20.5v-2M20.5 16h-2"/>',
-    share: '<path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12v7.5h14V12"/>',
-    edit: '<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
-    "arrow-up": '<path d="M12 19V5M6 11l6-6 6 6"/>',
-    "arrow-down": '<path d="M12 5v14M6 13l6 6 6-6"/>',
-    "list-ul": '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'
-  };
-  function injectIcons() {
-    const sprite = document.querySelector("svg symbol") && document.querySelector("svg symbol").parentNode;
-    if (!sprite) return;
-    for (const [name, paths] of Object.entries(ICON_PATHS)) {
-      if (document.getElementById("icon-" + name)) continue;
-      const sym = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-      sym.id = "icon-" + name;
-      sym.setAttribute("viewBox", "0 0 24 24");
-      // Static markup from this file, never user data.
-      sym.innerHTML = '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + paths + "</g>";
-      sprite.append(sym);
-    }
-  }
-
   // ---------- Init ----------
   async function init(appApi) {
     api = appApi;
@@ -2797,6 +2739,5 @@
     hasGroups: () => groups.length > 0
   };
   // Add the icons now, so the static markup (Settings) can use them right away.
-  injectIcons();
   window.CPGroups = { init };
 })();

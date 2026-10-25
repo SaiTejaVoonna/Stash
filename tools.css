@@ -432,7 +432,6 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 .cx-empty > .icon { width: 40px; height: 40px; color: var(--accent); font-size: 40px; }
 .cx-empty b { color: var(--text); font-size: 17px; }
 .cx-empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; }
-.cx-tip { color: var(--text-3); }
 .cx-bar { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
 .cx-bar[hidden], .cx-selbar[hidden], .cx-plus-menu[hidden] { display: none; }
 .cx-box { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 44px; padding: 4px 4px 4px 14px; border-radius: 22px; border: 1px solid var(--line-strong); background: var(--surface-1); }
@@ -591,7 +590,6 @@ body.cx-previewing #tab-bar { display: none !important; }
 #edit-toolbar .tb-add { color: var(--accent); }
 #edit-toolbar .tb-add .icon { width: 17px; height: 17px; font-size: 17px; }
 #edit-toolbar .tb-mark { background: color-mix(in srgb, var(--warning) 40%, transparent); padding: 0 4px; border-radius: 3px; font-weight: 700; }
-#edit-toolbar .tb-aa { font-size: 13px; font-weight: 700; letter-spacing: -.02em; }
 #fmt-mode { margin-left: auto; }
 @container detail (max-width: 560px) { #edit-toolbar .tb-label { display: none; } }
 /* Phones: above the keyboard while you write. */
