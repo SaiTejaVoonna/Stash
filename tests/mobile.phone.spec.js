@@ -71,7 +71,7 @@ test("long-press opens the action sheet; pin and move to folder work from it", a
   expect((await storedItems(page)).find((i) => i.id === "alpha").folderId).toBe("f1");
 });
 
-test("Me opens a short page and closes; its Vault row opens the Vault; Library's New folder box is on top", async ({ page }) => {
+test("Settings opens a short page and closes; its Vault row opens the Vault; Library's New folder box is on top", async ({ page }) => {
   await menuBtn(page).tap();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
   await page.locator('#me-rows .me-row[data-row="vault"]').tap();
@@ -139,7 +139,7 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
 });
 
 test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Library", "Snap", "Search", "Me"]);
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Library", "Snap", "Search", "Settings"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -157,14 +157,12 @@ test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no
   await page.locator('#me-rows .me-row[data-row="vault"]').tap();
   await expect(page.locator("#list-title")).toHaveText("Vault");
   await page.tap('.tab-btn[data-tab="more"]');
-  await openSettingsFromMe(page);
-  await expect(page.locator('.settings-nav-item[data-page="vault"]')).toBeVisible();
-  await page.tap('.settings-nav-item[data-page="vault"]');
+  await openSettingsFromMe(page, "privacy");
+  await expect(page.locator("#settings-title")).toHaveText("Privacy and lock");
   await expect(page.locator("#vault-setup-btn")).toBeVisible();
-  await expect(page.locator("#settings-title")).toHaveText("Vault");
   await page.tap("#settings-back-btn");
-  await expect(page.locator("#vault-setup-btn")).toBeHidden();
-  await expect(page.locator('.settings-nav-item[data-page="profiles"]')).toBeVisible();
+  await expect(page.locator("#settings-overlay")).toBeHidden(); // straight back to the Settings page
+  await expect(page.locator('.me-row[data-row="privacy"]')).toBeVisible();
 });
 
 test("on a phone the tag picker slides up from the bottom", async ({ page }) => {
@@ -252,20 +250,37 @@ test("Library shows 'Sorted for you' with counts; a chip opens that view", async
   await expect(page.locator("#tl-search")).toHaveValue("type:link");
 });
 
-test("Me lights its own tab, shows three rows, and keeps settings behind the ⋯ menu", async ({ page }) => {
+test("Settings lights its own tab and lists seven folders; Add-ons holds the password generator", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="search"]');
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await expect(page.locator('.tab-btn[data-tab="search"]')).not.toHaveClass(/active/);
-  await expect(page.locator("#me-head h1")).toHaveText("Me");
-  await expect(page.locator("#me-rows .me-row b")).toHaveText(["Vault", "Your data", "Look"]);
+  await expect(page.locator("#me-head h1")).toHaveText("Settings");
+  await expect(page.locator("#me-more")).toHaveCount(0); // no ⋯ menu
+  await expect(page.locator("#me-rows .me-row b")).toHaveText(["Vault", "Privacy and lock", "Your data", "Look", "Library", "Add-ons", "Help and about"]);
   // The older menu is gone from phones.
   await expect(page.locator("#sidebar-scroll")).toBeHidden();
   await expect(page.locator("#sidebar-footer")).toBeHidden();
-  await page.tap("#me-more");
-  await expect(page.locator("#me-menu button")).toHaveText(["All settings", "Add-ons", "Password generator", "Privacy page", "Help and about"]);
-  await page.locator('#me-menu [data-act="addons"]').tap();
-  await expect(page.locator("#addons-settings")).toBeVisible();
+  await page.locator('.me-row[data-row="addons"]').tap();
+  await expect(page.locator("#settings-title")).toHaveText("Add-ons");
+  await expect(page.locator("#open-passgen")).toBeVisible();
+  await page.tap("#settings-back-btn");
+  await page.locator('.me-row[data-row="library"]').tap();
+  await expect(page.locator("#settings-title")).toHaveText("Library");
+  await expect(page.locator('.settings-page.active')).toHaveCount(3); // Collections, Tags, Your words
+});
+
+test("one sync cloud: hidden when all is well, a popover instead of a redirect when tapped", async ({ page }) => {
+  await page.evaluate(() => {
+    const dot = document.getElementById("sync-dot");
+    dot.classList.remove("hidden"); dot.dataset.state = "wait";
+  });
+  await page.tap("#sync-dot");
+  await expect(page.locator("#sync-pop")).toBeVisible();
+  await expect(page.locator("#sync-pop-settings")).toBeVisible();
+  await expect(page.locator("#settings-overlay")).toBeHidden(); // tapping it does not open Settings
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#sync-pop")).toHaveCount(0);
 });
 
 test("Library › Notes has one Filters button for Favourites, Pinned, Archive, Trash, folders and tags", async ({ page }) => {
@@ -275,11 +290,11 @@ test("Library › Notes has one Filters button for Favourites, Pinned, Archive, 
   await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
   await expect(page.locator("#library-filter-btn")).toContainText("Filters");
   await page.tap("#library-filter-btn");
-  await expect(page.locator("#action-sheet")).toContainText("Favorites (1)");
+  await expect(page.locator("#action-sheet")).toContainText("Favourites (1)");
   await expect(page.locator("#action-sheet")).toContainText("Folders…");
-  await page.locator("#action-sheet button", { hasText: "Favorites" }).tap();
-  await expect(page.locator("#list-title")).toHaveText("Favorites");
-  await expect(page.locator("#library-filter-btn")).toContainText("Favorites");
+  await page.locator("#action-sheet button", { hasText: "Favourites" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Favourites");
+  await expect(page.locator("#library-filter-btn")).toContainText("Favourites");
   await expect(page.locator('.tab-btn[data-tab="groups"]')).toHaveClass(/active/); // still the Library tab
   await page.tap("#library-filter-clear");
   await expect(page.locator("#list-title")).toHaveText("All notes");
@@ -296,8 +311,6 @@ test("sheets and menus open and close repeatedly without leaving a dark screen b
   }).map((e) => e.id || e.className));
   for (let round = 0; round < 3; round++) {
     await page.tap('.tab-btn[data-tab="more"]');
-    await page.tap("#me-more");
-    await page.keyboard.press("Escape");
     await page.tap('.tab-btn[data-tab="groups"]');
     await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
     await page.tap("#library-filter-btn");
@@ -311,4 +324,21 @@ test("sheets and menus open and close repeatedly without leaving a dark screen b
   await page.tap('.tab-btn[data-tab="groups"]');
   await page.waitForTimeout(400);
   expect(await overlays()).toEqual([]);
+});
+
+test("every search field is the same pill: notes, Inbox and Search", async ({ page }) => {
+  const now = Date.now();
+  await seed(page, { items: [{ id: "in1", type: "note", chat: true, content: "Corner Tea House bill 240", createdAt: now, updatedAt: now, schemaVersion: 2 }] });
+  const look = (sel) => page.locator(sel).first().evaluate((e) => { const c = getComputedStyle(e); return [Math.round(e.getBoundingClientRect().height), parseFloat(c.borderTopLeftRadius) > 18]; });
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+  const notes = await look("#search-input");
+  await page.tap('.tab-btn[data-tab="chat"]');
+  await page.tap("#cx-search-btn");
+  const inbox = await look("#cx-q");
+  await page.tap('.tab-btn[data-tab="search"]');
+  const search = await look("#tl-search");
+  expect(inbox).toEqual(notes);
+  expect(search).toEqual(notes);
+  expect(notes).toEqual([44, true]);
 });

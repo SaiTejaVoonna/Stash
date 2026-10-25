@@ -183,19 +183,11 @@
   @media (max-width: 720px) {
     /* The Me page is short: a header with ⋯, the profile, two cards and three rows. The older menu is not shown on phones. */
     #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-scroll, #sidebar #sidebar-footer { display: none; }
-    #me-head { display: flex; align-items: center; justify-content: space-between; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
+    #me-head { display: flex; align-items: center; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
     #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
-    #me-more { width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
-    #me-more:hover { background: var(--surface-2); }
-    #me-more .icon { font-size: 24px; }
     #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
     #me-cards { order: 2; }
     #me-rows { order: 3; }
-    #me-menu-overlay { position: fixed; inset: 0; z-index: var(--z-palette); background: var(--scrim); animation: fadeIn var(--t-fast) ease; }
-    #me-menu { position: absolute; top: calc(56px + env(safe-area-inset-top)); right: var(--s-3); width: min(260px, calc(100vw - 2 * var(--s-3))); background: var(--elevated); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: var(--s-1); display: flex; flex-direction: column; transform-origin: 100% 0; animation: popIn var(--t-med) var(--ease); }
-    #me-menu button { display: flex; align-items: center; gap: var(--s-3); min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-md); text-align: left; cursor: pointer; }
-    #me-menu button:hover, #me-menu button:focus-visible { background: var(--surface-2); }
-    #me-menu .icon { color: var(--text-2); font-size: 22px; }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -670,11 +662,11 @@
   #sync-dot { width: var(--h-sm); height: var(--h-sm); display: inline-grid; place-items: center; background: none; border: none; border-radius: var(--r-md); cursor: pointer; flex-shrink: 0; padding: 0; }
   #sync-dot:hover { background: var(--surface-2); }
   #sync-dot.hidden { display: none; }
-  .sync-dot-light { width: 9px; height: 9px; border-radius: 50%; background: var(--text-3); }
-  #sync-dot[data-state="ok"] .sync-dot-light { background: #30d158; }
-  #sync-dot[data-state="wait"] .sync-dot-light, #sync-dot[data-state="busy"] .sync-dot-light { background: #ff9f0a; }
-  #sync-dot[data-state="err"] .sync-dot-light { background: #ff453a; }
-  @media (prefers-reduced-motion: no-preference) { #sync-dot[data-state="busy"] .sync-dot-light { animation: sync-pulse 1s ease-in-out infinite alternate; } }
+  #sync-dot .icon { font-size: 20px; color: var(--text-2); }
+  #sync-dot[data-state="err"] .icon { color: #ff453a; }
+  @media (prefers-reduced-motion: no-preference) { #sync-dot[data-state="busy"] .icon { animation: sync-pulse 1s ease-in-out infinite alternate; } }
+  .sync-pop-text { margin: 0 0 var(--s-3); font-size: var(--fs-md); color: var(--text-2); line-height: 1.4; }
+  .sync-pop-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
   @keyframes sync-pulse { from { opacity: 1; } to { opacity: .35; } }
   #empty-state .empty-steps { list-style: none; counter-reset: step; max-width: 300px; margin: var(--s-3) auto var(--s-3); padding: 0; text-align: left; display: grid; gap: 8px; }
   #empty-state .empty-steps li { counter-increment: step; position: relative; padding-left: 32px; font-size: var(--fs-sm); line-height: 1.4; }
@@ -1577,7 +1569,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
-    <div id="me-head"><h1>Me</h1><button id="me-more" type="button" aria-label="More" aria-haspopup="menu"><svg class="icon icon-lg"><use href="#icon-more"></use></svg></button></div>
+    <div id="me-head"><h1>Settings</h1></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
@@ -1617,7 +1609,7 @@
       <div id="list-title-row">
         <button id="menu-btn" aria-label="Menu" title="Menu"><svg class="icon icon-lg"><use href="#icon-menu"></use></svg></button>
         <div id="list-title">All Items</div>
-        <button id="sync-dot" class="hidden" type="button" aria-label="Sync"><span class="sync-dot-light"></span></button>
+        <button id="sync-dot" class="hidden" type="button" aria-label="Sync"></button>
         <button id="vault-lock-btn" class="hidden" type="button"></button>
         <button id="mark-read-btn" class="hidden" title="Mark all read"><svg class="icon"><use href="#icon-check-all"></use></svg></button>
         <button id="view-mode-btn" class="icon-btn" type="button" title="Show as cards" aria-label="Show as cards"><svg class="icon"><use href="#icon-grid"></use></svg></button>
@@ -1649,7 +1641,7 @@
       <span id="bulk-count"></span>
       <select id="bulk-folder-select"><option value="">Move to folder...</option></select>
       <button id="bulk-tag-btn">+ Tag</button>
-      <button id="bulk-fav-btn">★ Favorite</button>
+      <button id="bulk-fav-btn">★ Favourite</button>
       <button id="bulk-read-btn">Mark read</button>
       <button id="bulk-archive-btn">Archive</button>
       <button id="bulk-ai-btn" title="Copy as text to paste into any AI chat">Copy for AI</button>
@@ -1844,6 +1836,7 @@
           <h2 class="settings-page-title">Add-ons</h2>
           <p class="settings-page-lead">Turn on what you use. What's off is hidden from menus and isn't loaded, so Stash stays light. Nothing you saved is removed.</p>
           <div class="settings-group" id="addons-list"></div>
+          <div class="settings-group"><div class="settings-line"><span>Password generator<small>Make a strong password, or a passphrase. Nothing is saved.</small></span><button id="open-passgen" class="btn" type="button">Open</button></div></div>
         </section>
 
         <section class="settings-page" data-page="sync" id="sync-settings">
@@ -2835,14 +2828,7 @@
       b.setAttribute("aria-selected", b.dataset.page === page ? "true" : "false");
     });
     document.querySelectorAll(".settings-page").forEach((s) => s.classList.toggle("active", s.dataset.page === page));
-    // Pages whose contents depend on your data are drawn when shown.
-    if (page === "tags") renderTagSettings();
-    if (page === "appearance") renderDockSettings();
-    if (page === "sync" && syncApi) syncApi.render();
-    if (page === "lock") renderLockSettings();
-    if (page === "learning") renderLearningSettings();
-    if (page === "addons") renderAddons();
-    if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
+    renderSettingsPage(page);
     try { localStorage.setItem(SETTINGS_PAGE_KEY, page); } catch {}
     if (push && settingsIsStacked()) {
       settingsPanel.classList.add("at-page");
@@ -2850,16 +2836,46 @@
     }
     document.getElementById("settings-pages").scrollTop = 0;
   }
+  // Pages whose contents depend on your data are drawn when shown.
+  function renderSettingsPage(page) {
+    if (page === "tags") renderTagSettings();
+    if (page === "appearance") renderDockSettings();
+    if (page === "sync" && syncApi) syncApi.render();
+    if (page === "lock") renderLockSettings();
+    if (page === "learning") renderLearningSettings();
+    if (page === "addons") renderAddons();
+    if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
+  }
+  // Settings (phones): each row on the Settings page opens one group of pages together.
+  const SETTINGS_GROUPS = {
+    privacy: ["Privacy and lock", ["lock", "vault"]],
+    data: ["Your data", ["data", "sync", "cleanup"]],
+    look: ["Look", ["appearance"]],
+    library: ["Library", ["groups", "tags", "learning"]],
+    addons: ["Add-ons", ["addons"]],
+    help: ["Help and about", ["about", "shortcuts"]],
+    profiles: ["Profiles", ["profiles"]]
+  };
+  function openSettingsGroup(key) {
+    const g = SETTINGS_GROUPS[key];
+    if (!g) { openSettings(); return; }
+    openSettings(g[1][0]);
+    g[1].slice(1).forEach((p) => { const sec = document.querySelector('.settings-page[data-page="' + p + '"]'); if (sec) { sec.classList.add("active"); renderSettingsPage(p); } });
+    document.getElementById("settings-title").textContent = g[0];
+    settingsPanel.dataset.group = key;
+  }
   function openSettings(page) {
+    delete settingsPanel.dataset.group;
     closeSidebarOnMobile();
     settingsOverlay.classList.remove("hidden");
     settingsPanel.classList.remove("at-page");
     document.getElementById("settings-title").textContent = "Settings";
     showSettingsPage(page || localStorage.getItem(SETTINGS_PAGE_KEY) || "appearance", { push: !!page });
   }
-  function closeSettings() { settingsOverlay.classList.add("hidden"); }
+  function closeSettings() { settingsOverlay.classList.add("hidden"); delete settingsPanel.dataset.group; }
   // Back on phones: from a section to the list, then closed.
   function settingsStepBack() {
+    if (settingsPanel.dataset.group) { closeSettings(); if (settingsIsStacked()) openSidebarDrawer(); return; } // a group opened from a Settings row goes straight back to it
     if (settingsIsStacked() && settingsPanel.classList.contains("at-page")) {
       settingsPanel.classList.remove("at-page");
       document.getElementById("settings-title").textContent = "Settings";
@@ -3354,7 +3370,7 @@
     // at one), so a new person sees a short, calm list.
     { key: "unread", label: "Unread", icon: "unread", hideWhenEmpty: true },
     { key: "reminders", label: "Reminders", icon: "bell", hideWhenEmpty: true },
-    { key: "saved", label: "Favorites", icon: "star", hideWhenEmpty: true },
+    { key: "saved", label: "Favourites", icon: "star", hideWhenEmpty: true },
     { key: "pinned", label: "Pinned", icon: "pin", hideWhenEmpty: true },
     { key: "notes", label: "Notes", icon: "note", hideWhenEmpty: true },
     { key: "commands", label: "Commands", icon: "command", hideWhenEmpty: true },
@@ -3436,7 +3452,7 @@
 
   // Phones: the dock. Inbox, Groups, + (new anything), Search (the
   // Timeline), More (the full menu: folders, tags, Vault, settings…).
-  // With Groups switched off, Favorites takes their place.
+  // With Groups switched off, Favourites takes their place.
   // The phone dock: three tabs you pick, plus New in the middle and More at the end.
   const DOCK_KEY = "copypaster-dock";
   const DOCK_CHOICES = [
@@ -3445,7 +3461,7 @@
     { key: "groups", label: "Library", icon: "library", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
-    { key: "saved", label: "Favorites", icon: "star" },
+    { key: "saved", label: "Favourites", icon: "star" },
     { key: "reminders", label: "Reminders", icon: "bell" },
     { key: "unread", label: "Unread", icon: "unread" },
     { key: "notes", label: "Notes", icon: "note" }
@@ -3462,7 +3478,7 @@
     const picked = keys.map((k) => DOCK_CHOICES.find((c) => c.key === k))
       .map((c) => (c.needsGroups && !groupsOn ? DOCK_CHOICES.find((x) => x.key === "saved") : c));
     const mid = dockMiddle() === "new" ? { key: "new", label: "New", icon: "plus" } : { key: "snap", label: "Snap", icon: "camera" };
-    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "Me", icon: "user" }];
+    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "Settings", icon: "gear" }];
   }
   // The big middle button: New (default: one sheet for text, photo, scan, drawing) or Snap (one tap to the camera; hold it for the New menu).
   const DOCK_MID_KEY = "copypaster-dock-middle";
@@ -4534,7 +4550,7 @@
         refresh();
         showToast(item.unread ? "Marked unread" : "Marked read");
       } },
-      { label: item.starred ? "Remove from Favorites" : "Add to Favorites", run: async () => { await toggleFavorite(item); refresh(); } },
+      { label: item.starred ? "Remove from Favourites" : "Add to Favourites", run: async () => { await toggleFavorite(item); refresh(); } },
       { label: item.pinned ? "Unpin" : "Pin to top", run: async () => {
         item.pinned = !item.pinned;
         item.updatedAt = Date.now();
@@ -5176,7 +5192,7 @@
         const starBtn = document.createElement("button");
         starBtn.className = "row-icon-btn" + (item.starred ? " starred" : "");
         starBtn.innerHTML = icon("star", "icon-sm");
-        starBtn.title = item.starred ? "Remove from Favorites" : "Add to Favorites";
+        starBtn.title = item.starred ? "Remove from Favourites" : "Add to Favourites";
         starBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
           await toggleFavorite(item);
@@ -5524,7 +5540,7 @@
       const starBtn = document.createElement("button");
       starBtn.className = "icon-toggle star" + (item.starred ? " on" : "");
       starBtn.innerHTML = icon("star");
-      starBtn.title = item.starred ? "Remove from Favorites" : "Add to Favorites";
+      starBtn.title = item.starred ? "Remove from Favourites" : "Add to Favourites";
       starBtn.addEventListener("click", async () => {
         await toggleFavorite(item);
         redrawDetail("header");
@@ -5555,7 +5571,7 @@
       right.appendChild(vaultBtn);
     }
     // Labels on the main toggles (shown when the editor is wide enough).
-    const labels = { star: "Favorite", pin: "Pin", archive: "Archive", vault: "Vault" };
+    const labels = { star: "Favourite", pin: "Pin", archive: "Archive", vault: "Vault" };
     right.querySelectorAll(".icon-toggle").forEach((b) => {
       const key = Object.keys(labels).find((k) => b.classList.contains(k));
       if (!key) return;
@@ -5916,7 +5932,7 @@
       ...(addonOn("voice") ? [{ key: "record", label: "Recording", also: ["voice", "audio"], run: () => addVoiceNote(item) }] : []),
       { key: "colour", label: "Background colour", also: ["color", "background"], run: () => { const b = document.getElementById("fmt-color"); if (b) b.click(); } },
       { key: "pin", label: item.pinned ? "Unpin" : "Pin to top", run: () => { const b = document.querySelector("#detail-pane .icon-toggle.pin"); if (b) b.click(); } },
-      { key: "star", label: item.starred ? "Remove from Favorites" : "Add to Favorites", also: ["fav"], run: () => { const b = document.querySelector("#detail-pane .icon-toggle.star"); if (b) b.click(); } },
+      { key: "star", label: item.starred ? "Remove from Favourites" : "Add to Favourites", also: ["fav", "favorite"], run: () => { const b = document.querySelector("#detail-pane .icon-toggle.star"); if (b) b.click(); } },
       { key: "ai", label: "Copy for AI", run: () => { ed.flush(); copyForAI([item], item.title || "Note"); } }
     ];
   }
@@ -6454,7 +6470,7 @@
     }
     item.updatedAt = Date.now();
     await saveItem(item);
-    showToast(item.starred ? "Added to Favorites" + (timerRemoved ? " \u00b7 timer removed" : "") : "Removed from Favorites");
+    showToast(item.starred ? "Added to Favourites" + (timerRemoved ? " \u00b7 timer removed" : "") : "Removed from Favourites");
   }
 
   // ---------- Auto-delete row ----------
@@ -7098,7 +7114,6 @@
     if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return true; }
     if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return true; }
     if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return true; }
-    if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return true; }
     if (document.getElementById("palette-overlay")) { closePalette(); return true; }
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
     if (placeholderModal) { placeholderModal.remove(); return true; }
@@ -7658,7 +7673,7 @@
     document.getElementById("bulk-count").textContent = selectedIds.size + " selected";
     // Each toggle button says what it will do for this selection.
     const items = selectedItems();
-    document.getElementById("bulk-fav-btn").textContent = items.every((i) => i.starred) ? "\u2606 Unfavorite" : "\u2605 Favorite";
+    document.getElementById("bulk-fav-btn").textContent = items.every((i) => i.starred) ? "\u2606 Unfavourite" : "\u2605 Favorite";
     document.getElementById("bulk-read-btn").textContent = items.some((i) => i.unread) ? "Mark read" : "Mark unread";
     document.getElementById("bulk-archive-btn").textContent = items.every((i) => i.archivedAt) ? "Unarchive" : "Archive";
 
@@ -7778,7 +7793,7 @@
   }
   document.getElementById("bulk-fav-btn").addEventListener("click", () => {
     const on = !selectedItems().every((i) => i.starred);
-    bulkApply((i) => { i.starred = on; }, (n) => (on ? "Added " : "Removed ") + n + (on ? " to" : " from") + " Favorites");
+    bulkApply((i) => { i.starred = on; }, (n) => (on ? "Added " : "Removed ") + n + (on ? " to" : " from") + " Favourites");
   });
   document.getElementById("bulk-read-btn").addEventListener("click", () => {
     const makeUnread = !selectedItems().some((i) => i.unread);
@@ -8535,7 +8550,7 @@
       const name = "\u201c" + (open.title || firstLine(open.content) || "this item").slice(0, 30) + "\u201d";
       actions.unshift(
         { label: "Copy " + name, icon: "copy", run: () => copyItemSmart(open) },
-        { label: (open.starred ? "Remove " : "Add ") + name + (open.starred ? " from Favorites" : " to Favorites"), icon: "star", run: detailClick(".icon-toggle.star") },
+        { label: (open.starred ? "Remove " : "Add ") + name + (open.starred ? " from Favourites" : " to Favourites"), icon: "star", run: detailClick(".icon-toggle.star") },
         { label: (open.pinned ? "Unpin " : "Pin ") + name, icon: "pin", run: detailClick(".icon-toggle.pin") },
         { label: "Move " + name + " to Trash", icon: "trash", run: detailClick("button.action.danger") }
       );
@@ -8597,7 +8612,8 @@
     const render = () => {
       const q = input.value.trim();
       const all = mode === "item" ? itemPaletteActions() : paletteActions();
-      const actions = all.filter((a) => !q || a.label.toLowerCase().includes(q.toLowerCase()));
+      const needle = q.toLowerCase().replace("favorite", "favourite"); // American spelling finds it too
+      const actions = all.filter((a) => !q || a.label.toLowerCase().includes(needle));
       const items = q && mode !== "item" ? paletteItems(q) : [];
       results.innerHTML = "";
       rows = [];
@@ -8731,7 +8747,6 @@
     if (e.key === "Escape") {
       if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return; }
       if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return; }
-      if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return; }
       if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return; }
       if (sidebarEl.classList.contains("open")) { closeSidebarOnMobile(); return; }
       if (!settingsOverlay.classList.contains("hidden")) { settingsStepBack(); return; }
@@ -10329,34 +10344,17 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
-  // Me (phones): the ⋯ menu holds everything that is not one of the three rows.
-  function closeMeMenu() { const o = document.getElementById("me-menu-overlay"); if (o) o.remove(); }
-  function openMeMenu() {
-    closeMeMenu();
-    const overlay = document.createElement("div");
-    overlay.id = "me-menu-overlay";
-    const menu = document.createElement("div");
-    menu.id = "me-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "More");
-    [["settings", "gear", "All settings", () => openSettings()],
-     ["addons", "grid", "Add-ons", () => openSettings("addons")],
-     ["passwords", "dice", "Password generator", () => openPasswordGenerator()],
-     ["privacy", "shield-check", "Privacy page", () => window.open("privacy.html", "_blank", "noopener")],
-     ["help", "info", "Help and about", () => openSettings("about")]].forEach(([key, ic, label, run]) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.act = key;
-      b.innerHTML = icon(ic) + "<span></span>";
-      b.querySelector("span").textContent = label;
-      b.addEventListener("click", () => { closeMeMenu(); run(); });
-      menu.appendChild(b);
-    });
-    overlay.appendChild(menu);
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMeMenu(); });
-    document.body.appendChild(overlay);
-    menu.querySelector("button").focus();
+  // " · Synced just now" when Google Drive sync is on (nothing at all when it is off).
+  function syncLine() {
+    const st = syncApi && syncApi.status && syncApi.status();
+    if (!st || !st.on) return "";
+    if (st.error) return " \u00b7 Sync needs attention";
+    if (st.busy) return " \u00b7 Syncing\u2026";
+    if (st.pending || !st.last) return " \u00b7 Waiting to sync";
+    const mins = Math.round((Date.now() - st.last) / 60000);
+    return " \u00b7 Synced " + (mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : "today");
   }
-  document.getElementById("me-more").addEventListener("click", openMeMenu);
-
-  // Me (phones): "Back up your Stash" and "App lock is off", shown at the top of the menu.
+  // Settings (phones): the profile, a backup card, an App lock card when it is off, then seven rows.
   function renderMeCards() {
     const box = document.getElementById("me-cards");
     if (!box) return;
@@ -10374,20 +10372,25 @@
       return card;
     };
     const last = readNum(LAST_BACKUP_KEY);
-    const cards = [make("soft", "cloud", "Back up your Stash", last ? "Last backup " + daysAgoText(last) : "No backup yet. Browsers can clear saved data.", "Back up", () => document.getElementById("export-btn").click(), "me-backup")];
+    const backupLine = (last ? "Last backup " + daysAgoText(last) : "No backup yet. Browsers can clear saved data.") + syncLine();
+    const cards = [make("soft", "cloud", "Back up your Stash", backupLine, "Back up", () => document.getElementById("export-btn").click(), "me-backup")];
     if (!(window.CPLock && window.CPLock.on())) {
-      cards.push(make("", "lock-open", "App lock is off", "A PIN or Face ID hides Stash. The Vault is what encrypts.", "Turn on", () => openSettings("lock"), "me-lock"));
+      cards.push(make("", "lock-open", "App lock is off", "A PIN or Face ID hides Stash. The Vault is what encrypts.", "Turn on", () => openSettingsGroup("privacy"), "me-lock"));
     }
     box.replaceChildren(...cards);
     const rowsBox = document.getElementById("me-rows");
     if (rowsBox) {
       const rows = [
-        ["vault", "Vault", "Encrypted notes and keys", () => switchView("vault")],
-        ["database", "Your data", "Back up, restore, import, sync", () => openSettings("data")],
-        ["palette", "Look", "Theme, text size, motion", () => openSettings("appearance")]
-      ].map(([ic, name, hint, run]) => {
+        ["vault", "Vault", "Encrypted notes and keys", () => switchView("vault"), "vault"],
+        ["lock-closed", "Privacy and lock", "App lock, Vault password", () => openSettingsGroup("privacy"), "privacy"],
+        ["database", "Your data", "Back up, restore, import, sync", () => openSettingsGroup("data"), "data"],
+        ["palette", "Look", "Theme, text size, motion", () => openSettingsGroup("look"), "look"],
+        ["library", "Library", "Collections, tags, your words", () => openSettingsGroup("library"), "library"],
+        ["grid", "Add-ons", "Switch features on or off", () => openSettingsGroup("addons"), "addons"],
+        ["info", "Help and about", "Help, shortcuts, privacy page", () => openSettingsGroup("help"), "help"]
+      ].map(([ic, name, hint, run, key]) => {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "me-row"; b.dataset.row = name.toLowerCase().replace(/\s+/g, "-");
+        b.type = "button"; b.className = "me-row"; b.dataset.row = key;
         b.innerHTML = '<span class="me-card-ic">' + icon(ic) + '</span><span class="me-card-text"><b></b><small></small></span><span class="me-chev">' + icon("chevron-right") + "</span>";
         b.querySelector("b").textContent = name;
         b.querySelector("small").textContent = hint;
@@ -10870,22 +10873,64 @@
   // Sync to your own Google Drive (sync.js).
   if (window.CPBrain) window.CPBrain.setStore(profileKey("copypaster-brain"));
   if (window.CPWords) window.CPWords.setStore(profileKey("copypaster-words"));
-  // The dot beside the list title: green synced, orange waiting or syncing,
-  // red when the last sync failed. Hidden until Drive is connected.
+  // Sync light: nothing is shown while everything is fine (or sync is off). A small cloud appears
+  // while changes wait or sync runs, and a red one if it failed. Tapping it explains, right there.
+  let syncStatus = { on: false };
   function showSyncDot(st) {
+    syncStatus = st;
     const dot = document.getElementById("sync-dot");
-    if (!dot) return;
-    dot.classList.toggle("hidden", !st.on);
-    if (!st.on) return;
-    const kind = st.error ? "err" : st.busy ? "busy" : st.pending ? "wait" : st.last ? "ok" : "wait";
-    dot.dataset.state = kind;
-    const mins = st.last ? Math.round((Date.now() - st.last) / 60000) : 0;
-    const when = !st.last ? "" : mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : new Date(st.last).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-    const text = kind === "err" ? "Sync failed: " + st.error : kind === "busy" ? "Syncing\u2026" : kind === "wait" ? "Changes waiting to sync" : "Synced " + when;
-    dot.title = text;
-    dot.setAttribute("aria-label", text + ". Open Sync settings");
+    if (dot) {
+      const kind = !st.on ? "off" : st.error ? "err" : st.busy ? "busy" : st.pending || !st.last ? "wait" : "ok";
+      dot.dataset.state = kind;
+      dot.classList.toggle("hidden", kind === "off" || kind === "ok");
+      dot.innerHTML = icon(kind === "err" ? "sync-problem" : kind === "busy" ? "cloud-sync" : "cloud");
+      const text = syncText(st);
+      dot.title = text;
+      dot.setAttribute("aria-label", text);
+      const pop = document.getElementById("sync-pop");
+      if (pop) fillSyncPop(pop);
+    }
+    if (document.getElementById("me-cards")) renderMeCards();
   }
-  document.getElementById("sync-dot").addEventListener("click", () => openSettings("sync"));
+  function syncText(st) {
+    if (!st.on) return "Sync is off";
+    if (st.error) return "Couldn't sync: " + st.error;
+    if (st.busy) return "Syncing to your Google Drive\u2026";
+    if (st.pending || !st.last) return navigator.onLine === false ? "Offline. Changes will sync when you're back online." : "Changes are waiting to sync.";
+    const mins = Math.round((Date.now() - st.last) / 60000);
+    return "Synced " + (mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : "earlier today");
+  }
+  function fillSyncPop(pop) {
+    const st = syncStatus;
+    pop.replaceChildren(popoverHead(st.error ? "sync-problem" : "cloud", "Sync"));
+    const p = document.createElement("p");
+    p.className = "sync-pop-text";
+    p.textContent = syncText(st);
+    const row = document.createElement("div");
+    row.className = "sync-pop-actions";
+    const go = document.createElement("button");
+    go.type = "button"; go.className = "btn primary"; go.id = "sync-pop-run";
+    go.textContent = st.error ? "Try again" : "Sync now";
+    go.disabled = !!st.busy;
+    go.addEventListener("click", () => { if (syncApi) syncApi.run(); });
+    const more = document.createElement("button");
+    more.type = "button"; more.className = "btn ghost"; more.id = "sync-pop-settings";
+    more.textContent = "Sync settings";
+    more.addEventListener("click", () => { closeAnyPopover(); openSettingsGroup("data"); });
+    row.append(go, more);
+    pop.append(p, row);
+  }
+  document.getElementById("sync-dot").addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (document.getElementById("sync-pop")) { closeAnyPopover(); return; }
+    closeAnyPopover();
+    const pop = document.createElement("div");
+    pop.id = "sync-pop"; pop.className = "popover with-head";
+    fillSyncPop(pop);
+    document.body.appendChild(pop);
+    positionPopover(pop, e.currentTarget);
+  });
+  document.getElementById("open-passgen").addEventListener("click", () => { closeSettings(); openPasswordGenerator(); });
   function startSync() {
     if (!window.CPSync || !window.CPSyncCore) return;
     syncApi = window.CPSync.init({

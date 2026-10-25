@@ -364,7 +364,7 @@
 
   const TYPE_OPTIONS = [["type", "note", "Notes", "note"], ["type", "checklist", "Checklists", "checklist"], ["type", "command", "Commands", "command"], ["type", "link", "Links", "link"],
     ["type", "photo", "Photos", "image"], ["type", "voice", "Voice notes", "mic"], ["type", "sketch", "Sketches", "pen"], ["type", "entry", "Collection entries", "layers"]];
-  const IS_OPTIONS = [["is", "todo", "To do"], ["is", "doing", "In progress"], ["is", "done", "Done"], ["is", "fav", "Favorites"], ["is", "pinned", "Pinned"], ["is", "unread", "Unread"], ["is", "reminder", "Has a reminder"], ["is", "archived", "Archived"]];
+  const IS_OPTIONS = [["is", "todo", "To do"], ["is", "doing", "In progress"], ["is", "done", "Done"], ["is", "fav", "Favourites"], ["is", "pinned", "Pinned"], ["is", "unread", "Unread"], ["is", "reminder", "Has a reminder"], ["is", "archived", "Archived"]];
 
   // A chip with three states: off → show only these → hide these → off.
   // `raw` is the positive word (type:photo, #lab, space:Food); its hidden form is "-" + raw.

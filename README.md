@@ -16,14 +16,14 @@ Stash remembers them, suggests where they belong, and finds them again.
 - Optional sync copies your data to a "Stash" folder in **your own Google Drive**. Stash can only see files it created there (`drive.file`).
 - The **Vault** is the encrypted part: items you move into it are locked with a password only you know. The app lock (a PIN) only hides the screen.
 - Suggestions, search and text reading run on the device. Nothing is sent to any AI unless you copy text out yourself ("Copy for AI").
-- Browsers can clear site data. Export a backup now and then (Settings → Your data).
+- Browsers can clear site data. Export a backup now and then (Settings › Your data).
 
 ## What works today
 
 **Four tabs and one +** (on phones)
-- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (profile, backup and App lock cards, three rows: Vault, Your data, Look; everything else is behind the ⋯ at the top). Library › Notes has one **Filters** button for Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags. The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
+- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Settings** (your profile, a backup card with the sync status, an App lock card, then seven folders: Vault, Privacy and lock, Your data, Look, Library, Add-ons, Help and about). Library › Notes has one **Filters** button for Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags. The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
 - Keys, passwords and card numbers you drop into the Inbox are spotted, and Stash offers to move them to the Vault. It only suggests.
-- Commands, Passwords and 2FA, and the Template store are off for new people. They are one switch away in Me › Add-ons, and anyone who already uses them keeps them.
+- Commands, Passwords and 2FA, and the Template store are off for new people. They are one switch away in Settings › Add-ons, and anyone who already uses them keeps them.
 
 **Capture**
 - Inbox: a chat with yourself. Text, photos, files, albums, Snap (camera first, caption after), drag and drop, paste.
@@ -54,7 +54,7 @@ Stash remembers them, suggests where they belong, and finds them again.
 **Safety and comfort**
 - Vault, app lock, profiles (separate sets of data), backup and restore.
 - Optional Google Drive sync, light and dark themes, true black and warm paper, text size, reduced motion, screen-reader labels, works offline.
-- Add-ons you can switch off (audio, video, QR scanner, contacts, location pins, password builder, 2FA codes).
+- Add-ons you can switch off (audio, video, QR scanner, contacts, location pins, password builder, 2FA codes). A small cloud shows only while sync is waiting, running or has failed; tap it for a note and a "Sync now" button.
 
 **Not done yet** (see the roadmap): the same one-look polish on every screen, merging Folders and Tags into Collections, search by meaning, more sync choices (OneDrive, Dropbox, WebDAV), conflict-free sync across devices, Android and iPhone apps, computer apps with clipboard history, an MCP connector for AI assistants, whole-app encryption, app languages, and live-camera scanning. Phase 1's "one look everywhere" pass is partly done (Settings and Inbox).
 

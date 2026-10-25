@@ -17,7 +17,7 @@ test("Ctrl+K finds items and runs actions", async ({ page }) => {
   await page.keyboard.press("Control+k");
   await page.keyboard.type("go to fav");
   await page.keyboard.press("Enter");
-  await expect(page.locator("#list-title")).toHaveText("Favorites");
+  await expect(page.locator("#list-title")).toHaveText("Favourites");
 
   await page.keyboard.press("Control+k");
   await page.keyboard.type("qqqzzz");

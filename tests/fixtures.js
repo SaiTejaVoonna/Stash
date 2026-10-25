@@ -127,7 +127,7 @@ const rowTexts = async (page) => page.locator(".item-row .item-text").allInnerTe
 const lastToast = (page) => page.locator(".toast-item").last();
 const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name });
 
-// Phones: Me › ⋯ › All settings.
-const openSettingsFromMe = async (page) => { await page.tap("#me-more"); await page.tap('#me-menu [data-act="settings"]'); };
+// Phones: tap a row on the Settings page (default: Look, where the dock choices are).
+const openSettingsFromMe = async (page, row = "look") => { await page.tap('.me-row[data-row="' + row + '"]'); };
 
 module.exports = { openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };

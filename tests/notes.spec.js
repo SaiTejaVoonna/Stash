@@ -34,11 +34,11 @@ test("search filters the list", async ({ page }) => {
 test("favorite and pin show a message and a list", async ({ page }) => {
   await newNote(page, "starred");
   await page.click("#detail-pane .icon-toggle.star");
-  await expect(lastToast(page)).toContainText("Favorites");
+  await expect(lastToast(page)).toContainText("Favourites");
   await page.click("#detail-pane .icon-toggle.pin");
   await expect(lastToast(page)).toContainText("Pinned");
-  await nav(page, "Favorites").click();
-  await expect(page.locator("#list-title")).toHaveText("Favorites");
+  await nav(page, "Favourites").click();
+  await expect(page.locator("#list-title")).toHaveText("Favourites");
   await expect(page.locator(".item-row")).toHaveCount(1);
   const [item] = await storedItems(page);
   expect(item.favorite || item.starred).toBeTruthy();

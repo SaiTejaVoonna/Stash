@@ -142,7 +142,7 @@
         h("div", { class: "docs-title" }, h("b", null, "Documents"), h("small", null, "Every PDF and file, wherever it lives.")),
         api.scan ? h("button", { class: "btn primary gp-small", id: "docs-scan", onclick: () => api.scan() }, ic("camera"), "Scan") : null),
       api.libraryBar ? api.libraryBar("docs") : null,
-      h("div", { class: "docs-tools" }, searchEl, sort),
+      h("div", { class: "docs-tools" }, h("label", { class: "search-wrap" }, ic("search"), searchEl), sort),
       h("div", { class: "docs-where", id: "docs-where" }),
       listEl);
     document.body.append(pane);
@@ -170,7 +170,7 @@
         h("div", { class: "doc-main" }, h("b", null, d.file.name),
           h("small", null, [new Date(d.at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }), d.where, sizeOf(d.file.size)].join(" · ")),
           inText ? h("small", { class: "doc-hit" }, "Found in its text") : null),
-        d.goTo ? h("button", { class: "btn ghost gp-small", "aria-label": "Show where it is", onclick: (e) => { e.stopPropagation(); close(); d.goTo(); } }, "Show") : null));
+        d.goTo ? h("button", { class: "btn icon ghost doc-where-btn", "aria-label": "Show where it is", title: "Show where it is", onclick: (e) => { e.stopPropagation(); close(); d.goTo(); } }, ic("library")) : null));
     }
   }
   function open() {
