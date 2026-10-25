@@ -218,6 +218,20 @@
     });
   }
 
+  // Numbers count up the first time Library opens in a visit; the real number is always in the text at the end.
+  let countedOnce = false;
+  function countUp(nodes) {
+    if (countedOnce || !(api.motionOK && api.motionOK())) { countedOnce = true; return; }
+    countedOnce = true;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - p, 3);
+      nodes.forEach((b) => { const n = Number(b.dataset.n) || 0; b.textContent = String(p >= 1 ? n : Math.round(n * e)); });
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
   // ---------- Init ----------
   async function init(appApi) {
     api = appApi;
@@ -550,7 +564,8 @@
       if (quick.length) headEl.append(h("div", { class: "library-quick" },
         h("div", { class: "library-quick-title" }, "Sorted for you"),
         h("div", { class: "library-quick-row" }, quick.map((q) => h("button", { class: "library-quick-chip", type: "button", "data-quick": q.key, onclick: q.run },
-          ic(q.icon), h("b", null, String(q.n)), h("small", null, q.label))))));
+          ic(q.icon), h("b", { "data-n": String(q.n) }, String(q.n)), h("small", null, q.label))))));
+      countUp(headEl.querySelectorAll(".library-quick-chip b"));
     }
     const wrap = h("div", { class: "gp-home" });
     if (!groups.length) {

@@ -1,6 +1,6 @@
 // 2.6 on a phone: the Filter sheet (same spacing everywhere, hide with a
 // second tap, custom dates) and a dock you can change.
-const { test, expect, openApp, newNote, openSettingsFromMe } = require("./fixtures");
+const { test, expect, openApp, newNote, openSettingsFromMe, seed } = require("./fixtures");
 
 test.beforeEach(async ({ page }) => { await openApp(page); });
 
@@ -408,4 +408,15 @@ test("A new person doesn't get Commands, Passwords or the Template store until t
   await page.tap('.settings-nav-item[data-page="addons"]');
   await expect(page.locator('#addons-settings [data-addon="passwords"]')).not.toBeChecked();
   await expect(page.locator('#addons-settings [data-addon="templates"]')).not.toBeChecked();
+});
+
+test("a checklist note's preview shows boxes for every line, not '- [ ]'", async ({ page }) => {
+  const now = Date.now();
+  await seed(page, { items: [{ id: "cl1", type: "note", content: "Buy milk\n- [ ] eggs\n- [ ] bread", createdAt: now, updatedAt: now, schemaVersion: 2 }] });
+  await page.reload();
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+  const sub = page.locator(".item-row .item-subtext").first();
+  await expect(sub).toContainText("eggs");
+  await expect(sub).not.toContainText("[ ]");
 });
