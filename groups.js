@@ -53,13 +53,7 @@
     return el;
   }
   function ic(name, cls) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "icon" + (cls ? " " + cls : ""));
-    svg.setAttribute("aria-hidden", "true");
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", "#icon-" + name);
-    svg.append(use);
-    return svg;
+    return window.CPIcon.el(name, cls);
   }
   const tile = (iconName, color, soft, cls) => h("span", { class: "gp-tile" + (soft ? " soft" : "") + (cls ? " " + cls : ""), style: "--c:" + color }, ic(iconName));
   const groupTile = (g, cls) => (g.cover
@@ -608,6 +602,14 @@
   function renderHome() {
     headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
       h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
+    if (api.libraryBar) headEl.append(api.libraryBar("collections"));
+    if (api.libraryQuick) {
+      const quick = api.libraryQuick();
+      if (quick.length) headEl.append(h("div", { class: "library-quick" },
+        h("div", { class: "library-quick-title" }, "Sorted for you"),
+        h("div", { class: "library-quick-row" }, quick.map((q) => h("button", { class: "library-quick-chip", type: "button", "data-quick": q.key, onclick: q.run },
+          ic(q.icon), h("b", null, String(q.n)), h("small", null, q.label))))));
+    }
     const wrap = h("div", { class: "gp-home" });
     if (!groups.length) {
       wrap.append(h("div", { class: "gp-empty" }, h("span", { class: "gp-tile big", style: "--c:var(--accent)" }, ic("layers")),
@@ -1851,7 +1853,7 @@
             box.append(h("div", { class: "gp-tpl-sec" }, sec.name), h("div", { class: "gp-tpl-grid" }, ...items.map(card)));
           }
           if (!shown) box.append(h("p", { class: "gp-hint" }, "No template like that. Start from Blank and add your own sections."));
-          if (!store && !q) box.append(h("button", { class: "btn gp-wide", id: "gp-tpl-store", onclick: () => { store = true; drawList(); box.scrollIntoView({ block: "start" }); } },
+          if (!store && !q && api.addonOn && api.addonOn("templates")) box.append(h("button", { class: "btn gp-wide", id: "gp-tpl-store", onclick: () => { store = true; drawList(); box.scrollIntoView({ block: "start" }); } },
             ic("grid"), "Browse all " + C.TEMPLATES.length + " templates"));
         };
         search.oninput = drawList;

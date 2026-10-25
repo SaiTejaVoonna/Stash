@@ -1,11 +1,8 @@
-// Stash power tools and small surprises. window.CPSlash, window.CPEggs
+// Stash power tools: "/" commands. window.CPSlash
 //
 // "/" commands: off unless you turn them on (Settings → Shortcuts). Type "/" in
 // a note (or the Inbox box) and a short menu offers tags, folders, tick boxes,
 // today's date and more. Nothing changes for anyone who leaves it off.
-//
-// Eggs: a few quiet surprises for people who poke around. They never get in
-// the way, never cost anything, and respect "reduce motion".
 (function () {
   "use strict";
 
@@ -120,52 +117,4 @@
 
   window.CPSlash = { on, set, attach, close, insert, today, now };
 
-  // ---------- Small surprises ----------
-  const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // A burst of little coloured pieces from a point (or the middle of the screen).
-  function confetti(x = innerWidth / 2, y = innerHeight / 3) {
-    if (reduced()) return;
-    const colors = ["#27d5ff", "#7b61ff", "#ff5db8", "#ffb36b", "#30d158"];
-    const box = document.createElement("div");
-    box.className = "cp-confetti";
-    box.setAttribute("aria-hidden", "true");
-    for (let i = 0; i < 28; i++) {
-      const p = document.createElement("i");
-      const a = Math.random() * Math.PI * 2, d = 80 + Math.random() * 160;
-      p.style.cssText = "left:" + x + "px;top:" + y + "px;background:" + colors[i % colors.length] + ";--dx:" + Math.cos(a) * d + "px;--dy:" + (Math.sin(a) * d - 60) + "px;--r:" + Math.round(Math.random() * 720 - 360) + "deg;animation-delay:" + Math.random() * 80 + "ms";
-      box.appendChild(p);
-    }
-    document.body.appendChild(box);
-    setTimeout(() => box.remove(), 1600);
-  }
-  // Calls found() after the classic ↑↑↓↓←→←→BA on a keyboard.
-  function konami(found) {
-    const seq = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
-    let i = 0;
-    window.addEventListener("keydown", (e) => {
-      const t = e.target;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) { i = 0; return; }
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      i = k === seq[i] ? i + 1 : k === seq[0] ? 1 : 0;
-      if (i === seq.length) { i = 0; found(); }
-    });
-  }
-  // Taps in quick succession on an element (the logo): n taps within ~2 s.
-  function taps(el, n, found) {
-    if (!el) return;
-    let times = [];
-    el.addEventListener("click", () => {
-      const t = Date.now();
-      times = times.filter((x) => t - x < 2200).concat(t);
-      if (times.length >= n) { times = []; found(); }
-    });
-  }
-  // A list doing one slow barrel roll.
-  function roll(el) {
-    if (!el || reduced()) return;
-    el.classList.remove("cp-roll"); void el.offsetWidth; el.classList.add("cp-roll");
-    setTimeout(() => el.classList.remove("cp-roll"), 1300);
-  }
-
-  window.CPEggs = { confetti, konami, taps, roll };
 })();

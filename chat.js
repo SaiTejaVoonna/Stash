@@ -524,6 +524,13 @@
         h("small", { class: "cx-why" }, whyText(d),
           h("button", { class: "cx-not", type: "button", onclick: (e) => { e.stopPropagation(); notThis(n, d); } }, "Not this"))));
     }
+    // Keys, passwords and card numbers: offer the Vault (it only suggests; nothing moves until you tap).
+    if (!ui.selecting && !n.archivedAt && api.secretOf && api.toVault) {
+      const sec = api.secretOf(n);
+      if (sec) b.append(h("div", { class: "cx-sugg cx-secret" },
+        h("button", { class: "cx-guess cx-vault", "data-vault": "1", "aria-label": "Move to the Vault", onclick: (e) => { e.stopPropagation(); api.toVault(n); } }, ic("vault"), "Move to Vault"),
+        h("small", { class: "cx-why" }, "Looks like " + sec + ".")));
+    }
     if (ui.selecting) b.prepend(h("span", { class: "cx-check" + (picked ? " on" : "") }, picked ? ic("check") : null));
     // Tap: open it (or pick it while selecting). Hold: start selecting.
     let timer = null, held = false;
@@ -608,7 +615,7 @@
     const list = () => api.items().filter((x) => ui.picked.has(x.id));
     selBar.replaceChildren(...[
       h("span", { class: "cx-count" }, n ? n + " selected" : "Pick messages"),
-      h("button", { class: "btn ghost gp-small", id: "cx-all", onclick: () => { const vis = api.items().filter(passes); if (vis.every((x) => ui.picked.has(x.id))) ui.picked.clear(); else vis.forEach((x) => ui.picked.add(x.id)); render(); } }, "All"),
+      h("button", { class: "btn ghost gp-small", id: "cx-all", onclick: () => { const vis = api.items().filter(passes); if (vis.every((x) => ui.picked.has(x.id))) ui.picked.clear(); else vis.forEach((x) => ui.picked.add(x.id)); render(); } }, "Select all"),
       h("button", { class: "btn ghost gp-small", id: "cx-archive", disabled: !n, onclick: async () => { const l = list(); const on = ui.filter !== "archived"; await api.archive(l, on); setSelecting(false); } }, ic("archive"), ui.filter === "archived" ? "Unarchive" : "Archive"),
       n === 1 ? h("button", { class: "btn ghost gp-small", id: "cx-edit", onclick: () => { const id = [...ui.picked][0]; setSelecting(false); openCaption(id); } }, "Edit caption") : null,
       h("button", { class: "btn danger ghost gp-small", id: "cx-delete", disabled: !n, onclick: async () => { await api.remove(list()); setSelecting(false); } }, ic("trash"), "Delete"),

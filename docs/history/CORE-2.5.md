@@ -1,4 +1,4 @@
-# CopyPaster 2.5: the core
+# Stash 2.5: the core
 
 *Release 1 of the v3.0 plan. Everything here works offline, needs no account and keeps data on the device.*
 
@@ -53,7 +53,7 @@ Notes keep tag records (name, colour, icon) in the `tags` store. Group entries k
 
 - **Checklist** (`item.checklist: [{ id, text, done }]`): the Checklist button turns each line into an item; off turns the items back into ☐ / ☑ lines. Enter adds the next item, Backspace on an empty one removes it, done items sit under the rest with "Clear done". Copy copies the ☐ / ☑ lines. Rows show `2/5`.
 - **Status** (`item.status: "todo" | "doing" | "done"`): Organise → Status. A pill on the row; `is:todo` etc.
-- **Reminders** (`item.remindAt`, `item.reminded`): Organise → Remind me (in 1 hour, this evening, tomorrow morning, next week, or a time). When it's due: a sticky message with Open, a system notification if allowed (asked the first time), and the note shows Due with Snooze 1 hour / Done. A Reminders view lists them (Due, then Upcoming). Browsers only run this while CopyPaster is open; a closed app catches up when it opens. Not offered for Vault items.
+- **Reminders** (`item.remindAt`, `item.reminded`): Organise → Remind me (in 1 hour, this evening, tomorrow morning, next week, or a time). When it's due: a sticky message with Open, a system notification if allowed (asked the first time), and the note shows Due with Snooze 1 hour / Done. A Reminders view lists them (Due, then Upcoming). Browsers only run this while Stash is open; a closed app catches up when it opens. Not offered for Vault items.
 - **Voice notes** (`item.audio: [{ src, duration, mime, at }]`): up to 5 minutes, recorded on the device (Opus/WebM, or MP4 on iPhone) and kept as a data URL in the note.
 - **Sketch**: a drawing pad (7 inks, 3 sizes, eraser, undo, clear) saved as a PNG photo on the note. "Draw on it" on a photo saves a drawn-on copy. `item.sketches` remembers which photos are drawings (for `type:sketch`).
 

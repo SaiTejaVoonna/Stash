@@ -1,4 +1,4 @@
-# CopyPaster design system (v2.5)
+# Stash design system (v2.5)
 
 All styling lives in the `<style>` block of `index.html`, plus `groups.css` and `tools.css` (Timeline, tools, v2.5 extras), all built on the tokens at the top of `index.html`.
 

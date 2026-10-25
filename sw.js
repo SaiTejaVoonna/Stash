@@ -6,7 +6,7 @@
 // (bump CACHE when they do).
 // Your items are never touched here: they live in IndexedDB, not in this cache.
 
-const CACHE = "copypaster-v34";
+const CACHE = "stash-v44";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -21,6 +21,7 @@ const APP_SHELL = [
   "./icons/styles/style-glass.png",
   "./icons/styles/style-mono.png",
   "./icons/styles/style-mono-light.png",
+  "./icons.js",
   "./groups-core.js",
   "./entities-core.js",
   "./snap.js",
@@ -103,6 +104,18 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // The icon font is big, so it is not fetched up front: it is cached the first
+  // time it is used, and then works offline.
+  if (url.origin === self.location.origin && url.pathname.includes("/fonts/") && !url.search) {
+    event.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((cache) => cache.put(req, copy)); }
+        return res;
+      }))
     );
     return;
   }

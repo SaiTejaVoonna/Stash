@@ -1,4 +1,4 @@
-# CopyPaster plan (working draft)
+# Stash plan (working draft, kept for history)
 
 *Shared summary of the plan as of 7 Oct 2026. A working draft for discussion, not a promise. Personal examples are left out on purpose.*
 
@@ -7,8 +7,8 @@
 - Live site (`main`): **v2.0**.
 - **v2.5** (Spaces + Core) is in pull request #1 with 108/108 tests passing, waiting for the owner's merge.
 - Nothing goes live without the owner's "ok".
-- The repo layout stays as it is. `index.html`, `sw.js` and the tests depend on file paths, so there will be no folder restructure.
-- The old `Copy-Paster` repo (first version) is superseded by this one.
+- The file layout stays flat for now: `index.html`, `sw.js`, the build and the tests depend on file paths.
+- The first version of this project lives in an older, private repository; this one replaces it.
 
 ## Versions
 
@@ -120,7 +120,7 @@ People see it simply as **Personal → Health → Dr X → Prescriptions**. Unde
 11. Outside services enrich or import; they are never the source of truth.
 12. AI asks the engine; AI doesn't own the memory. AI receives only the records needed for the current request, never the whole collection by default.
 13. OCR is a throwaway search index. Search helps you find it; the original tells you what it is.
-14. Private by default. Nothing leaves the device unless the user explicitly turns on a destination or connection. Before sensitive data is sent, CopyPaster shows what will be sent and where.
+14. Private by default. Nothing leaves the device unless the user explicitly turns on a destination or connection. Before sensitive data is sent, Stash shows what will be sent and where.
 15. Nothing is discoverable: no public pages, no user directory.
 16. Sharing is explicit, per person, time-limited and revocable. A Card is a copy, not a published page.
 17. Deleting here is not deleting there (data already sent to AI or cloud).

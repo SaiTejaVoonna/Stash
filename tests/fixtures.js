@@ -36,6 +36,10 @@ const test = base.test.extend({
     await page.addInitScript(() => { window.Tesseract = { createWorker: async () => ({ recognize: async () => ({ data: { text: window.__ocrText || "TOTAL 450" } }) }) }; });
     // Tests start as if "What's new" was already seen; one test checks it on its own.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-whatsnew")) localStorage.setItem("copypaster-seen-version", "99"); } catch {} });
+    // Tests start with Snap as the dock's middle button (the default is New); one test checks the default.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-dockdefault")) localStorage.setItem("copypaster-dock-middle", "snap"); } catch {} });
+    // Tests start with every add-on on (new people get Commands, Passwords and the Template store off); one test checks the default.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-addondefault")) localStorage.setItem("copypaster-addons", JSON.stringify({ passwords: true, commands: true, templates: true })); } catch {} });
     // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
     // Tests type into the plain-text editor; the rich editor has its own tests.
@@ -62,7 +66,7 @@ const test = base.test.extend({
 // The "+ New" button: in the list header on computers, the dock's middle
 // button on phones.
 const newBtn = (page) => page.locator("#new-btn:visible, #tab-bar .tab-btn[data-tab='new']:visible").first();
-// The full menu: the ☰ button on tablets, "More" in the dock on phones.
+// The full menu: the ☰ button on tablets, "Me" in the dock on phones.
 const menuBtn = (page) => page.locator("#menu-btn:visible, #tab-bar .tab-btn[data-tab='more']:visible").first();
 
 async function openApp(page) {

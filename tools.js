@@ -30,13 +30,7 @@
     return el;
   }
   function ic(name, cls) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "icon" + (cls ? " " + cls : ""));
-    svg.setAttribute("aria-hidden", "true");
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", "#icon-" + name);
-    svg.append(use);
-    return svg;
+    return window.CPIcon.el(name, cls);
   }
   const isPhone = () => window.matchMedia("(max-width: 720px)").matches;
   const store = {

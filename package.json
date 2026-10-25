@@ -1,5 +1,5 @@
 {
-  "name": "copypaster",
+  "name": "stash",
   "private": true,
   "description": "Stash: browser tests and the build for the published copy. The app itself is index.html and its files, no build needed to run it.",
   "scripts": {

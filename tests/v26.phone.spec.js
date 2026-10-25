@@ -68,7 +68,7 @@ test("the phone Filter sheet and dock settings say Collection, never group", asy
   await page.tap("#settings-btn");
   await page.tap('.settings-nav-item[data-page="appearance"]');
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
-  expect(options).toContain("Collections");
+  expect(options).toContain("Library");
   expect(options.join(" ")).not.toMatch(/group/i);
 });
 
@@ -365,4 +365,47 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   await page.tap("#cx-sort-move");
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("random thought");
+});
+
+test("The dock's middle button is + by default: one sheet to add text, a photo, a scan or a drawing", async ({ page }) => {
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-dock-middle"); });
+  await page.reload();
+  await expect(page.locator("#tab-bar [data-tab='new']")).toBeVisible();
+  await expect(page.locator("#tab-bar [data-tab='snap']")).toHaveCount(0);
+  await page.tap("#tab-bar [data-tab='new']");
+  await expect(page.locator("#new-menu")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='snap']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='sketch']")).toBeVisible();
+});
+
+test("Inbox: a message that looks like a key or a card number offers the Vault", async ({ page }) => {
+  await page.tap("#tab-bar [data-tab='chat']");
+  await page.fill("#cx-input", "my google key " + "AIza" + "x".repeat(35));
+  await page.tap("#cx-send");
+  await page.fill("#cx-input", "card 4242 4242 4242 4242 for the trip");
+  await page.tap("#cx-send");
+  await page.fill("#cx-input", "dinner at 7 with Dr Asha Verma");
+  await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(3);
+  await expect(page.locator("#chat-pane .cx-secret")).toHaveCount(2);
+  await expect(page.locator("#chat-pane .cx-secret").first()).toContainText("a Google API key");
+  await expect(page.locator("#chat-pane .cx-secret").nth(1)).toContainText("a card number");
+  await page.locator("#chat-pane .cx-vault").first().tap();
+  await expect(page.locator("#dialog")).toContainText("Set up your Vault"); // the Vault asks to be set up first
+});
+
+test("A new person doesn't get Commands, Passwords or the Template store until they switch them on", async ({ page }) => {
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-addondefault", "1"); sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-addons"); localStorage.removeItem("copypaster-dock-middle"); });
+  await page.reload();
+  await page.tap("#tab-bar [data-tab='new']");
+  await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='command']")).toHaveCount(0);
+  await expect(page.locator("#new-menu [data-new='password']")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.tap("#tab-bar [data-tab='more']");
+  await page.tap("#settings-btn");
+  await page.tap('.settings-nav-item[data-page="addons"]');
+  await expect(page.locator('#addons-settings [data-addon="passwords"]')).not.toBeChecked();
+  await expect(page.locator('#addons-settings [data-addon="templates"]')).not.toBeChecked();
 });

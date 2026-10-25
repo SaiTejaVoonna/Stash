@@ -122,8 +122,7 @@
     --primary-shadow: 0 4px 12px -4px rgba(10, 108, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     --glass: rgba(255, 255, 255, 0.8);
   }
-  /* Backgrounds: true black (dark, kind to OLED screens), warm paper (light),
-     and Aurora (a dark night sky; found, not shown). */
+  /* Backgrounds: true black (dark, kind to OLED screens) and warm paper (light). */
   html[data-theme="dark"][data-surface="black"] {
     --bg: #000000; --bg-sidebar: #050506; --surface-1: #0b0b0d; --surface-2: #141418; --surface-3: #1e1f24; --elevated: #121215;
     --code-bg: #000000; --glass: rgba(10, 10, 12, 0.8);
@@ -133,12 +132,6 @@
     --line: rgba(80, 60, 20, 0.1); --line-strong: rgba(80, 60, 20, 0.17);
     --text: #2a2419; --text-2: #5f5546; --text-3: #6d6352; --glass: rgba(251, 247, 239, 0.84);
   }
-  html[data-theme="dark"][data-surface="aurora"] {
-    --bg: #0b0b1a; --bg-sidebar: #0e0d20; --surface-1: #14132a; --surface-2: #1b1a36; --surface-3: #252347; --elevated: #191833;
-    --line: rgba(190, 180, 255, 0.09); --line-strong: rgba(190, 180, 255, 0.16); --glass: rgba(20, 19, 42, 0.74);
-  }
-  html[data-surface="aurora"] body { background: radial-gradient(1200px 500px at 15% -10%, rgba(39, 213, 255, .14), transparent 60%), radial-gradient(900px 500px at 90% 0%, rgba(255, 93, 184, .13), transparent 60%), var(--bg); }
-  html[data-surface="aurora"] #app > * { background-color: transparent; }
 
   /* Looks: one tap for icon, theme, colour and background together. */
   #look-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; width: 100%; }
@@ -172,9 +165,58 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
-  .icon { width: var(--icon-md); height: var(--icon-md); flex-shrink: 0; vertical-align: -3px; }
-  .icon-sm { width: var(--icon-sm); height: var(--icon-sm); }
-  .icon-lg { width: var(--icon-lg); height: var(--icon-lg); }
+  /* Me (phones): a backup card and an App lock card at the top. */
+  #me-cards, #me-rows { display: none; }
+  @media (max-width: 720px) {
+    #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
+    #me-cards:empty { display: none; }
+    .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
+    .me-card.soft { background: var(--accent-soft, var(--surface-2)); border-color: transparent; }
+    .me-card-ic { width: 40px; height: 40px; border-radius: var(--r-md); display: grid; place-items: center; background: var(--surface-2); color: var(--text-2); flex-shrink: 0; }
+    .me-card.soft .me-card-ic { background: var(--surface-1); color: var(--accent); }
+    .me-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .me-card-text b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+    .me-card-text small { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
+    .me-card button.me-go { min-height: 40px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
+    #me-rows { display: block; margin: 0 var(--s-2) var(--s-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+    .me-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-2) var(--s-3); border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+    .me-row + .me-row { border-top: 1px solid var(--line); }
+    .me-row .me-card-ic { width: 36px; height: 36px; }
+    .me-row .me-chev { color: var(--text-3); }
+    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent); }
+  }
+
+  /* Library: Collections | Notes | Documents (phones only). */
+  .library-seg { display: none; }
+  @media (max-width: 720px) {
+    .library-seg { width: 100%; flex: 0 0 auto; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 0 var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
+    .library-seg-btn { min-height: 36px; border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; transition: background var(--t-med) var(--ease), color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+    .library-quick { width: 100%; flex: 0 0 auto; box-sizing: border-box; margin: 0 0 var(--s-3); }
+    .docs-pane .library-seg { width: calc(100% - 2 * var(--s-4)); margin: 0 var(--s-4) var(--s-3); }
+    .library-quick-title { margin: 0 var(--s-1) var(--s-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+    .library-quick-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s-2); }
+    .library-quick-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s-2) var(--s-1); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-1); color: var(--text); font: inherit; cursor: pointer; }
+    .library-quick-chip .icon { color: var(--accent); }
+    .library-quick-chip b { font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: 1.2; }
+    .library-quick-chip small { font-size: var(--fs-xs); color: var(--text-2); }
+    .library-seg-btn.on { background: var(--surface-1); color: var(--text); font-weight: var(--fw-semibold); box-shadow: var(--shadow-sm); }
+    #library-seg-slot:empty { display: none; }
+  }
+  /* Icons: Material Symbols (outlined), served from fonts/. The name sits in data-ms so it is never read as text. */
+  @font-face { font-family: "Material Symbols Outlined"; font-style: normal; font-weight: 100 700; font-display: block; src: url("fonts/material-symbols-outlined.woff2") format("woff2"); }
+  .ms {
+    font-style: normal;
+    font-family: "Material Symbols Outlined"; font-weight: 400; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none;
+    display: inline-block; white-space: nowrap; direction: ltr; overflow: hidden; user-select: none; -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased; font-feature-settings: "liga";
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  }
+  .ms::before { content: attr(data-ms); }
+  /* The chosen tab, button or row shows its icon filled in. */
+  .tab-btn.active .ms, .nav-item.active .ms, .icon-toggle.on .ms, .settings-nav-item.active .ms { font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24; }
+  .icon { width: var(--icon-md); height: var(--icon-md); flex-shrink: 0; vertical-align: -3px; font-size: var(--icon-md); }
+  .icon-sm { width: var(--icon-sm); height: var(--icon-sm); font-size: var(--icon-sm); }
+  .icon-lg { width: var(--icon-lg); height: var(--icon-lg); font-size: var(--icon-lg); }
   .hidden { display: none !important; }
   .kbd {
     display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
@@ -277,7 +319,7 @@
   }
   .chip:hover { background: var(--surface-2); color: var(--text); }
   .chip.on { background: var(--text); color: var(--bg); border-color: transparent; }
-  .chip .icon { width: 14px; height: 14px; }
+  .chip .icon { width: 14px; height: 14px; font-size: 14px; }
 
   /* =====================================================================
      App layout: sidebar | list | detail
@@ -299,7 +341,7 @@
     width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; color: #fff;
     background: var(--accent-grad); box-shadow: 0 3px 10px -3px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.25);
   }
-  #brand-dot .icon { width: 15px; height: 15px; }
+  #brand-dot .icon { width: 15px; height: 15px; font-size: 15px; }
   #brand-dot:has(img) { background: none; box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 0.35); overflow: hidden; }
   #brand-dot img { width: 100%; height: 100%; display: block; }
   #brand-label { flex: 1; font-family: var(--font-display); font-size: var(--fs-lg); font-weight: var(--fw-bold); letter-spacing: -0.02em; }
@@ -345,7 +387,7 @@
   .nav-item .count { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
   .nav-label { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-icon { width: 18px; display: flex; align-items: center; justify-content: center; opacity: 0.9; flex-shrink: 0; }
-  .nav-icon .icon { width: 17px; height: 17px; }
+  .nav-icon .icon { width: 17px; height: 17px; font-size: 17px; }
 
   .sidebar-divider { height: var(--s-2); }
   .sidebar-section-header {
@@ -356,7 +398,7 @@
   .section-title-click:hover { color: var(--text-2); }
   .section-chevron { display: inline-flex; transition: transform var(--t-fast); opacity: 0; }
   .sidebar-section-header:hover .section-chevron, .sidebar-section-header.collapsed .section-chevron { opacity: 1; }
-  .section-chevron .icon { width: 12px; height: 12px; }
+  .section-chevron .icon { width: 12px; height: 12px; font-size: 12px; }
   .sidebar-section-header.collapsed .section-chevron { transform: rotate(-90deg); }
   .sidebar-section-header.collapsed + div, .sidebar-section-header.collapsed + nav { display: none; }
   .section-add-btn {
@@ -364,7 +406,7 @@
     background: none; border: none; color: var(--text-3); cursor: pointer; padding: 0;
   }
   .section-add-btn:hover { background: var(--surface-2); color: var(--text); }
-  .section-add-btn .icon { width: 14px; height: 14px; }
+  .section-add-btn .icon { width: 14px; height: 14px; font-size: 14px; }
 
   .folder-expand { width: 12px; flex-shrink: 0; opacity: 0.6; font-size: 10px; }
   .folder-sub { padding-left: 16px; }
@@ -379,7 +421,7 @@
     background: transparent; border: none; color: var(--text-2); font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer;
   }
   #settings-btn:hover, .footer-btn:hover { background: var(--surface-2); color: var(--text); }
-  #settings-btn .icon, .footer-btn .icon { width: 17px; height: 17px; }
+  #settings-btn .icon, .footer-btn .icon { width: 17px; height: 17px; font-size: 17px; }
 
   @media (min-width: 901px) {
     #sidebar.collapsed { width: 60px !important; min-width: 60px; }
@@ -411,18 +453,18 @@
     transition: background var(--t-fast), transform var(--t-fast);
   }
   #new-btn:hover { background: var(--accent-hover); }
-  #new-btn .icon { width: 16px; height: 16px; }
+  #new-btn .icon { width: 16px; height: 16px; font-size: 16px; }
   #vault-lock-btn {
     display: inline-flex; align-items: center; gap: 5px; height: var(--h-sm); padding: 0 10px; margin-right: 4px;
     border: 1px solid var(--line-strong); background: var(--surface-1); color: var(--text-2); border-radius: var(--r-full);
     font-size: var(--fs-xs); font-weight: var(--fw-medium); cursor: pointer; white-space: nowrap; flex-shrink: 0;
   }
   #vault-lock-btn:hover { color: var(--text); background: var(--surface-2); }
-  #vault-lock-btn .icon { width: 14px; height: 14px; color: var(--password); }
+  #vault-lock-btn .icon { width: 14px; height: 14px; color: var(--password); font-size: 14px; }
 
   #search-sort-row { display: flex; gap: var(--s-2); align-items: center; }
   .search-wrap { position: relative; flex: 1; min-width: 0; display: flex; }
-  .search-wrap > .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; width: 15px; height: 15px; }
+  .search-wrap > .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; width: 15px; height: 15px; font-size: 15px; }
   #search-input { flex: 1; min-width: 0; width: 100%; padding-left: 32px; height: 34px; }
   .search-wrap .kbd { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); pointer-events: none; }
   #search-input:focus + .kbd, #search-input:not(:placeholder-shown) + .kbd { display: none; }
@@ -462,7 +504,7 @@
   .type-dot, .row-thumb {
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   }
-  .type-dot .icon { width: 17px; height: 17px; }
+  .type-dot .icon { width: 17px; height: 17px; font-size: 17px; }
   .type-dot.note { color: var(--note); background: var(--note-soft); }
   .type-dot.command { color: var(--command); background: var(--command-soft); }
   .type-dot.password, .type-dot.vault { color: var(--password); background: var(--password-soft); }
@@ -498,13 +540,13 @@
     background: var(--surface-2); color: var(--text-2); font-size: var(--fs-2xs); font-weight: var(--fw-medium); max-width: 120px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .meta-pill .icon { width: 11px; height: 11px; }
+  .meta-pill .icon { width: 11px; height: 11px; font-size: 11px; }
   .row-expire { display: inline-flex; align-items: center; gap: 3px; color: var(--warning); cursor: help; }
-  .row-expire .icon { width: 12px; height: 12px; }
+  .row-expire .icon { width: 12px; height: 12px; font-size: 12px; }
   .mini-tag { width: 7px; height: 7px; border-radius: 50%; }
   .row-lang-badge { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); color: var(--command); text-transform: uppercase; letter-spacing: 0.03em; }
   .row-pin-badge { display: inline-flex; color: var(--accent); }
-  .row-pin-badge .icon { width: 12px; height: 12px; }
+  .row-pin-badge .icon { width: 12px; height: 12px; font-size: 12px; }
 
   /* Star and copy appear on hover (always on touch screens, where there is no hover). */
   .row-icons { display: flex; align-items: center; gap: 0; flex-shrink: 0; margin: -4px -4px 0 0; }
@@ -516,7 +558,7 @@
   .item-row:hover .row-icon-btn, .item-row.selected .row-icon-btn, .item-row.kbd-highlight .row-icon-btn, .row-icon-btn:focus-visible, .row-icon-btn.starred { opacity: 1; }
   .row-icon-btn:hover { color: var(--text); background: var(--surface-3); }
   .row-icon-btn.starred { color: var(--note); }
-  .row-icon-btn .icon { width: 15px; height: 15px; }
+  .row-icon-btn .icon { width: 15px; height: 15px; font-size: 15px; }
   @media (hover: none) { #sidebar-search .kbd, .search-wrap .kbd { display: none; } }
   @media (hover: none) { .row-icon-btn { opacity: 1; } .row-icon-btn:not(.starred) { display: none; } }
 
@@ -561,7 +603,7 @@
     width: 56px; height: 56px; margin: 0 auto var(--s-4); border-radius: 16px; display: grid; place-items: center;
     background: var(--surface-2); color: var(--text-2); font-size: 26px;
   }
-  #empty-state .empty-icon .icon { width: 26px; height: 26px; }
+  #empty-state .empty-icon .icon { width: 26px; height: 26px; font-size: 26px; }
   #empty-state .empty-icon.brand, #placeholder .ph-icon.brand { background: none; padding: 0; overflow: hidden; border-radius: 22%; box-shadow: var(--shadow-sm); }
   #empty-state .empty-icon.brand img, #placeholder .ph-icon.brand img { width: 100%; height: 100%; display: block; }
   #empty-state .empty-title { color: var(--text); font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-bottom: 4px; }
@@ -614,7 +656,7 @@
   #empty-state .empty-steps b { color: var(--text); display: block; }
   #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
   #empty-state .empty-second:hover { background: var(--surface-2); }
-  #empty-state .empty-second .icon { width: 16px; height: 16px; }
+  #empty-state .empty-second .icon { width: 16px; height: 16px; font-size: 16px; }
 
   /* =====================================================================
      Detail pane
@@ -625,7 +667,7 @@
 
   #placeholder { flex: 1; display: flex; flex-direction: column; gap: var(--s-3); align-items: center; justify-content: center; color: var(--text-3); font-size: var(--fs-md); text-align: center; padding: var(--s-6); }
   #placeholder .ph-icon { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: var(--surface-2); color: var(--text-3); }
-  #placeholder .ph-icon .icon { width: 28px; height: 28px; }
+  #placeholder .ph-icon .icon { width: 28px; height: 28px; font-size: 28px; }
   #placeholder .ph-title { color: var(--text-2); font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
   #placeholder .ph-keys { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-4); margin-top: var(--s-2); font-size: var(--fs-sm); }
   #placeholder .ph-keys span { display: inline-flex; align-items: center; gap: 6px; }
@@ -644,7 +686,7 @@
     border: none; background: transparent; color: var(--text-2); font-size: var(--fs-sm); font-weight: var(--fw-medium); cursor: pointer;
     transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
   }
-  .type-btn .icon { width: 14px; height: 14px; }
+  .type-btn .icon { width: 14px; height: 14px; font-size: 14px; }
   .type-btn:hover { color: var(--text); }
   .type-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .type-btn.active { background: var(--surface-1); color: var(--text); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
@@ -706,7 +748,7 @@
     background: transparent; border: none; color: var(--text-3); font-size: var(--fs-sm); font-weight: var(--fw-medium); cursor: pointer;
   }
   #edit-toolbar button:hover { color: var(--text); background: var(--surface-2); }
-  #edit-toolbar button .icon { width: 14px; height: 14px; }
+  #edit-toolbar button .icon { width: 14px; height: 14px; font-size: 14px; }
 
   #content-input {
     flex: 1; width: 100%; resize: none; background: transparent; border: 1px solid transparent;
@@ -777,7 +819,7 @@
   }
   #add-image-btn.empty { width: auto; height: var(--h-sm); flex-direction: row; padding: 0 10px; border-radius: var(--r-full); border-width: 1px; }
   #add-image-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
-  #add-image-btn .icon { width: 16px; height: 16px; }
+  #add-image-btn .icon { width: 16px; height: 16px; font-size: 16px; }
   .attached-image-wrap { position: relative; display: inline-block; flex-shrink: 0; }
   .attached-image {
     width: auto; height: 88px; max-width: 180px; border-radius: var(--r-lg); display: block; object-fit: cover;
@@ -820,7 +862,7 @@
   .prop-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; column-gap: var(--s-3); row-gap: 6px; min-height: 44px; padding: 5px 0; font-size: var(--fs-md); }
   .prop-row + .prop-row, .props-inner > .prop-picker + .prop-row { border-top: 1px solid var(--line); }
   .prop-label { color: var(--text-2); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .prop-label .icon { width: 15px; height: 15px; color: var(--text-3); }
+  .prop-label .icon { width: 15px; height: 15px; color: var(--text-3); font-size: 15px; }
   .prop-value { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; color: var(--text); }
   .prop-row.expanded .prop-value:has(#expire-row) { flex-basis: 100%; justify-content: flex-start; }
   .prop-row.expanded { padding-bottom: 10px; }
@@ -829,7 +871,7 @@
     background: transparent; border: none; color: var(--text-2); font-size: var(--fs-md); cursor: pointer;
   }
   .prop-btn:hover { background: var(--surface-2); color: var(--text); }
-  .prop-btn .icon-sm { width: 12px; height: 12px; color: var(--text-3); transition: transform var(--t-fast); }
+  .prop-btn .icon-sm { width: 12px; height: 12px; color: var(--text-3); transition: transform var(--t-fast); font-size: 12px; }
   .prop-row.expanded .prop-btn .icon-sm { transform: rotate(180deg); }
   .color-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
   .color-dot.none { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
@@ -906,7 +948,7 @@
   }
   #detail-meta { font-size: var(--fs-xs); color: var(--text-3); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   #autosave-status { color: var(--success); display: inline-flex; align-items: center; gap: 3px; font-weight: var(--fw-medium); }
-  #autosave-status .icon { width: 12px; height: 12px; }
+  #autosave-status .icon { width: 12px; height: 12px; font-size: 12px; }
   .detail-vault-note { color: var(--password); display: inline-flex; align-items: center; gap: 4px; }
   #detail-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; }
 
@@ -925,7 +967,7 @@
   .popover .color-input::-moz-color-swatch { border: none; border-radius: 50%; }
   .pop-head { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
   .pop-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); flex-shrink: 0; }
-  .pop-icon .icon { width: 17px; height: 17px; }
+  .pop-icon .icon { width: 17px; height: 17px; font-size: 17px; }
   .pop-title { flex: 1; font-size: var(--fs-lg); font-weight: var(--fw-bold); letter-spacing: -0.01em; }
   .pop-head .popover-close-btn { position: static; width: 28px; height: 28px; display: grid; place-items: center; }
   .popover.as-sheet {
@@ -992,7 +1034,7 @@
     display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: none; color: var(--text);
     font-size: 16px; min-height: 50px; padding: 0 14px; border-radius: var(--r-lg); cursor: pointer;
   }
-  #action-sheet button .icon { width: 20px; height: 20px; color: var(--text-2); }
+  #action-sheet button .icon { width: 20px; height: 20px; color: var(--text-2); font-size: 20px; }
   #action-sheet button:active, #action-sheet button:hover { background: var(--surface-2); }
   #action-sheet button.danger, #action-sheet button.danger .icon { color: var(--danger); }
   #action-sheet button.cancel { justify-content: center; color: var(--text); font-weight: var(--fw-semibold); margin-top: 6px; background: var(--surface-2); }
@@ -1008,7 +1050,7 @@
   .command-menu button:hover, .command-menu button.active { background: var(--surface-3); border-color: var(--line-strong); }
   .command-menu button:active { transform: scale(0.98); }
   .command-menu .cm-icon { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; }
-  .command-menu .cm-icon .icon { width: 17px; height: 17px; }
+  .command-menu .cm-icon .icon { width: 17px; height: 17px; font-size: 17px; }
   .command-menu .cm-text { display: flex; flex-direction: column; min-width: 0; }
   .command-menu .cm-label { font-size: var(--fs-md); font-weight: var(--fw-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .command-menu .cm-hint { font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1047,7 +1089,7 @@
     animation: popIn var(--t-med) var(--ease);
   }
   #dialog h2 { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-bold); letter-spacing: -0.015em; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
-  #dialog h2 .icon { width: 22px; height: 22px; color: var(--accent); padding: 9px; box-sizing: content-box; border-radius: 12px; background: var(--accent-soft); }
+  #dialog h2 .icon { width: 22px; height: 22px; color: var(--accent); padding: 9px; box-sizing: content-box; border-radius: 12px; background: var(--accent-soft); font-size: 22px; }
   .dialog-text { font-size: var(--fs-md); color: var(--text-2); line-height: var(--lh); margin: 0; }
   .dialog-field { display: flex; flex-direction: column; gap: 6px; }
   .dialog-field label { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-2); }
@@ -1081,7 +1123,7 @@
     overflow: hidden; display: flex; flex-direction: column;
   }
   .palette-input-wrap { display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-4); border-bottom: 1px solid var(--line); }
-  .palette-input-wrap > .icon { width: 18px; height: 18px; color: var(--text-3); }
+  .palette-input-wrap > .icon { width: 18px; height: 18px; color: var(--text-3); font-size: 18px; }
   #palette-input { flex: 1; border: none; background: transparent; color: var(--text); font-size: 17px; height: 56px; padding: 0; outline: none; }
   #palette-results { max-height: min(56vh, 460px); overflow-y: auto; padding: 6px; }
   .palette-group { font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); padding: 10px 10px 4px; }
@@ -1090,7 +1132,7 @@
   .palette-row .palette-hint { color: var(--text-3); font-size: var(--fs-xs); }
   .palette-row.active { background: var(--accent-soft); }
   html[data-theme="dark"] .palette-row.active { background: var(--surface-3); }
-  .palette-row .icon { width: 17px; height: 17px; color: var(--text-2); flex-shrink: 0; }
+  .palette-row .icon { width: 17px; height: 17px; color: var(--text-2); flex-shrink: 0; font-size: 17px; }
   .palette-row.active .icon { color: var(--accent); }
   .palette-empty { padding: var(--s-6); text-align: center; color: var(--text-3); font-size: var(--fs-md); }
   .palette-foot { display: flex; gap: var(--s-4); padding: 8px 14px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--text-3); }
@@ -1117,7 +1159,7 @@
     border-radius: var(--r-full); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   }
   .lb-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #e8eaee; cursor: pointer; padding: 0; }
-  .lb-btn .icon { width: 18px; height: 18px; }
+  .lb-btn .icon { width: 18px; height: 18px; font-size: 18px; }
   .lb-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
   .lb-btn:disabled { opacity: 0.35; cursor: default; background: transparent; }
   .lb-btn.danger:hover { background: rgba(229, 72, 77, 0.2); color: #ff6b6f; }
@@ -1144,7 +1186,7 @@
   }
   .toast-item:not(:has(button)) { padding-right: 16px; }
   .toast-item.show { opacity: 1; transform: none; }
-  .toast-item > .icon { width: 16px; height: 16px; color: var(--success); }
+  .toast-item > .icon { width: 16px; height: 16px; color: var(--success); font-size: 16px; }
   .toast-item button {
     height: 26px; padding: 0 10px; border-radius: var(--r-sm); background: var(--accent-soft); border: none; color: var(--accent);
     font-weight: var(--fw-semibold); font-size: var(--fs-sm); cursor: pointer; white-space: nowrap;
@@ -1182,7 +1224,7 @@
   .settings-nav-item.active { background: var(--surface-3); color: var(--text); }
   html[data-theme="light"] .settings-nav-item.active { background: var(--surface-1); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
   .settings-nav-item .sn-icon { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: #fff; flex-shrink: 0; }
-  .settings-nav-item .sn-icon .icon { width: 15px; height: 15px; }
+  .settings-nav-item .sn-icon .icon { width: 15px; height: 15px; font-size: 15px; }
   .settings-nav-item .sn-chevron { display: none; margin-left: auto; color: var(--text-3); }
   #settings-pages { flex: 1; overflow-y: auto; padding: var(--s-6) var(--s-8) var(--s-8); min-width: 0; }
   .settings-page { display: none; flex-direction: column; gap: var(--s-6); max-width: 560px; }
@@ -1251,7 +1293,7 @@
     display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; border: none;
     background: transparent; color: var(--text-2); font-size: var(--fs-sm); font-weight: var(--fw-medium); cursor: pointer;
   }
-  .segmented button .icon { width: 15px; height: 15px; }
+  .segmented button .icon { width: 15px; height: 15px; font-size: 15px; }
   .segmented button:hover { color: var(--text); }
   .segmented button.active { background: var(--surface-1); color: var(--text); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
   html[data-theme="dark"] .segmented button.active { background: var(--surface-3); }
@@ -1266,7 +1308,7 @@
   #vault-settings-body > * + * { border-top: 1px solid var(--line); }
   #vault-settings-body .settings-hint { margin-top: 0; }
   .vault-status { display: flex; align-items: center; gap: 10px; font-size: var(--fs-md); font-weight: var(--fw-medium); }
-  .vault-status .icon { width: 20px; height: 20px; color: var(--password); }
+  .vault-status .icon { width: 20px; height: 20px; color: var(--password); font-size: 20px; }
   .profile-row { display: flex; align-items: center; gap: 10px; font-size: var(--fs-md); padding: 10px var(--s-4); min-height: 52px; }
   .profile-row + .profile-row { border-top: 1px solid var(--line); }
   .profile-row .profile-avatar { width: 30px; height: 30px; border-radius: 9px; font-size: var(--fs-md); }
@@ -1326,7 +1368,7 @@
   #back-btn, #menu-btn { display: none; }
   #back-btn { align-items: center; justify-content: center; width: var(--h-md); height: var(--h-md); border-radius: var(--r-md); background: transparent; border: none; color: var(--text); cursor: pointer; padding: 0; flex-shrink: 0; }
   #back-btn:hover { background: var(--surface-2); }
-  #back-btn .icon { width: 20px; height: 20px; }
+  #back-btn .icon { width: 20px; height: 20px; font-size: 20px; }
   #sidebar-backdrop { display: none; }
   #tab-bar { display: none; }
 
@@ -1349,6 +1391,19 @@
   /* Phones: one pane at a time, a tab bar at the bottom and a floating + button. */
   @media (max-width: 720px) {
     #app { position: relative; }
+    /* Me: on a phone the menu is a page that fades up above the dock, not a
+       drawer with a dark layer behind it (that layer could get stuck on screen). */
+    #sidebar {
+      width: 100% !important; right: 0; bottom: calc(84px + env(safe-area-inset-bottom)); border-radius: 0; box-shadow: none;
+      transform: translateY(14px); opacity: 0; visibility: hidden;
+      transition: transform var(--t-slow) var(--ease), opacity var(--t-med) ease, visibility 0s linear var(--t-slow);
+    }
+    #sidebar.open { transform: none; opacity: 1; visibility: visible; transition-delay: 0s; }
+    /* The whole Me page scrolls as one, so nothing gets squeezed or cut off. */
+    #sidebar { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    #sidebar-scroll { flex: 0 0 auto; overflow: visible; min-height: auto; }
+    #sidebar > * { flex-shrink: 0; }
+    #sidebar-backdrop, body.sidebar-open #sidebar-backdrop { display: none !important; }
     #list-pane { width: 100%; min-width: 0; border-right: none; }
     #detail-pane { position: absolute; inset: 0; z-index: 20; display: none; }
     #detail-pane.open { display: flex; }
@@ -1379,7 +1434,7 @@
       background: var(--accent-grad); box-shadow: 0 10px 28px -6px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.25);
     }
     #new-btn .new-label { display: none; }
-    #new-btn .icon { width: 26px; height: 26px; }
+    #new-btn .icon { width: 26px; height: 26px; font-size: 26px; }
     body.select-mode #new-btn { display: none; }
 
     #tab-bar {
@@ -1393,7 +1448,7 @@
       background: none; border: none; color: var(--text-3); font-size: 10.5px; font-weight: var(--fw-medium); cursor: pointer;
       transition: color var(--t-fast), transform var(--t-fast);
     }
-    .tab-btn .icon { width: 23px; height: 23px; }
+    .tab-btn .icon { width: 23px; height: 23px; font-size: 23px; }
     .tab-btn.active { color: var(--accent); }
     .tab-btn:active { transform: scale(0.94); }
     body.select-mode #tab-bar { display: none; }
@@ -1421,7 +1476,7 @@
     #detail-actions button.action { flex: 1; height: var(--h-touch); font-size: 15px; border-radius: var(--r-lg); padding: 0 8px; }
     #detail-actions button.action.danger { flex: 0 0 var(--h-touch); padding: 0; }
     #detail-actions button.action.danger .btn-text { display: none; }
-    #detail-actions button.action .icon { width: 17px; height: 17px; }
+    #detail-actions button.action .icon { width: 17px; height: 17px; font-size: 17px; }
 
     /* Toasts sit above the tab bar on phones, where the thumb is. */
     #toast { bottom: calc(146px + env(safe-area-inset-bottom)); }
@@ -1444,7 +1499,7 @@
   /* Fingers need bigger targets than mouse pointers (at least 36px). */
   @media (pointer: coarse) {
     .section-add-btn { width: 36px; height: 36px; }
-    .section-add-btn .icon { width: 17px; height: 17px; }
+    .section-add-btn .icon { width: 17px; height: 17px; font-size: 17px; }
     #sidebar-collapse-btn { width: 36px; height: 36px; }
     .sidebar-section-header { padding-top: 0; padding-bottom: 0; }
     .section-title-click { min-height: 36px; }
@@ -1648,6 +1703,8 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
+    <div id="me-cards"></div>
+    <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -1693,6 +1750,7 @@
         <button id="paste-btn" title="Paste from clipboard — attaches to the open item, or creates a new one"><svg class="icon"><use href="#icon-paste"></use></svg></button>
         <button id="new-btn" title="New item"><svg class="icon"><use href="#icon-plus"></use></svg><span class="new-label">New</span></button>
       </div>
+      <div id="library-seg-slot"></div>
       <div id="search-sort-row">
         <label class="search-wrap"><svg class="icon"><use href="#icon-search"></use></svg>
           <input id="search-input" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search items"><span class="kbd">/</span></label>
@@ -1828,7 +1886,7 @@
           <p class="settings-page-lead">Each profile has its own notes, collections, folders, tags and Vault — for example Personal, Work or Family. Theme and paste clean-up are shared on this device.</p>
           <div class="settings-section">
             <div class="settings-group" id="profile-list"></div>
-            <div class="settings-row-actions"><button id="new-profile-btn" type="button">+ New profile</button></div>
+            <div class="settings-row-actions"><button id="new-profile-btn" type="button">New profile</button></div>
           </div>
         </section>
 
@@ -1853,7 +1911,7 @@
 
         <section class="settings-page" data-page="tags" id="tags-settings">
           <h2 class="settings-page-title">Tags</h2>
-          <p class="settings-page-lead">One set of tags for notes and collections. Rename, recolor, merge look-alikes and clear out unused ones.</p>
+          <p class="settings-page-lead">One set of tags for notes and collections. Rename, recolour, merge look-alikes and clear out unused ones.</p>
           <div id="tags-settings-body"></div>
         </section>
 
@@ -1869,7 +1927,7 @@
             <div class="settings-section-title">Find and replace</div>
             <div class="settings-group padded">
               <div id="cleanup-rules"></div>
-              <button id="cleanup-add-rule" type="button">+ Add rule</button>
+              <button id="cleanup-add-rule" type="button">Add rule</button>
             </div>
           </div>
         </section>
@@ -1952,6 +2010,7 @@
 <input id="attach-image-file" type="file" accept="image/*" multiple hidden>
 <div id="toast"></div>
 
+<script src="icons.js"></script>
 <script src="groups-core.js"></script>
 <script src="entities-core.js"></script>
 <script src="snap.js"></script>
@@ -1984,6 +2043,7 @@
   "use strict";
 
   const APP_VERSION = "3.1";
+  window.CPIcon.upgrade(document); // the icons written straight into the page
 
   // ---------- Profiles ----------
   // Each profile is its own IndexedDB database, so notes, folders, tags and
@@ -1993,6 +2053,7 @@
   const PROFILES_KEY = "copypaster-profiles";
   const CURRENT_PROFILE_KEY = "copypaster-current-profile";
   const PROFILE_COLORS = ["#4f8cff", "#3fb27f", "#e0843a", "#b061e6", "#e5484d", "#2bb3c0", "#d9a441", "#7a8599"];
+  // The stored name keeps its first-version spelling on purpose: renaming a database or a saved key would hide people's existing data.
   const profileDbName = (id) => (id === "default" ? "copypaster" : "copypaster-" + id);
   // Per-profile keys for per-device settings that belong to one profile.
   const profileKey = (key) => (currentProfile.id === "default" ? key : key + ":" + currentProfile.id);
@@ -2023,7 +2084,7 @@
   const SWATCH_NAMES = ["Blue", "Green", "Yellow", "Orange", "Red", "Purple", "Teal", "Grey"];
   const EMOJI_OPTIONS = ["🔥","✅","📌","💻","🔑","⚙️","🐞","📊","🎯","📁","⭐","🚀","🧩","🔗","🗂️","📄","💡","⏰","🔒","📝","🚧","✨","📦","🧪"];
   function icon(name, extraClass) {
-    return '<svg class="icon' + (extraClass ? " " + extraClass : "") + '"><use href="#icon-' + name + '"></use></svg>';
+    return window.CPIcon.html(name, extraClass);
   }
   const ITEM_TYPES = ["note", "command", "password"]; // Password items only live in the Vault
   // A note's status (optional). Colors come from the design tokens.
@@ -2055,11 +2116,23 @@
     { key: "sketch", name: "Sketch", hint: "Drawing pad with pens, shapes and text." },
     { key: "voice", name: "Voice notes", hint: "Record voice notes in notes." },
     { key: "commands", name: "Commands", hint: "Terminal commands with {{blanks}} to fill in." },
-    { key: "passwords", name: "Passwords and 2FA", hint: "Logins and 2FA codes, kept in the Vault." }
+    { key: "passwords", name: "Passwords and 2FA", hint: "Logins and 2FA codes, kept in the Vault." },
+    { key: "templates", name: "Template store", hint: "Browse every ready-made collection layout, with previews. The first dozen are always there." }
   ];
+  // Quiet by default: off for a new person, on for anyone who already has some. (Nothing is deleted; switch them on any time.)
+  const QUIET_BY_DEFAULT = {
+    passwords: () => cache.some((i) => i.type === "password" && !i.deletedAt),
+    commands: () => cache.some((i) => i.type === "command" && !i.deletedAt),
+    templates: () => false
+  };
   const ADDONS_KEY = "copypaster-addons";
   function addonOn(key) {
-    try { const m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}"); return m[key] !== false; } catch { return true; }
+    let m = {};
+    try { m = JSON.parse(localStorage.getItem(ADDONS_KEY) || "{}") || {}; } catch {}
+    if (m[key] !== undefined) return m[key] !== false;
+    const quiet = QUIET_BY_DEFAULT[key];
+    if (!quiet) return true;
+    try { return !!quiet(); } catch { return false; }
   }
   function setAddon(key, on) {
     let m = {};
@@ -2756,10 +2829,10 @@
   document.querySelectorAll("[data-glass-pick]").forEach((b) => b.addEventListener("click", () => applyGlass(b.dataset.glassPick)));
   try { applyGlass(localStorage.getItem(GLASS_KEY)); } catch { applyGlass("subtle"); }
 
-  // Background: normal, true black (dark), warm paper (light), or Aurora (found, not shown).
+  // Background: normal, true black (dark), or warm paper (light).
   const SURFACE_KEY = "copypaster-surface";
   function applySurface(value) {
-    const pick = ["black", "paper", "aurora"].includes(value) ? value : "normal";
+    const pick = ["black", "paper"].includes(value) ? value : "normal";
     if (pick === "normal") delete document.documentElement.dataset.surface; else document.documentElement.dataset.surface = pick;
     try { localStorage.setItem(SURFACE_KEY, pick); } catch {}
     document.querySelectorAll("[data-surface-pick]").forEach((b) => {
@@ -2785,10 +2858,7 @@
     { key: "glass", name: "Glass", hint: "Clear and airy", icon: "glass", theme: "system", accent: "cyan", surface: "normal", glass: "strong", bg: "#eef7fb", text: "#17181c", bar: "#06b6d4" },
     { key: "graphite", name: "Graphite", hint: "Quiet, no colour", icon: "mono", theme: "dark", accent: "mono", surface: "normal", glass: "subtle", bg: "#0d0e11", text: "#ececf0", bar: "#9ca3af" },
     { key: "snow", name: "Snow", hint: "Light and plain", icon: "mono-light", theme: "light", accent: "mono", surface: "normal", glass: "off", bg: "#ffffff", text: "#17181c", bar: "#9ca3af" },
-    { key: "aurora", name: "Aurora", hint: "You found it", secret: true, icon: "glass", theme: "dark", accent: "stash", surface: "aurora", glass: "strong", bg: "#0b0b1a", text: "#ececf0", bar: STASH_GRAD }
   ];
-  const LOOK_SECRET_KEY = "copypaster-aurora";
-  function auroraFound() { try { return localStorage.getItem(LOOK_SECRET_KEY) === "1"; } catch { return false; } }
   function currentLook() {
     let st = {};
     try { st = { icon: localStorage.getItem(ICON_STYLE_KEY) || "default", theme: localStorage.getItem(THEME_KEY) || "system", accent: localStorage.getItem(ACCENT_KEY) || "stash", surface: localStorage.getItem(SURFACE_KEY) || "normal" }; } catch {}
@@ -2807,7 +2877,6 @@
     const cur = currentLook();
     box.replaceChildren();
     for (const l of LOOKS) {
-      if (l.secret && !auroraFound()) continue;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "look-opt" + (cur === l.key ? " active" : "");
@@ -3425,6 +3494,7 @@
   function renderNav() {
     const nav = document.getElementById("main-nav");
     nav.innerHTML = "";
+    try { renderMeCards(); } catch {}
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const elsewhere = tlOpen || !!(groupsApi && groupsApi.isActive());
     for (const item of NAV_ITEMS) {
@@ -3479,7 +3549,7 @@
   const DOCK_CHOICES = [
     { key: "chat", label: "Inbox", icon: "inbox" },
     { key: "all", label: "All notes", icon: "note" },
-    { key: "groups", label: "Collections", icon: "layers", needsGroups: true },
+    { key: "groups", label: "Library", icon: "library", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
     { key: "saved", label: "Favorites", icon: "star" },
@@ -3499,11 +3569,11 @@
     const picked = keys.map((k) => DOCK_CHOICES.find((c) => c.key === k))
       .map((c) => (c.needsGroups && !groupsOn ? DOCK_CHOICES.find((x) => x.key === "saved") : c));
     const mid = dockMiddle() === "new" ? { key: "new", label: "New", icon: "plus" } : { key: "snap", label: "Snap", icon: "camera" };
-    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "More", icon: "menu" }];
+    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "Me", icon: "user" }];
   }
-  // The big middle button: Snap (default; hold it for the New menu) or New.
+  // The big middle button: New (default: one sheet for text, photo, scan, drawing) or Snap (one tap to the camera; hold it for the New menu).
   const DOCK_MID_KEY = "copypaster-dock-middle";
-  function dockMiddle() { try { return localStorage.getItem(DOCK_MID_KEY) === "new" ? "new" : "snap"; } catch { return "snap"; } }
+  function dockMiddle() { try { return localStorage.getItem(DOCK_MID_KEY) === "snap" ? "snap" : "new"; } catch { return "new"; } }
   let timelineTab = "search"; // which dock tab opened the Timeline
   function renderDockSettings() {
     const box = document.getElementById("dock-picker");
@@ -3558,6 +3628,26 @@
       if (slot === 1) box.appendChild(midWrap);
     });
   }
+  // One highlight slides from the old tab to the new one. The bar is redrawn on every
+  // change, so the highlight is kept in the page and only the tabs are replaced.
+  function slideTabPill(bar) {
+    let pill = bar.querySelector(".tab-pill");
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "tab-pill";
+      pill.setAttribute("aria-hidden", "true");
+      pill.style.opacity = "0";
+      bar.prepend(pill);
+    }
+    const act = bar.querySelector(".tab-btn.active:not(.plus)");
+    if (!act || !act.offsetWidth) { pill.style.opacity = "0"; return; }
+    const first = pill.style.left === "";
+    if (first) pill.style.transition = "none";
+    pill.style.left = act.offsetLeft + "px";
+    pill.style.width = act.offsetWidth + "px";
+    pill.style.opacity = "1";
+    if (first) { void pill.offsetWidth; pill.style.transition = ""; }
+  }
   function renderTabBar() {
     const bar = document.getElementById("tab-bar");
     document.body.classList.add("has-dock");
@@ -3566,9 +3656,14 @@
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const tabs = dockTabs();
     const chatOpen = !!(chatApi && chatApi.isOpen());
-    const activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
+    let activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
+    // Library covers Collections, Notes (All notes) and Documents.
+    if (!chatOpen && !tlOpen && tabs.some((t) => t.key === "groups") && !tabs.some((t) => t.key === "all") &&
+        (inGroups || (docsApi && docsApi.isOpen()) || currentView === "all")) activeKey = "groups";
+    // Me, while its page is open, owns the highlight.
+    if (isDrawerMode() && sidebarEl.classList.contains("open")) activeKey = "more";
     const onTab = tabs.some((tab) => tab.key === activeKey);
-    bar.innerHTML = "";
+    [...bar.children].forEach((c) => { if (!c.classList.contains("tab-pill")) c.remove(); });
     for (const tab of tabs) {
       const b = document.createElement("button");
       b.type = "button";
@@ -3605,6 +3700,54 @@
       });
       bar.appendChild(b);
     }
+    slideTabPill(bar);
+  }
+
+  // Library: Collections, Notes and Documents are three views of one place. On a
+  // phone each of them shows this bar at the top, to hop between them.
+  function libraryBar(active) {
+    const parts = [["collections", "Collections"], ["notes", "Notes"]];
+    if (window.CPDocs && addonOn("documents")) parts.push(["docs", "Documents"]);
+    const bar = document.createElement("div");
+    bar.className = "library-seg";
+    bar.setAttribute("role", "tablist");
+    bar.setAttribute("aria-label", "Library");
+    for (const [key, label] of parts) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.dataset.lib = key;
+      b.setAttribute("aria-selected", key === active ? "true" : "false");
+      b.className = "library-seg-btn" + (key === active ? " on" : "");
+      b.textContent = label;
+      b.addEventListener("click", () => {
+        if (key === active) return;
+        if (docsApi && docsApi.isOpen()) docsApi.close();
+        if (chatApi && chatApi.isOpen()) chatApi.close();
+        if (key === "collections") { closeTimeline(); groupsApi.showHome(); }
+        else if (key === "notes") { if (groupsApi && groupsApi.isActive()) groupsApi.exit(); switchView("all"); }
+        else openDocuments();
+        renderTabBar();
+      });
+      bar.appendChild(b);
+    }
+    return bar;
+  }
+  // "Sorted for you": things Stash grouped by what they are, one tap to see them.
+  function libraryQuick() {
+    const n = (q) => (timelineApi && timelineApi.count ? timelineApi.count(q) : 0);
+    const out = [
+      { key: "photos", label: "Photos", icon: "image", n: n("type:photo"), run: () => { timelineTab = "search"; openTimeline({ q: "type:photo" }); } },
+      { key: "links", label: "Links", icon: "link", n: n("type:link"), run: () => { timelineTab = "search"; openTimeline({ q: "type:link" }); } },
+      { key: "lists", label: "Checklists", icon: "checklist", n: n("type:checklist"), run: () => { timelineTab = "search"; openTimeline({ q: "type:checklist" }); } }
+    ];
+    if (docsApi && addonOn("documents")) out.push({ key: "docs", label: "Documents", icon: "file", n: allDocuments().length, run: () => openDocuments() });
+    return out;
+  }
+  function renderLibrarySlot() {
+    const slot = document.getElementById("library-seg-slot");
+    if (!slot) return;
+    slot.replaceChildren(...(currentView === "all" ? [libraryBar("notes")] : []));
   }
 
   // Changing views cross-fades the list where the browser supports the
@@ -4795,6 +4938,7 @@
 
   function renderList() {
     document.getElementById("list-title").textContent = currentViewLabel();
+    renderLibrarySlot();
     // The Me chat shows the same items; keep it current (a guess or a location arriving, an edit).
     if (chatApi && chatApi.isOpen()) chatApi.render();
 
@@ -7444,7 +7588,7 @@
     }
     if (!inVault) {
       const here = groupsApi && groupsApi.snapContext();
-      entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
+      entries.push({ key: "snap", label: "Snap", hint: here ? "Saved straight into " + here : "Saved to your Inbox right away; sort it later", icon: "camera", cls: "cm-image", letter: "A", run: () => snapNow() });
     }
     if (!inVault && window.CPScan && addonOn("scanner")) entries.push({ key: "scan", label: "Scan document", hint: "Paper to a clean PDF", icon: "file", cls: "cm-image", letter: "D", run: () => openScanner({ camera: true }) });
     // Switched-off add-ons aren't offered.
@@ -7935,7 +8079,7 @@
   function imageFileName(dataUrl, item, idx) {
     const mime = (dataUrl.match(/^data:([^;,]+)/) || [])[1] || "image/png";
     const ext = { "image/jpeg": "jpg", "image/svg+xml": "svg" }[mime] || mime.split("/")[1] || "png";
-    const base = ((item && item.title) || "copypaster-image").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "-").slice(0, 60) || "copypaster-image";
+    const base = ((item && item.title) || "stash-image").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "-").slice(0, 60) || "stash-image";
     const suffix = item && item.images && item.images.length > 1 ? "-" + (idx + 1) : "";
     return base + suffix + "." + ext;
   }
@@ -8701,10 +8845,13 @@
   function openSidebarDrawer() {
     sidebarEl.classList.add("open");
     document.body.classList.add("sidebar-open");
+    renderTabBar();
   }
   function closeSidebarOnMobile() {
+    const wasOpen = sidebarEl.classList.contains("open");
     sidebarEl.classList.remove("open");
     document.body.classList.remove("sidebar-open");
+    if (wasOpen) renderTabBar();
   }
   document.getElementById("menu-btn").addEventListener("click", () => {
     // On a computer with the sidebar hidden, the same button brings it back.
@@ -8875,8 +9022,7 @@
     const tips = [
       ["Make a list as you type", "- or 1. then space"], ["Heading as you type", "# then space"], ["Tick box as you type", "[] then space"],
       ["Bold / italic / underline", MOD + " B / I / U"], ["/ commands (turn on above)", "/tag /folder /todo /date /time /remind /photo /draw /record /colour /pin /star /ai"],
-      ["Phone: swipe a note", "left for Trash, right to archive"], ["Phone: hold a note", "every action for it"], ["Phone: hold an icon", "its name"],
-      ["A few surprises are hidden", "have fun looking"]
+      ["Phone: swipe a note", "left for Trash, right to archive"], ["Phone: hold a note", "every action for it"], ["Phone: hold an icon", "its name"]
     ];
     const box = document.createElement("div");
     box.className = "settings-group";
@@ -9251,7 +9397,7 @@
           const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
           const a = document.createElement("a");
           a.href = url;
-          a.download = "copypaster-recovery-key.txt";
+          a.download = "stash-recovery-key.txt";
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -9763,8 +9909,20 @@
     [/\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, "a login token"],
     [/\b(?:password|passwd|pwd|passcode|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*\S{6,}/i, "a password"]
   ];
+  // A card number: 13 to 19 digits (spaces or dashes allowed) that pass the Luhn check.
+  function hasCardNumber(text) {
+    for (const m of String(text).matchAll(/\b\d(?:[ -]?\d){12,18}\b/g)) {
+      const digits = m[0].replace(/\D/g, "");
+      if (digits.length < 13 || digits.length > 19 || /^(\d)\1+$/.test(digits)) continue;
+      let sum = 0, dbl = false;
+      for (let i = digits.length - 1; i >= 0; i--) { let d = +digits[i]; if (dbl) { d *= 2; if (d > 9) d -= 9; } sum += d; dbl = !dbl; }
+      if (sum % 10 === 0) return true;
+    }
+    return false;
+  }
   function detectSecret(text) {
     for (const [re, label] of SECRET_PATTERNS) if (re.test(text)) return label;
+    if (hasCardNumber(text)) return "a card number";
     // One long, random-looking word mixing cases and digits: probably a key.
     const t = text.trim();
     if (/\s/.test(t) || t.length < 20 || t.length > 200) return null;
@@ -10093,7 +10251,7 @@
 
   // ---------- Settings → Tags ----------
   // Every tag with how often it's used in notes and in groups. Rename and
-  // recolor (the tag box), merge look-alikes, delete unused ones.
+  // recolour (the tag box), merge look-alikes, delete unused ones.
   const looseKey = (k) => k.replace(/[-_]/g, "").replace(/(es|s)$/, "");
   function tagLookAlikes(list) {
     const out = [];
@@ -10225,7 +10383,51 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
+  // Me (phones): "Back up your Stash" and "App lock is off", shown at the top of the menu.
+  function renderMeCards() {
+    const box = document.getElementById("me-cards");
+    if (!box) return;
+    const make = (cls, iconName, title, sub, label, onClick, id) => {
+      const card = document.createElement("div");
+      card.className = "me-card " + cls;
+      card.id = id;
+      card.innerHTML = '<span class="me-card-ic">' + icon(iconName) + '</span><span class="me-card-text"><b></b><small></small></span>';
+      card.querySelector("b").textContent = title;
+      card.querySelector("small").textContent = sub;
+      const go = document.createElement("button");
+      go.type = "button"; go.className = "me-go"; go.textContent = label;
+      go.addEventListener("click", onClick);
+      card.appendChild(go);
+      return card;
+    };
+    const last = readNum(LAST_BACKUP_KEY);
+    const cards = [make("soft", "cloud", "Back up your Stash", last ? "Last backup " + daysAgoText(last) : "No backup yet. Browsers can clear saved data.", "Back up", () => document.getElementById("export-btn").click(), "me-backup")];
+    if (!(window.CPLock && window.CPLock.on())) {
+      cards.push(make("", "lock-open", "App lock is off", "A PIN or Face ID hides Stash. The Vault is what encrypts.", "Turn on", () => openSettings("lock"), "me-lock"));
+    }
+    box.replaceChildren(...cards);
+    const rowsBox = document.getElementById("me-rows");
+    if (rowsBox) {
+      const rows = [
+        ["palette", "Look", "Theme, colour, text size, motion", "appearance"],
+        ["database", "Your data", "Back up, restore, import, sync to Drive", "data"],
+        ["vault", "Privacy and Vault", "App lock, the encrypted Vault", "lock"],
+        ["grid", "Add-ons", "Switch features on or off", "addons"],
+        ["info", "Help and about", "Shortcuts, privacy page, version", "about"]
+      ].map(([ic, name, hint, page]) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "me-row"; b.dataset.page = page;
+        b.innerHTML = '<span class="me-card-ic">' + icon(ic) + '</span><span class="me-card-text"><b></b><small></small></span><span class="me-chev">' + icon("chevron-right") + "</span>";
+        b.querySelector("b").textContent = name;
+        b.querySelector("small").textContent = hint;
+        b.addEventListener("click", () => openSettings(page));
+        return b;
+      });
+      rowsBox.replaceChildren(...rows);
+    }
+  }
   function renderBackupInfo() {
+    renderMeCards();
     const el = document.getElementById("last-backup");
     const last = readNum(LAST_BACKUP_KEY);
     if (el) el.textContent = last ? "Last backup " + daysAgoText(last) + " (" + new Date(last).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + "). Vault items stay encrypted." : "Never backed up on this device. Download a .cps file with everything, Vault items still encrypted.";
@@ -10678,38 +10880,12 @@
     cb.addEventListener("change", () => { window.CPSlash.set(cb.checked); showToast(cb.checked ? "Type / in a note or the Inbox for quick commands" : "\"/\" commands off"); });
   })();
 
-  // ---------- Small surprises ----------
-  (function () {
-    const E = window.CPEggs;
-    if (!E) return;
-    // Aurora: tap the logo seven times, or the old ↑↑↓↓←→←→BA.
-    const aurora = () => {
-      const first = !auroraFound();
-      try { localStorage.setItem(LOOK_SECRET_KEY, "1"); } catch {}
-      E.confetti();
-      applyLook("aurora", true);
-      showToast(first ? "You found Aurora. It lives in Settings \u2192 Appearance \u2192 Looks now." : "Aurora");
-    };
-    E.taps(document.getElementById("brand-dot"), 7, aurora);
-    E.konami(aurora);
-    // "do a barrel roll" in search.
-    document.getElementById("search-input").addEventListener("input", (e) => { if (/^do a barrel roll$/i.test(e.target.value.trim())) E.roll(document.getElementById("items")); });
-    // New year's day: a little hello, once a year.
-    const d = new Date(), y = String(d.getFullYear());
-    try {
-      if (d.getMonth() === 0 && d.getDate() === 1 && localStorage.getItem("copypaster-newyear") !== y) {
-        localStorage.setItem("copypaster-newyear", y);
-        setTimeout(() => { E.confetti(); showToast("Happy new year from Stash"); }, 1200);
-      }
-    } catch {}
-  })();
-  // The 100th thing you save gets a little celebration (once).
+  // The 100th thing you save gets a small thank-you (once).
   function milestone() {
     try {
       if (localStorage.getItem(profileKey("copypaster-100")) || cache.filter((i) => !i.deletedAt).length < 100) return;
       localStorage.setItem(profileKey("copypaster-100"), "1");
     } catch { return; }
-    if (window.CPEggs) window.CPEggs.confetti();
     showToast("That's 100 things in your Stash.");
   }
 
@@ -10955,7 +11131,7 @@
 
   function startDocs() {
     if (!window.CPDocs) return;
-    docsApi = window.CPDocs.init({ icon, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav(),
+    docsApi = window.CPDocs.init({ icon, libraryBar, documents: allDocuments, openFile: openFileOutside, onClose: () => renderNav(),
       scan: window.CPScan && addonOn("scanner") ? () => openScanner() : null,
       sign: window.CPScan ? (f) => signPdf(f) : null });
   }
@@ -10963,6 +11139,7 @@
     if (!docsApi) return;
     closeSidebarOnMobile();
     docsApi.open();
+    renderTabBar();
   }
 
   function startChat() {
@@ -10970,6 +11147,8 @@
     try {
       chatApi = window.CPChat.init({
         icon,
+        secretOf: (n) => detectSecret([n.title, n.content].filter(Boolean).join("\n")),
+        toVault: async (n) => { await moveToVault(n); if (chatApi) chatApi.render(); },
         items: () => cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted && !i._locked).sort((a, b) => a.createdAt - b.createdAt),
         addText: async (text, pick) => {
           const item = await chatAdd({ content: text, pick: pick && (pick.dest.length || pick.tags.length) ? pick : null });
@@ -11168,7 +11347,7 @@
     if (!window.CPGroups) return;
     try {
       groupsApi = await window.CPGroups.init({
-        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn,
+        getAll, put, remove, profileKey, showToast, openDialog, motionOK, snapLocationOn, libraryBar, libraryQuick, addonOn,
         capturedNotes: () => cache.filter((i) => i.captured && !i.deletedAt && !i._locked && !i.vaulted).sort((a, b) => b.createdAt - a.createdAt),
         closeSidebarOnMobile, openSidebarDrawer, renderTabBar, renderAllViews, closeSettings,
         tags: tagsWithCounts, ensureTag, tagLabel, openTag, renderNav,
