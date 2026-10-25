@@ -1394,7 +1394,7 @@
     /* Me: on a phone the menu is a page that fades up above the dock, not a
        drawer with a dark layer behind it (that layer could get stuck on screen). */
     #sidebar {
-      width: 100% !important; right: 0; bottom: calc(84px + env(safe-area-inset-bottom)); border-radius: 0; box-shadow: none;
+      width: 100% !important; right: 0; bottom: 0; padding-bottom: calc(96px + env(safe-area-inset-bottom)); box-sizing: border-box; border-radius: 0; box-shadow: none;
       transform: translateY(14px); opacity: 0; visibility: hidden;
       transition: transform var(--t-slow) var(--ease), opacity var(--t-med) ease, visibility 0s linear var(--t-slow);
     }
@@ -1403,6 +1403,8 @@
     #sidebar { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     #sidebar-scroll { flex: 0 0 auto; overflow: visible; min-height: auto; }
     #sidebar > * { flex-shrink: 0; }
+    /* The page fills the screen, so the see-through tab bar sits on top of it instead of showing what is behind. */
+    body.sidebar-open #tab-bar { z-index: calc(var(--z-drawer) + 1); }
     #sidebar-backdrop, body.sidebar-open #sidebar-backdrop { display: none !important; }
     #list-pane { width: 100%; min-width: 0; border-right: none; }
     #detail-pane { position: absolute; inset: 0; z-index: 20; display: none; }
