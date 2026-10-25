@@ -604,7 +604,7 @@ test("@fzv3 on a snap picks that vehicle's page when sorting", async ({ page }) 
 });
 
 test("Stash colors are the default; someone who had the old default blue gets Stash, someone who picked a color keeps it", async ({ page }) => {
-  expect(await page.evaluate(() => [document.documentElement.dataset.accent, getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()])).toEqual(["stash", "#7b61ff"]);
+  expect(await page.evaluate(() => [document.documentElement.dataset.accent, getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()])).toEqual(["stash", "#745af7"]);
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent-grad"))).toContain("#27d5ff");
   // Old default saved without a choice → Stash.
   await page.evaluate(() => { localStorage.setItem("copypaster-accent", "blue"); localStorage.removeItem("copypaster-accent-picked"); });

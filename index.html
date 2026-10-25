@@ -78,7 +78,7 @@
     --line: rgba(255, 255, 255, 0.07);
     --line-strong: rgba(255, 255, 255, 0.12);
     --text: #ececf0; --text-2: #a3a6b0; --text-3: #868a96; /* all at least 4.5:1 on --bg (WCAG AA) */
-    --accent: #4c8dff; --accent-hover: #6aa0ff; --accent-text: #ffffff;
+    --accent: #4c8dff; --accent-hover: #6aa0ff; --accent-text: #ffffff; --accent-ink: color-mix(in srgb, var(--accent) 72%, white); /* the accent as text on a dark page */
     --accent-grad: linear-gradient(145deg, #5b9bff, #6a6cff); --accent-glow: rgba(76, 110, 255, 0.65);
     --accent-soft: rgba(76, 141, 255, 0.14); --accent-ring: rgba(76, 141, 255, 0.35);
     --danger: #ff5f57; --danger-soft: rgba(255, 95, 87, 0.12);
@@ -107,7 +107,7 @@
     --line: rgba(20, 20, 30, 0.08);
     --line-strong: rgba(20, 20, 30, 0.14);
     --text: #17181c; --text-2: #5c5f68; --text-3: #676a73;
-    --accent: #0a6cff; --accent-hover: #2a80ff; --accent-text: #ffffff;
+    --accent: #0a6cff; --accent-hover: #2a80ff; --accent-text: #ffffff; --accent-ink: var(--accent);
     --accent-soft: rgba(10, 108, 255, 0.09); --accent-ring: rgba(10, 108, 255, 0.28);
     --danger: #e5352b; --danger-soft: rgba(229, 53, 43, 0.08);
     --success: #12a150; --warning: #c98a0c;
@@ -165,9 +165,37 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
-  /* Me (phones): a backup card and an App lock card at the top. */
-  #me-cards, #me-rows { display: none; }
+  /* Phones: every tap target is at least 44 px, and rows give a small press-down so taps feel answered. */
   @media (max-width: 720px) {
+    .icon-btn, #view-mode-btn, #select-mode-btn, #sidebar-collapse-btn { min-width: 44px; min-height: 44px; }
+    .library-seg-btn, .library-filter-btn, .library-filter-clear, .tl-when-chip, .tl-filter-btn, .row-icon-btn { min-height: 44px; }
+    .row-icon-btn { min-width: 44px; }
+    .gp-home .btn.primary { min-height: 44px; }
+  }
+  @media (hover: none) and (prefers-reduced-motion: no-preference) {
+    .item-row, .cx-msg, .library-quick-chip, .library-seg-btn, .library-filter-btn, .me-row, .me-card, .tl-when-chip, .nav-item, .settings-nav-item { transition: transform 120ms ease, background-color 120ms ease; }
+    .cx-msg:active, .library-quick-chip:active, .me-card:active { transform: scale(0.985); }
+    .item-row:active, .me-row:active, .nav-item:active, .settings-nav-item:active { transform: scale(0.985); background-color: var(--surface-2); }
+    .library-seg-btn:active, .library-filter-btn:active, .tl-when-chip:active { transform: scale(0.96); }
+  }
+  /* Me (phones): a backup card and an App lock card at the top. */
+  #me-cards, #me-rows, #me-head { display: none; }
+  @media (max-width: 720px) {
+    /* The Me page is short: a header with ⋯, the profile, two cards and three rows. The older menu is not shown on phones. */
+    #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-scroll, #sidebar #sidebar-footer { display: none; }
+    #me-head { display: flex; align-items: center; justify-content: space-between; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
+    #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
+    #me-more { width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+    #me-more:hover { background: var(--surface-2); }
+    #me-more .icon { font-size: 24px; }
+    #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
+    #me-cards { order: 2; }
+    #me-rows { order: 3; }
+    #me-menu-overlay { position: fixed; inset: 0; z-index: var(--z-palette); background: var(--scrim); animation: fadeIn var(--t-fast) ease; }
+    #me-menu { position: absolute; top: calc(56px + env(safe-area-inset-top)); right: var(--s-3); width: min(260px, calc(100vw - 2 * var(--s-3))); background: var(--elevated); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: var(--s-1); display: flex; flex-direction: column; transform-origin: 100% 0; animation: popIn var(--t-med) var(--ease); }
+    #me-menu button { display: flex; align-items: center; gap: var(--s-3); min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-md); text-align: left; cursor: pointer; }
+    #me-menu button:hover, #me-menu button:focus-visible { background: var(--surface-2); }
+    #me-menu .icon { color: var(--text-2); font-size: 22px; }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -177,20 +205,24 @@
     .me-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .me-card-text b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
     .me-card-text small { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
-    .me-card button.me-go { min-height: 40px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
+    .me-card button.me-go { min-height: 44px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
     #me-rows { display: block; margin: 0 var(--s-2) var(--s-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
     .me-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-2) var(--s-3); border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
     .me-row + .me-row { border-top: 1px solid var(--line); }
     .me-row .me-card-ic { width: 36px; height: 36px; }
     .me-row .me-chev { color: var(--text-3); }
-    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent); }
+    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent-ink, var(--accent)); }
   }
 
   /* Library: Collections | Notes | Documents (phones only). */
-  .library-seg { display: none; }
+  .library-seg, .library-filter-row { display: none; }
   @media (max-width: 720px) {
     .library-seg { width: 100%; flex: 0 0 auto; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 0 var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
     .library-seg-btn { min-height: 36px; border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; transition: background var(--t-med) var(--ease), color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+    .library-filter-row { display: flex; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-3); }
+    .library-filter-btn { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 36px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-md); cursor: pointer; }
+    .library-filter-btn.on { background: var(--accent-soft, var(--surface-2)); border-color: transparent; color: var(--accent); font-weight: var(--fw-semibold); }
+    .library-filter-clear { min-height: 36px; padding: 0 var(--s-2); border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); cursor: pointer; }
     .library-quick { width: 100%; flex: 0 0 auto; box-sizing: border-box; margin: 0 0 var(--s-3); }
     .docs-pane .library-seg { width: calc(100% - 2 * var(--s-4)); margin: 0 var(--s-4) var(--s-3); }
     .library-quick-title { margin: 0 var(--s-1) var(--s-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
@@ -304,11 +336,6 @@
   select { cursor: pointer; }
   input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; margin: 0; }
 
-  /* Toggle switch */
-  .switch { width: 36px; height: 22px; border-radius: var(--r-full); background: var(--surface-3); position: relative; cursor: pointer; transition: background var(--t-med) var(--ease); flex-shrink: 0; }
-  .switch.on { background: var(--accent); }
-  .switch-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform var(--t-med) var(--ease); }
-  .switch.on .switch-knob { transform: translateX(14px); }
 
   /* Chips (filters, properties, tags) */
   .chip {
@@ -359,7 +386,7 @@
   .profile-avatar {
     width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; display: inline-flex;
     align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: var(--fw-bold); color: #fff;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+    background-image: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
   }
 
   #sidebar-search {
@@ -654,7 +681,7 @@
   #empty-state .empty-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
     background: var(--accent); color: var(--accent-text); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
   #empty-state .empty-steps b { color: var(--text); display: block; }
-  #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
+  #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent-ink, var(--accent)); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
   #empty-state .empty-second:hover { background: var(--surface-2); }
   #empty-state .empty-second .icon { width: 16px; height: 16px; font-size: 16px; }
 
@@ -959,7 +986,6 @@
     position: absolute; background: var(--elevated); border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
     padding: 6px; z-index: 70; width: 240px; animation: popIn var(--t-med) var(--ease); transform-origin: top;
   }
-  .popover.has-close { padding-top: 32px; }
   .popover.with-head { padding: 10px; width: 290px; }
   .popover .color-input { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; padding: 0; border: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
   .popover .color-input::-webkit-color-swatch-wrapper { padding: 0; }
@@ -976,7 +1002,6 @@
     animation: sheet-up var(--t-slow) var(--ease); transition: bottom var(--t-fast) ease;
   }
   .popover.as-sheet::before { content: ""; display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--line-strong); margin: 4px auto 10px; }
-  .popover.as-sheet.has-close { padding-top: 6px; }
   .popover.as-sheet .pop-title { font-size: var(--fs-xl); }
   .popover.as-sheet .popover-input { height: 44px; }
   .popover.as-sheet .popover-list { max-height: none; }
@@ -1019,7 +1044,6 @@
   .emoji-opt:hover { background: var(--surface-2); }
   .emoji-opt.selected { border-color: var(--accent); background: var(--accent-soft); }
   .context-menu .popover-list-item { min-height: 30px; font-size: var(--fs-md); }
-  .menu-sep { height: 1px; background: var(--line); margin: 4px 6px; }
 
   /* Action sheet (phones) */
   #action-sheet-overlay { position: fixed; inset: 0; z-index: var(--z-sheet); background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn var(--t-med) ease; }
@@ -1058,7 +1082,7 @@
   .cm-note { color: var(--note); background: var(--note-soft); }
   .cm-command { color: var(--command); background: var(--command-soft); }
   .cm-password { color: var(--password); background: var(--password-soft); }
-  .cm-paste, .cm-link { color: var(--link); background: var(--link-soft); }
+  .cm-paste { color: var(--link); background: var(--link-soft); }
   .cm-image { color: var(--image); background: var(--image-soft); }
   .cm-folder { color: var(--text-2); background: var(--surface-3); }
   #new-menu-overlay { position: fixed; inset: 0; z-index: var(--z-palette); background: var(--scrim); display: flex; align-items: flex-start; justify-content: center; padding: 14vh var(--s-4) var(--s-4); animation: fadeIn var(--t-fast) ease; }
@@ -1259,7 +1283,6 @@
   .settings-line small { color: var(--text-3); font-size: var(--fs-xs); }
   .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px var(--s-4); font-size: var(--fs-md); }
   .settings-row-actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
-  .settings-subtitle { font-weight: var(--fw-semibold); font-size: var(--fs-md); }
   .settings-hint { font-size: var(--fs-sm); color: var(--text-2); line-height: var(--lh); }
   #sync-box .settings-group.padded { display: flex; flex-direction: column; gap: var(--s-2); }
   .sync-label { font-weight: 600; font-size: var(--fs-sm); margin-top: var(--s-2); }
@@ -1282,7 +1305,6 @@
   .settings-check input[type="checkbox"]:checked { background: var(--accent); }
   .settings-check input[type="checkbox"]:checked::after { transform: translateX(14px); }
   .settings-check input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .settings-danger-zone { border-color: var(--danger-soft); }
   .settings-select-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--fs-md); min-height: 44px; }
   .settings-select-row select { height: var(--h-md); }
   #settings-footer { font-size: var(--fs-xs); color: var(--text-3); padding: 0 var(--s-1); }
@@ -1394,7 +1416,7 @@
     /* Me: on a phone the menu is a page that fades up above the dock, not a
        drawer with a dark layer behind it (that layer could get stuck on screen). */
     #sidebar {
-      width: 100% !important; right: 0; bottom: calc(84px + env(safe-area-inset-bottom)); border-radius: 0; box-shadow: none;
+      width: 100% !important; right: 0; bottom: 0; padding-bottom: calc(96px + env(safe-area-inset-bottom)); box-sizing: border-box; border-radius: 0; box-shadow: none;
       transform: translateY(14px); opacity: 0; visibility: hidden;
       transition: transform var(--t-slow) var(--ease), opacity var(--t-med) ease, visibility 0s linear var(--t-slow);
     }
@@ -1403,6 +1425,8 @@
     #sidebar { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     #sidebar-scroll { flex: 0 0 auto; overflow: visible; min-height: auto; }
     #sidebar > * { flex-shrink: 0; }
+    /* The page fills the screen, so the see-through tab bar sits on top of it instead of showing what is behind. */
+    body.sidebar-open #tab-bar { z-index: calc(var(--z-drawer) + 1); }
     #sidebar-backdrop, body.sidebar-open #sidebar-backdrop { display: none !important; }
     #list-pane { width: 100%; min-width: 0; border-right: none; }
     #detail-pane { position: absolute; inset: 0; z-index: 20; display: none; }
@@ -1449,7 +1473,7 @@
       transition: color var(--t-fast), transform var(--t-fast);
     }
     .tab-btn .icon { width: 23px; height: 23px; font-size: 23px; }
-    .tab-btn.active { color: var(--accent); }
+    .tab-btn.active { color: var(--accent-ink, var(--accent)); }
     .tab-btn:active { transform: scale(0.94); }
     body.select-mode #tab-bar { display: none; }
     #bulk-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 16; margin: 0 8px calc(8px + env(safe-area-inset-bottom)); padding-bottom: 10px; }
@@ -1542,157 +1566,7 @@
 <svg style="display:none" aria-hidden="true">
   <defs>
     <g id="icon-stroke-defaults" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></g>
-
-    <symbol id="icon-clip" viewBox="0 0 24 24">
-      <path d="M8 11.5V6a3 3 0 116 0v10a4 4 0 01-8 0V8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-snippet" viewBox="0 0 24 24">
-      <path d="M9 7l-4 5 4 5M15 7l4 5-4 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-note" viewBox="0 0 24 24">
-      <rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-command" viewBox="0 0 24 24">
-      <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M7 9l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M13 15h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-    </symbol>
-
-    <symbol id="icon-grid" viewBox="0 0 24 24">
-      <rect x="3" y="3" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <rect x="14" y="3" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <rect x="3" y="14" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <rect x="14" y="14" width="7" height="7" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-    </symbol>
-    <symbol id="icon-star" viewBox="0 0 24 24">
-      <path d="M12 2.5l3.1 6.3 6.9 1-5 4.9 1.2 6.9-6.2-3.3-6.2 3.3 1.2-6.9-5-4.9 6.9-1z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-    </symbol>
-    <symbol id="icon-clock" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M12 7v5l4 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-pin" viewBox="0 0 24 24">
-      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M12 12v9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-archive" viewBox="0 0 24 24">
-      <path d="M3 8l2-5h14l2 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="3" y="8" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M9.5 13h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-key" viewBox="0 0 24 24">
-      <circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-user" viewBox="0 0 24 24">
-      <circle cx="12" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M4.5 20c.8-3.6 3.8-5.8 7.5-5.8s6.7 2.2 7.5 5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-vault" viewBox="0 0 24 24">
-      <path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6L12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-      <rect x="9" y="11" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/>
-      <path d="M10.3 11V9.6a1.7 1.7 0 0 1 3.4 0V11" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </symbol>
-    <symbol id="icon-zoom-in" viewBox="0 0 24 24">
-      <path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM20 20l-4.8-4.8M10.5 7.8v5.4M7.8 10.5h5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-zoom-out" viewBox="0 0 24 24">
-      <path d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM20 20l-4.8-4.8M7.8 10.5h5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-close" viewBox="0 0 24 24">
-      <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-download" viewBox="0 0 24 24">
-      <path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-trash" viewBox="0 0 24 24">
-      <path d="M4 7h16M9 7V4.5A1 1 0 0110 3.5h4a1 1 0 011 1V7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M6.5 7l1 12.5A2 2 0 009.5 21.5h5a2 2 0 002-2L17.5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-folder" viewBox="0 0 24 24">
-      <path d="M4 6.5A1.5 1.5 0 015.5 5H10l2 2h6.5A1.5 1.5 0 0120 8.5v9A1.5 1.5 0 0118.5 19h-13A1.5 1.5 0 014 17.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-    </symbol>
-
-    <symbol id="icon-copy" viewBox="0 0 24 24">
-      <rect x="4" y="4" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M9 20h9a2 2 0 002-2V9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-lock-closed" viewBox="0 0 24 24">
-      <rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M8 11V7a4 4 0 018 0v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-lock-open" viewBox="0 0 24 24">
-      <rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M8 11V7a4 4 0 017.4-2.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-fullscreen-enter" viewBox="0 0 24 24">
-      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-fullscreen-exit" viewBox="0 0 24 24">
-      <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-check-box" viewBox="0 0 24 24">
-      <rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M8 12.5l2.8 2.8L16.5 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-tag" viewBox="0 0 24 24">
-      <path d="M11.5 4H6a2 2 0 00-2 2v5.5a2 2 0 00.6 1.4l9 9a2 2 0 002.8 0l5.5-5.5a2 2 0 000-2.8l-9-9a2 2 0 00-1.4-.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-      <circle cx="8" cy="9" r="1.3" fill="currentColor" stroke="none"/>
-    </symbol>
-    <symbol id="icon-paste" viewBox="0 0 24 24">
-      <rect x="5" y="5" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-      <path d="M9 5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 01-1 1h-4a1 1 0 01-1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-unread" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="5" fill="currentColor"/>
-    </symbol>
-    <symbol id="icon-mail" viewBox="0 0 24 24">
-      <rect x="3" y="5.5" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M3.5 7l8.5 6 8.5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-check-all" viewBox="0 0 24 24">
-      <path d="M2.5 12.5l4.5 4.5L16 8M11 16.5l.5.5L21 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-check" viewBox="0 0 24 24">
-      <path d="M5 12.5l5 5L19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></g></symbol>
-    <symbol id="icon-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></g></symbol>
-    <symbol id="icon-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3.1 14H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 20.9 10H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></symbol>
-    <symbol id="icon-chevron-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></g></symbol>
-    <symbol id="icon-chevron-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></g></symbol>
-    <symbol id="icon-chevron-left" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></g></symbol>
-    <symbol id="icon-sidebar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></g></symbol>
-    <symbol id="icon-panel-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></g></symbol>
-    <symbol id="icon-monitor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></g></symbol>
-    <symbol id="icon-menu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></g></symbol>
-    <symbol id="icon-more" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="18.5" cy="12" r="1.1" fill="currentColor"/></g></symbol>
-    <symbol id="icon-undo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></g></symbol>
-    <symbol id="icon-redo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></g></symbol>
-    <symbol id="icon-sparkle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></g></symbol>
-    <symbol id="icon-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></g></symbol>
-    <symbol id="icon-timer" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></g></symbol>
-    <symbol id="icon-image" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></g></symbol>
-    <symbol id="icon-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></g></symbol>
-    <symbol id="icon-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></g></symbol>
-    <symbol id="icon-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></g></symbol>
-    <symbol id="icon-palette" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/><circle cx="14.5" cy="7" r="1" fill="currentColor"/></g></symbol>
-    <symbol id="icon-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g></symbol>
-    <symbol id="icon-keyboard" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7 14h10"/></g></symbol>
-    <symbol id="icon-cloud" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.7 4.7 0 0 0 7 18.5z"/></symbol>
-    <symbol id="icon-database" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></g></symbol>
-    <symbol id="icon-wand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 10V8M11 6h2M17 6h2M18.5 3.5l-1 1M4 20l10-10"/><path d="M13 11l-1.5-1.5"/></g></symbol>
-    <symbol id="icon-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.6-3.3 3.2-5.3 6.5-5.3s5.9 2 6.5 5.3M16 5.2a3.3 3.3 0 0 1 0 6.6M18 14.9c1.9.6 3.2 2.3 3.5 5.1"/></g></symbol>
-    <symbol id="icon-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M7 13.5l5-5 5 5M5 4.5h14"/></g></symbol>
     <symbol id="icon-logo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-16 12 8)"><path d="M8.6 12.2V4.4a1.2 1.2 0 0 1 1.2-1.2h4.6a1.2 1.2 0 0 1 1.2 1.2v7.8"/><path d="M10.6 6.2h2.6"/></g><path d="M2.8 12.2h18.4"/><path d="M4.2 12.2l.9 6.6a2 2 0 0 0 2 1.7h9.8a2 2 0 0 0 2-1.7l.9-6.6"/><path d="M9.6 15.6h4.8"/></g></symbol>
-    <symbol id="icon-folder-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A1.5 1.5 0 015.5 5H10l2 2h6.5A1.5 1.5 0 0120 8.5v9A1.5 1.5 0 0118.5 19h-13A1.5 1.5 0 014 17.5z"/><path d="M12 10.5v5M9.5 13h5"/></g></symbol>
-    <symbol id="icon-hash" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h15M4 15h15M10 3.5L8 20.5M16 3.5l-2 17"/></g></symbol>
-    <symbol id="icon-shield-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6L12 3z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/></g></symbol>
-    <symbol id="icon-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></g></symbol>
-    <symbol id="icon-command-key" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V6.5A2.5 2.5 0 1 0 6.5 9H9zm0 0h6m-6 0v6m6-6V6.5A2.5 2.5 0 1 1 17.5 9H15zm0 0v6m0 0h-6m6 0v2.5a2.5 2.5 0 1 0 2.5-2.5H15zm-6 0v2.5A2.5 2.5 0 1 1 6.5 15H9z"/></g></symbol>
   </defs>
 </svg>
 
@@ -1703,6 +1577,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
+    <div id="me-head"><h1>Me</h1><button id="me-more" type="button" aria-label="More" aria-haspopup="menu"><svg class="icon icon-lg"><use href="#icon-more"></use></svg></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
@@ -1799,26 +1674,27 @@
     </div>
     <div id="settings-layout">
       <div id="settings-nav" role="tablist" aria-label="Settings sections">
+        <div class="settings-nav-label">Look</div>
         <div class="settings-nav-group">
           <button class="settings-nav-item" data-page="appearance"><span class="sn-icon" style="background:#5b8cff"><svg class="icon"><use href="#icon-palette"></use></svg></span>Appearance<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         </div>
-        <div class="settings-nav-label">Your things</div>
+        <div class="settings-nav-label">Your data</div>
         <div class="settings-nav-group">
           <button class="settings-nav-item" data-page="data"><span class="sn-icon" style="background:#f59e0b"><svg class="icon"><use href="#icon-database"></use></svg></span>Your data<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
           <button class="settings-nav-item" data-page="sync"><span class="sn-icon" style="background:#0ea5e9"><svg class="icon"><use href="#icon-cloud"></use></svg></span>Sync<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
           <button class="settings-nav-item" data-page="profiles"><span class="sn-icon" style="background:#34c759"><svg class="icon"><use href="#icon-users"></use></svg></span>Profiles<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
+          <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         </div>
         <div class="settings-nav-label">Privacy</div>
         <div class="settings-nav-group">
           <button class="settings-nav-item" data-page="vault"><span class="sn-icon" style="background:#14b8a6"><svg class="icon"><use href="#icon-vault"></use></svg></span>Vault<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
           <button class="settings-nav-item" data-page="lock"><span class="sn-icon" style="background:#64748b"><svg class="icon"><use href="#icon-lock-closed"></use></svg></span>App lock<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         </div>
-        <div class="settings-nav-label">Organising</div>
+        <div class="settings-nav-label">Library</div>
         <div class="settings-nav-group">
           <button class="settings-nav-item" data-page="groups"><span class="sn-icon" style="background:#8b5cf6"><svg class="icon"><use href="#icon-layers"></use></svg></span>Collections<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
           <button class="settings-nav-item" data-page="tags"><span class="sn-icon" style="background:#ec4899"><svg class="icon"><use href="#icon-tag"></use></svg></span>Tags<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
           <button class="settings-nav-item" data-page="learning"><span class="sn-icon" style="background:#7b61ff"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Your words<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
-          <button class="settings-nav-item" data-page="cleanup"><span class="sn-icon" style="background:#a78bfa"><svg class="icon"><use href="#icon-sparkle"></use></svg></span>Paste clean-up<span class="sn-chevron"><svg class="icon"><use href="#icon-chevron-right"></use></svg></span></button>
         </div>
         <div class="settings-nav-label">More</div>
         <div class="settings-nav-group">
@@ -1936,8 +1812,8 @@
           <h2 class="settings-page-title">Your data</h2>
           <p class="settings-page-lead">Everything is saved only in this browser, on this device. Export now and then to keep a backup file.</p>
           <div class="settings-group">
-            <div class="settings-line"><span>Back up<small id="last-backup">Download a .cps file with everything, Vault items still encrypted.</small></span><button id="export-btn" class="btn"><svg class="icon"><use href="#icon-download"></use></svg>Export</button></div>
-            <div class="settings-line"><span>Restore<small>Add items from a .cps backup. Nothing is overwritten.</small></span><button id="import-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Import</button></div>
+            <div class="settings-line"><span>Back up<small id="last-backup">Saves one .cps file with everything. Vault items stay encrypted.</small></span><button id="export-btn" class="btn"><svg class="icon"><use href="#icon-download"></use></svg>Save backup file</button></div>
+            <div class="settings-line"><span>Restore<small>Add items from a .cps backup file. Nothing is overwritten.</small></span><button id="import-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Restore from file</button></div>
             <div class="settings-line"><span>Bring in from other apps<small>Google Keep (Takeout), a WhatsApp chat export, text or Markdown files, or a batch of photos and PDFs. Read on this device.</small></span><button id="import-apps-btn" class="btn"><svg class="icon"><use href="#icon-upload"></use></svg>Choose files</button></div>
             <label class="settings-line"><span>Location on snaps<small>Saves where a snap was taken, on this device only. It's added after the photo is saved and never holds it up.</small></span><input type="checkbox" id="snap-location"></label>
             <label class="settings-line"><span>Guess what a snap shows<small>Works it out on this device: the photo never leaves your phone. The first time, a small model (about 7 MB) is downloaded and kept. The guess is only a suggestion.</small></span><input type="checkbox" id="snap-see"></label>
@@ -2697,7 +2573,7 @@
   // "stash" is the brand look: violet buttons, the blue → violet → pink → peach gradient.
   const STASH_GRAD = "linear-gradient(135deg, #27d5ff 0%, #7b61ff 38%, #ff5db8 72%, #ffb36b 100%)";
   const ACCENT_PICKED_KEY = "copypaster-accent-picked";
-  const ACCENTS = [["stash", "Stash", "#7b61ff"], ["blue", "Blue", "#4c8dff"], ["indigo", "Indigo", "#6366f1"], ["violet", "Violet", "#8b5cf6"], ["pink", "Pink", "#ec4899"],
+  const ACCENTS = [["stash", "Stash", "#745af7"], ["blue", "Blue", "#4c8dff"], ["indigo", "Indigo", "#6366f1"], ["violet", "Violet", "#8b5cf6"], ["pink", "Pink", "#ec4899"],
     ["red", "Red", "#ef4444"], ["orange", "Orange", "#f97316"], ["amber", "Amber", "#f59e0b"], ["lime", "Lime", "#84cc16"], ["green", "Green", "#16a34a"],
     ["teal", "Teal", "#0d9488"], ["cyan", "Cyan", "#06b6d4"], ["mono", "Graphite", "#9ca3af"]];
   const ACCENT_PROPS = ["--accent", "--accent-hover", "--accent-text", "--accent-soft", "--accent-ring", "--primary-shadow", "--accent-grad", "--accent-glow"];
@@ -3050,6 +2926,23 @@
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   function motionOK() { return !reducedMotionQuery.matches; }
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // A filed note shrinks toward the Library tab, so you see where it went.
+  function flyToLibrary(ghosts) {
+    const tab = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
+    if (!ghosts.length || !tab || !motionOK() || !document.body.animate) return;
+    const t = tab.getBoundingClientRect();
+    ghosts.forEach((g, i) => {
+      const n = g.node;
+      Object.assign(n.style, { position: "fixed", left: g.box.left + "px", top: g.box.top + "px", width: g.box.width + "px", margin: "0", zIndex: "9999", pointerEvents: "none", transformOrigin: "50% 50%" });
+      document.body.appendChild(n);
+      const dx = t.left + t.width / 2 - (g.box.left + g.box.width / 2), dy = t.top + t.height / 2 - (g.box.top + g.box.height / 2);
+      const a = n.animate([{ transform: "none", opacity: 1 }, { transform: "translate(" + dx + "px," + dy + "px) scale(.08)", opacity: 0.2 }],
+        { duration: 480, delay: i * 70, easing: "cubic-bezier(.5,0,.8,.4)", fill: "both" });
+      a.onfinish = a.oncancel = () => n.remove();
+    });
+    tab.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 260, delay: 420, easing: "ease-out" });
+  }
 
   // Slides a list row out before the list re-renders without it.
   async function animateRowOut(id) {
@@ -3659,7 +3552,7 @@
     let activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
     // Library covers Collections, Notes (All notes) and Documents.
     if (!chatOpen && !tlOpen && tabs.some((t) => t.key === "groups") && !tabs.some((t) => t.key === "all") &&
-        (inGroups || (docsApi && docsApi.isOpen()) || currentView === "all")) activeKey = "groups";
+        (inGroups || (docsApi && docsApi.isOpen()) || isLibraryView())) activeKey = "groups";
     // Me, while its page is open, owns the highlight.
     if (isDrawerMode() && sidebarEl.classList.contains("open")) activeKey = "more";
     const onTab = tabs.some((tab) => tab.key === activeKey);
@@ -3684,6 +3577,8 @@
       b.addEventListener("click", async () => {
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
         if (tab.key === "more") { openSidebarDrawer(); return; }
+        // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
+        if (isDrawerMode() && sidebarEl.classList.contains("open")) closeSidebarOnMobile();
         if (tab.key === "new") { openNewMenu(); return; }
         if (tab.key === "search") { timelineTab = "search"; openTimeline({ focus: true }); return; }
         if (tab.key === "timeline") {
@@ -3744,10 +3639,55 @@
     if (docsApi && addonOn("documents")) out.push({ key: "docs", label: "Documents", icon: "file", n: allDocuments().length, run: () => openDocuments() });
     return out;
   }
+  // Notes live in Library; Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags are
+  // filters of that one place, picked from one "Filters" button.
+  const LIBRARY_VIEWS = ["all", "saved", "pinned", "unread", "reminders", "notes", "commands", "archive", "trash"];
+  const isLibraryView = () => typeof currentView === "object" || LIBRARY_VIEWS.includes(currentView);
   function renderLibrarySlot() {
     const slot = document.getElementById("library-seg-slot");
     if (!slot) return;
-    slot.replaceChildren(...(currentView === "all" ? [libraryBar("notes")] : []));
+    if (!isLibraryView()) { slot.replaceChildren(); return; }
+    const row = document.createElement("div");
+    row.className = "library-filter-row";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.id = "library-filter-btn";
+    btn.className = "library-filter-btn" + (currentView !== "all" ? " on" : "");
+    btn.innerHTML = icon("filter") + "<span></span>";
+    btn.querySelector("span").textContent = currentView === "all" ? "Filters" : currentViewLabel();
+    btn.addEventListener("click", openLibraryFilters);
+    row.appendChild(btn);
+    if (currentView !== "all") {
+      const clear = document.createElement("button");
+      clear.type = "button"; clear.id = "library-filter-clear"; clear.className = "library-filter-clear"; clear.textContent = "Show all";
+      clear.addEventListener("click", () => switchView("all"));
+      row.appendChild(clear);
+    }
+    slot.replaceChildren(libraryBar("notes"), row);
+  }
+  function openLibraryFilters() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const actions = [];
+    for (const key of ["all", "saved", "pinned", "unread", "reminders", "commands", "archive", "trash"]) {
+      const item = NAV_ITEMS.find((n) => n.key === key);
+      const n = countForNav(key);
+      if (item.hideWhenEmpty && !n && currentView !== key) continue;
+      actions.push({ label: item.label + (key === "all" ? "" : " (" + n + ")"), icon: item.icon, run: () => switchView(key) });
+    }
+    if (folderCache.length) actions.push({ label: "Folders…", icon: "folder", run: () => openLibraryFolders() });
+    if (tagCache.length) actions.push({ label: "Tags…", icon: "tag", run: () => openLibraryTags() });
+    actions.push({ label: "New folder", icon: "folder-plus", run: () => openFolderPopover(document.getElementById("library-filter-btn"), null) });
+    openSheet("Show", actions);
+  }
+  function openLibraryFolders() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const path = (f) => (f.parentId && folderById(f.parentId) ? path(folderById(f.parentId)) + " › " : "") + f.name;
+    const list = folderCache.slice().sort((a, b) => path(a).localeCompare(path(b)));
+    openSheet("Folders", list.map((f) => ({ label: path(f) + " (" + cache.filter((i) => i.folderId === f.id && live(i)).length + ")", icon: "folder", run: () => switchView({ folder: f.id }) })));
+  }
+  function openLibraryTags() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const list = tagCache.slice().sort((a, b) => a.name.localeCompare(b.name));
+    openSheet("Tags", list.map((t) => ({ label: t.name + " (" + cache.filter((i) => (i.tags || []).includes(t.id) && live(i)).length + ")", icon: "tag", run: () => switchView({ tag: t.id }) })));
   }
 
   // Changing views cross-fades the list where the browser supports the
@@ -5140,7 +5080,7 @@
         }
         else if (item.title) subText = asCards ? lines.slice(0, 10).join("\n") : lines[0] || "";
         else if (kind === "link") subText = hostOf(lines[0]) || "";
-        else subText = lines.slice(1, asCards ? 11 : undefined).join(asCards ? "\n" : "  ");
+        else subText = lines.slice(1, asCards ? 11 : undefined).map((l) => (item.type === "note" && window.CPFormat ? window.CPFormat.plain(l) : l)).join(asCards ? "\n" : "  ");
         // A snap waiting in Inbox: what it looks like and where it was taken.
         if (!subText && item.captured && item.capture) {
           const loc = item.capture.location;
@@ -7158,6 +7098,7 @@
     if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return true; }
     if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return true; }
     if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return true; }
+    if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return true; }
     if (document.getElementById("palette-overlay")) { closePalette(); return true; }
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
     if (placeholderModal) { placeholderModal.remove(); return true; }
@@ -8790,6 +8731,7 @@
     if (e.key === "Escape") {
       if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return; }
       if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return; }
+      if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return; }
       if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return; }
       if (sidebarEl.classList.contains("open")) { closeSidebarOnMobile(); return; }
       if (!settingsOverlay.classList.contains("hidden")) { settingsStepBack(); return; }
@@ -8895,8 +8837,12 @@
     const KEY = "copypaster-started";
     let seen = true;
     try { seen = !!localStorage.getItem(KEY); localStorage.setItem(KEY, "1"); } catch {}
-    if (seen || cache.length || !window.matchMedia("(max-width: 720px)").matches || !chatApi) return;
-    openChat();
+    if (!window.matchMedia("(max-width: 720px)").matches || !chatApi) return;
+    // On a phone Stash always opens at the Inbox, unless a shortcut or a share already opened something.
+    if (!seen && !cache.length) { openChat(); return; }
+    let where = "inbox";
+    try { where = localStorage.getItem("copypaster-start") || "inbox"; } catch {}
+    if (where === "inbox" && !chatApi.isOpen() && !currentId && !(timelineApi && timelineApi.isOpen()) && currentView === "all") openChat();
   }
 
   async function handleLaunchParams() {
@@ -10383,6 +10329,33 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
+  // Me (phones): the ⋯ menu holds everything that is not one of the three rows.
+  function closeMeMenu() { const o = document.getElementById("me-menu-overlay"); if (o) o.remove(); }
+  function openMeMenu() {
+    closeMeMenu();
+    const overlay = document.createElement("div");
+    overlay.id = "me-menu-overlay";
+    const menu = document.createElement("div");
+    menu.id = "me-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "More");
+    [["settings", "gear", "All settings", () => openSettings()],
+     ["addons", "grid", "Add-ons", () => openSettings("addons")],
+     ["passwords", "dice", "Password generator", () => openPasswordGenerator()],
+     ["privacy", "shield-check", "Privacy page", () => window.open("privacy.html", "_blank", "noopener")],
+     ["help", "info", "Help and about", () => openSettings("about")]].forEach(([key, ic, label, run]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.act = key;
+      b.innerHTML = icon(ic) + "<span></span>";
+      b.querySelector("span").textContent = label;
+      b.addEventListener("click", () => { closeMeMenu(); run(); });
+      menu.appendChild(b);
+    });
+    overlay.appendChild(menu);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMeMenu(); });
+    document.body.appendChild(overlay);
+    menu.querySelector("button").focus();
+  }
+  document.getElementById("me-more").addEventListener("click", openMeMenu);
+
   // Me (phones): "Back up your Stash" and "App lock is off", shown at the top of the menu.
   function renderMeCards() {
     const box = document.getElementById("me-cards");
@@ -10409,18 +10382,16 @@
     const rowsBox = document.getElementById("me-rows");
     if (rowsBox) {
       const rows = [
-        ["palette", "Look", "Theme, colour, text size, motion", "appearance"],
-        ["database", "Your data", "Back up, restore, import, sync to Drive", "data"],
-        ["vault", "Privacy and Vault", "App lock, the encrypted Vault", "lock"],
-        ["grid", "Add-ons", "Switch features on or off", "addons"],
-        ["info", "Help and about", "Shortcuts, privacy page, version", "about"]
-      ].map(([ic, name, hint, page]) => {
+        ["vault", "Vault", "Encrypted notes and keys", () => switchView("vault")],
+        ["database", "Your data", "Back up, restore, import, sync", () => openSettings("data")],
+        ["palette", "Look", "Theme, text size, motion", () => openSettings("appearance")]
+      ].map(([ic, name, hint, run]) => {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "me-row"; b.dataset.page = page;
+        b.type = "button"; b.className = "me-row"; b.dataset.row = name.toLowerCase().replace(/\s+/g, "-");
         b.innerHTML = '<span class="me-card-ic">' + icon(ic) + '</span><span class="me-card-text"><b></b><small></small></span><span class="me-chev">' + icon("chevron-right") + "</span>";
         b.querySelector("b").textContent = name;
         b.querySelector("small").textContent = hint;
-        b.addEventListener("click", () => openSettings(page));
+        b.addEventListener("click", run);
         return b;
       });
       rowsBox.replaceChildren(...rows);
@@ -10769,7 +10740,7 @@
       const P = (t) => (window.CPFormat && i.type === "note" ? window.CPFormat.plain(t) : t);
       const fileName = i.files && i.files[0] ? i.files[0].name : "";
       const title = i.title || P(lines[0] || "").replace(/^[\u2610\u2611\u2022]\s*/, "") || fileName || (i.checklist && i.checklist[0] ? i.checklist[0].text : "") || (i.audio.length ? "Voice note" : i.images.length ? "Photo" : "Untitled");
-      let sub = P(i.title ? lines[0] || "" : lines.slice(1).join("  "));
+      let sub = i.title ? P(lines[0] || "") : lines.slice(1).map(P).join("  ");
       if (i.checklist && i.checklist.length) sub = i.checklist.filter((c) => c.done).length + " of " + i.checklist.length + " done";
       if (kind === "link") sub = hostOf(lines[0]) || sub;
       const folder = i.folderId && folderById(i.folderId);
@@ -11269,7 +11240,8 @@
           if (!groupsApi) return;
           if (editor && list.some((i) => i.id === currentId)) editor.flush();
           if (!groupsApi.enabled()) groupsApi.setEnabled(true);
-          groupsApi.sortSnap(list.length === 1 ? list[0] : list, { onDone: () => { done(); renderNav(); if (chatApi) chatApi.render(); } });
+          const ghosts = motionOK() ? list.slice(0, 3).map((i) => document.querySelector('.cx-msg[data-id="' + CSS.escape(i.id) + '"]')).filter(Boolean).map((r) => ({ node: r.cloneNode(true), box: r.getBoundingClientRect() })) : [];
+          groupsApi.sortSnap(list.length === 1 ? list[0] : list, { onDone: () => { flyToLibrary(ghosts); done(); renderNav(); if (chatApi) chatApi.render(); } });
         },
         openSidebarDrawer,
         onEnter: async () => {

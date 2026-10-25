@@ -1,4 +1,4 @@
-const { test, expect, openApp, seed, storedItems, rowTexts, lastToast, newBtn, menuBtn } = require("./fixtures");
+const { test, expect, openApp, seed, storedItems, rowTexts, lastToast, newBtn, menuBtn, openSettingsFromMe } = require("./fixtures");
 
 const t = Date.now();
 const notes = (...names) => names.map((n, i) => ({ id: n, type: "note", content: n, createdAt: t - i, updatedAt: t - i, schemaVersion: 2 }));
@@ -71,16 +71,18 @@ test("long-press opens the action sheet; pin and move to folder work from it", a
   expect((await storedItems(page)).find((i) => i.id === "alpha").folderId).toBe("f1");
 });
 
-test("side menu opens, picks a view and closes; new folder box is on top", async ({ page }) => {
+test("Me opens a short page and closes; its Vault row opens the Vault; Library's New folder box is on top", async ({ page }) => {
   await menuBtn(page).tap();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  // (Empty views like Commands stay out of the menu until they have something.)
-  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await page.locator('#me-rows .me-row[data-row="vault"]').tap();
   await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator("#sidebar")).not.toHaveClass(/open/);
 
-  await menuBtn(page).tap();
-  await page.tap("#add-folder-btn");
+  // Library › Notes › Filters › New folder (the box opens on top of everything).
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+  await page.tap("#library-filter-btn");
+  await page.locator("#action-sheet button", { hasText: "New folder" }).tap();
   const box = await page.locator(".popover").boundingBox();
   const onTop = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y).closest(".popover"), { x: box.x + box.width / 2, y: box.y + 30 });
   expect(onTop).toBe(true);
@@ -143,21 +145,19 @@ test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no
   await page.tap('.tab-btn[data-tab="search"]');
   await expect(page.locator("#tl-pane")).toBeVisible();
   await expect(page.locator('.tab-btn[data-tab="search"]')).toHaveClass(/active/);
-  // Inbox is under More now (Me took its place in the dock).
-  await page.tap('.tab-btn[data-tab="more"]');
-  await page.locator("#sidebar .nav-item", { hasText: "All notes" }).tap();
+  // All notes live in Library now.
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
   await expect(page.locator("#list-title")).toHaveText("All notes");
   await page.tap('.tab-btn[data-tab="chat"]');
   await expect(page.locator("#chat-pane")).toBeVisible();
   await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  // (Empty views like Commands stay out of the menu until they have something.)
-  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
+  await page.locator('#me-rows .me-row[data-row="vault"]').tap();
   await expect(page.locator("#list-title")).toHaveText("Vault");
-  await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
-  await page.tap("#settings-btn");
+  await openSettingsFromMe(page);
   await expect(page.locator('.settings-nav-item[data-page="vault"]')).toBeVisible();
   await page.tap('.settings-nav-item[data-page="vault"]');
   await expect(page.locator("#vault-setup-btn")).toBeVisible();
@@ -184,7 +184,7 @@ test("on a phone the tag picker slides up from the bottom", async ({ page }) => 
 test("Me opens as a full page above the dock, with no dark layer behind it; Search sits at the bottom", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await expect(page.locator("#sidebar .nav-item").first()).toBeVisible();
+  await expect(page.locator("#me-rows .me-row").first()).toBeVisible();
   await expect(page.locator("#sidebar-backdrop")).toBeHidden();
   const box = await page.locator("#sidebar").boundingBox();
   const view = page.viewportSize();
@@ -252,13 +252,63 @@ test("Library shows 'Sorted for you' with counts; a chip opens that view", async
   await expect(page.locator("#tl-search")).toHaveValue("type:link");
 });
 
-test("Me lights its own tab and lists five places; each opens its Settings page", async ({ page }) => {
+test("Me lights its own tab, shows three rows, and keeps settings behind the ⋯ menu", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="search"]');
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await expect(page.locator('.tab-btn[data-tab="search"]')).not.toHaveClass(/active/);
-  await expect(page.locator("#me-rows .me-row")).toHaveCount(5);
-  await expect(page.locator("#me-rows .me-row b")).toHaveText(["Look", "Your data", "Privacy and Vault", "Add-ons", "Help and about"]);
-  await page.locator('#me-rows .me-row[data-page="addons"]').tap();
+  await expect(page.locator("#me-head h1")).toHaveText("Me");
+  await expect(page.locator("#me-rows .me-row b")).toHaveText(["Vault", "Your data", "Look"]);
+  // The older menu is gone from phones.
+  await expect(page.locator("#sidebar-scroll")).toBeHidden();
+  await expect(page.locator("#sidebar-footer")).toBeHidden();
+  await page.tap("#me-more");
+  await expect(page.locator("#me-menu button")).toHaveText(["All settings", "Add-ons", "Password generator", "Privacy page", "Help and about"]);
+  await page.locator('#me-menu [data-act="addons"]').tap();
   await expect(page.locator("#addons-settings")).toBeVisible();
+});
+
+test("Library › Notes has one Filters button for Favourites, Pinned, Archive, Trash, folders and tags", async ({ page }) => {
+  await seed(page, { items: [{ id: "f1", type: "note", content: "starred one", starred: true, createdAt: Date.now(), updatedAt: Date.now(), schemaVersion: 2 }, { id: "n2", type: "note", content: "plain one", createdAt: Date.now() - 1, updatedAt: Date.now() - 1, schemaVersion: 2 }], folders: [{ id: "fo1", name: "Work" }] });
+  await page.reload();
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+  await expect(page.locator("#library-filter-btn")).toContainText("Filters");
+  await page.tap("#library-filter-btn");
+  await expect(page.locator("#action-sheet")).toContainText("Favorites (1)");
+  await expect(page.locator("#action-sheet")).toContainText("Folders…");
+  await page.locator("#action-sheet button", { hasText: "Favorites" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Favorites");
+  await expect(page.locator("#library-filter-btn")).toContainText("Favorites");
+  await expect(page.locator('.tab-btn[data-tab="groups"]')).toHaveClass(/active/); // still the Library tab
+  await page.tap("#library-filter-clear");
+  await expect(page.locator("#list-title")).toHaveText("All notes");
+  await page.tap("#library-filter-btn");
+  await page.locator("#action-sheet button", { hasText: "Folders" }).tap();
+  await page.locator("#action-sheet button", { hasText: "Work" }).tap();
+  await expect(page.locator("#list-title")).toHaveText("Work");
+});
+
+test("sheets and menus open and close repeatedly without leaving a dark screen behind", async ({ page }) => {
+  const overlays = () => page.evaluate(() => [...document.querySelectorAll("body > *")].filter((e) => {
+    const cs = getComputedStyle(e), r = e.getBoundingClientRect();
+    return cs.position === "fixed" && cs.display !== "none" && cs.visibility !== "hidden" && r.width >= innerWidth - 2 && r.height >= innerHeight - 2 && /overlay|backdrop|scrim/i.test(e.id + " " + e.className);
+  }).map((e) => e.id || e.className));
+  for (let round = 0; round < 3; round++) {
+    await page.tap('.tab-btn[data-tab="more"]');
+    await page.tap("#me-more");
+    await page.keyboard.press("Escape");
+    await page.tap('.tab-btn[data-tab="groups"]');
+    await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+    await page.tap("#library-filter-btn");
+    await page.keyboard.press("Escape");
+    await page.tap("#tab-bar .tab-btn.plus");
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForTimeout(400);
+  expect(await overlays()).toEqual([]);
+  await page.tap('.tab-btn[data-tab="more"]');
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.waitForTimeout(400);
+  expect(await overlays()).toEqual([]);
 });

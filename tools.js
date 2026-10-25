@@ -568,40 +568,6 @@
     });
   }
 
-  // Icons this file adds to the app's sprite.
-  const ICON_PATHS = {
-    eraser: '<path d="M8.5 20H20M4.6 15.2l8.6-8.6a2 2 0 0 1 2.8 0l3.4 3.4a2 2 0 0 1 0 2.8L12 20H8.5l-3.9-3.9a.7.7 0 0 1 0-.9zM9 11l6 6"/>',
-    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',
-    pen: '<path d="M4 20l1.2-4.4L15.5 5.3a2.1 2.1 0 0 1 3 3L8.2 18.6zM14 7l3 3"/>',
-    checklist: '<path d="M4 6.5l1.5 1.5 3-3M4 13l1.5 1.5 3-3M11 7h9M11 13.5h9M11 19h9M4.5 19h2"/>',
-    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>',
-    shield: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M9 12.5l2 2 4-4"/>',
-    dice: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/>',
-    timeline: '<path d="M6 4v16M6 7h3M6 12h3M6 17h3"/><rect x="11" y="5" width="9" height="4" rx="1.5"/><rect x="11" y="10" width="7" height="4" rx="1.5"/><rect x="11" y="15" width="9" height="4" rx="1.5"/>',
-    inbox: '<path d="M4 13.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4.5M4 13.5L6.5 5h11l2.5 8.5M4 13.5h4.5l1 2h5l1-2H20"/>',
-    filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
-    "hard-drive": '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5.5 13L8 5h8l2.5 8M7 16.5h.01M10 16.5h.01"/>',
-    flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
-    chat: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
-    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
-    forward: '<path d="M14 5l7 7-7 7M21 12H9a6 6 0 0 0-6 6v1"/>',
-    "eye-off": '<path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.2 9.5 6-.4.8-1.3 2-2.5 3.2M6.7 7.7C4.6 9 3.2 10.9 2.5 12c1 1.8 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 10a3 3 0 0 0 4.1 4.1"/>'
-  };
-  function injectIcons() {
-    const first = document.querySelector("svg symbol");
-    const sprite = first && first.parentNode;
-    if (!sprite) return;
-    for (const [name, paths] of Object.entries({ ...ICON_PATHS, ...(window.CPSketch ? window.CPSketch.ICONS : {}) })) {
-      if (document.getElementById("icon-" + name)) continue;
-      const sym = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-      sym.id = "icon-" + name;
-      sym.setAttribute("viewBox", "0 0 24 24");
-      sym.innerHTML = '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + paths + "</g>"; // static markup from this file
-      sprite.append(sym);
-    }
-  }
-  injectIcons();
-
   window.CPTools = {
     init(appApi) { api = { ...api, ...appApi }; return window.CPTools; },
     h, ic, sheet, close, isOpen, passwordBuilder, totpWidget, totpSetup, recordVoice, sketch, clock

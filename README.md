@@ -21,7 +21,7 @@ Stash remembers them, suggests where they belong, and finds them again.
 ## What works today
 
 **Four tabs and one +** (on phones)
-- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (backup and App lock cards, then everything else). The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
+- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (profile, backup and App lock cards, three rows: Vault, Your data, Look; everything else is behind the ⋯ at the top). Library › Notes has one **Filters** button for Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags. The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
 - Keys, passwords and card numbers you drop into the Inbox are spotted, and Stash offers to move them to the Vault. It only suggests.
 - Commands, Passwords and 2FA, and the Template store are off for new people. They are one switch away in Me › Add-ons, and anyone who already uses them keeps them.
 
@@ -96,7 +96,7 @@ The files sit side by side in the repo root because `index.html`, `sw.js` and th
 | `snap.js`, `scanner.js`, `ocr.js`, `documents.js` | Camera capture, document scanner and signature, text reading, the Documents list and PDF viewer. |
 | `sync-core.js`, `sync.js` | Google Drive sync: readable files, and the connection. |
 | `applock.js`, `password-core.js`, `totp-core.js` | App lock, password builder, 2FA codes. |
-| `icons.js`, `fonts/` | Every icon: one place that maps icon names to Material Symbols (outlined), and the icon font itself (Apache 2.0 licence, see `fonts/LICENSE-material-symbols.txt`). |
+| `icons.js`, `fonts/` | Every icon (a 94 KB subset; rebuild with `scripts/subset-icons.py`): one place that maps icon names to Material Symbols (outlined), and the icon font itself (Apache 2.0 licence, see `fonts/LICENSE-material-symbols.txt`). |
 | `tools.js`, `tools.css` | Tool sheets (password builder, 2FA, recorder, sketch) and the Timeline and tool styles. |
 | `extras.js`, `power.js`, `hints.js` | QR, contacts, location pins; "/" commands; tooltips and previews. |
 | `importer.js`, `ai.js`, `demo.js` | Import from other apps; "Copy for AI"; made-up demo data. |

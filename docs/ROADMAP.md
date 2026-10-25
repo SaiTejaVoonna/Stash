@@ -149,7 +149,7 @@ and Zerodha Kite; one obvious action like GPay; familiar like WhatsApp.
 - [x] Looks: icon + theme + colour + background in one tap; true black and warm paper.
 - [x] Demo data: made-up notes, bills, prescription, lab report and PDFs, added and removed in one tap.
 - [x] "/" commands for quick hands (off by default). (The hidden surprises were removed in the calm redesign.)
-- [x] Settings grouped (Your things · Privacy · Organising · More); one spelling of "colour" across the app.
+- [x] Settings grouped (Look · Your data · Privacy · Library · More); one spelling of "colour" across the app.
 - [x] Repo tidy: a real README, a docs index, build-history docs moved to `docs/history/`, the old name removed from the app, docs and package.
 - [x] Calm redesign (branch `claude/stash-calm-redesign`): Easter eggs removed; Me is a full page on phones with no dark layer; search at the bottom on phones; one icon set (Material Symbols); Library (Collections, Notes, Documents) with "Sorted for you"; + as the middle button; Vault suggestions for keys, passwords and card numbers; backup and App lock cards in Me; one highlight sliding between dock tabs; Commands, Passwords and 2FA, and the Template store off by default.
 - [ ] Calm redesign, still to do: merge Folders and Tags into Collections (a data change, so careful), an export step then removal of saved passwords and 2FA, flying-card and count-up motion, a dark Inbox pass, the same polish on Collections and the note editor.
