@@ -126,4 +126,7 @@ const rowTexts = async (page) => page.locator(".item-row .item-text").allInnerTe
 const lastToast = (page) => page.locator(".toast-item").last();
 const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name });
 
-module.exports = { routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
+// Phones: Me › ⋯ › All settings.
+const openSettingsFromMe = async (page) => { await page.tap("#me-more"); await page.tap('#me-menu [data-act="settings"]'); };
+
+module.exports = { openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };

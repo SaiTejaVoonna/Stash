@@ -1,6 +1,6 @@
 // 2.6 on a phone: the Filter sheet (same spacing everywhere, hide with a
 // second tap, custom dates) and a dock you can change.
-const { test, expect, openApp, newNote } = require("./fixtures");
+const { test, expect, openApp, newNote, openSettingsFromMe } = require("./fixtures");
 
 test.beforeEach(async ({ page }) => { await openApp(page); });
 
@@ -39,7 +39,7 @@ test("Filter sheet: every section spaced the same, tap twice to hide, custom dat
 
 test("dock: pick tabs in Settings; Timeline gets its own tab without the keyboard", async ({ page }) => {
   await page.tap("#tab-bar [data-tab='more']");
-  await page.tap("#settings-btn");
+  await openSettingsFromMe(page);
   await page.tap('.settings-nav-item[data-page="appearance"]');
   await page.selectOption("#dock-slot-2", "timeline");
   await expect(page.locator("#tab-bar [data-tab='timeline']")).toHaveCount(1);
@@ -65,7 +65,7 @@ test("the phone Filter sheet and dock settings say Collection, never group", asy
   await page.keyboard.press("Escape");
   await page.goto("./");
   await page.tap("#tab-bar [data-tab='more']");
-  await page.tap("#settings-btn");
+  await openSettingsFromMe(page);
   await page.tap('.settings-nav-item[data-page="appearance"]');
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
   expect(options).toContain("Library");
@@ -97,7 +97,7 @@ test("Snap is the dock's middle button; holding it opens New; Settings can put N
   await page.keyboard.press("Escape");
   // Settings → Appearance → Middle: New.
   await page.tap("#tab-bar [data-tab='more']");
-  await page.tap("#settings-btn");
+  await openSettingsFromMe(page);
   await page.tap('.settings-nav-item[data-page="appearance"]');
   await page.selectOption("#dock-middle", "new");
   await expect(page.locator("#tab-bar [data-tab='new']")).toHaveCount(1);
@@ -404,7 +404,7 @@ test("A new person doesn't get Commands, Passwords or the Template store until t
   await expect(page.locator("#new-menu [data-new='password']")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.tap("#tab-bar [data-tab='more']");
-  await page.tap("#settings-btn");
+  await openSettingsFromMe(page);
   await page.tap('.settings-nav-item[data-page="addons"]');
   await expect(page.locator('#addons-settings [data-addon="passwords"]')).not.toBeChecked();
   await expect(page.locator('#addons-settings [data-addon="templates"]')).not.toBeChecked();

@@ -21,7 +21,7 @@ Stash remembers them, suggests where they belong, and finds them again.
 ## What works today
 
 **Four tabs and one +** (on phones)
-- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (backup and App lock cards, then everything else). The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
+- **Inbox**, **Library** (Collections, Notes and Documents, with "Sorted for you" counts), **Search** (the search field sits at the bottom, under your thumb), and **Me** (profile, backup and App lock cards, three rows: Vault, Your data, Look; everything else is behind the ⋯ at the top). Library › Notes has one **Filters** button for Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags. The **+** in the middle opens one sheet: note, photo, scan, drawing and more.
 - Keys, passwords and card numbers you drop into the Inbox are spotted, and Stash offers to move them to the Vault. It only suggests.
 - Commands, Passwords and 2FA, and the Template store are off for new people. They are one switch away in Me › Add-ons, and anyone who already uses them keeps them.
 

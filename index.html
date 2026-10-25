@@ -166,8 +166,23 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
   /* Me (phones): a backup card and an App lock card at the top. */
-  #me-cards, #me-rows { display: none; }
+  #me-cards, #me-rows, #me-head { display: none; }
   @media (max-width: 720px) {
+    /* The Me page is short: a header with ⋯, the profile, two cards and three rows. The older menu is not shown on phones. */
+    #brand, #sidebar-search, #sidebar-scroll, #sidebar-footer { display: none; }
+    #me-head { display: flex; align-items: center; justify-content: space-between; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-4); }
+    #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
+    #me-more { width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+    #me-more:hover { background: var(--surface-2); }
+    #me-more .icon { font-size: 24px; }
+    #profile-btn { order: 1; }
+    #me-cards { order: 2; }
+    #me-rows { order: 3; }
+    #me-menu-overlay { position: fixed; inset: 0; z-index: var(--z-palette); background: var(--scrim); animation: fadeIn var(--t-fast) ease; }
+    #me-menu { position: absolute; top: calc(56px + env(safe-area-inset-top)); right: var(--s-3); width: min(260px, calc(100vw - 2 * var(--s-3))); background: var(--elevated); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: var(--s-1); display: flex; flex-direction: column; transform-origin: 100% 0; animation: popIn var(--t-med) var(--ease); }
+    #me-menu button { display: flex; align-items: center; gap: var(--s-3); min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-md); text-align: left; cursor: pointer; }
+    #me-menu button:hover, #me-menu button:focus-visible { background: var(--surface-2); }
+    #me-menu .icon { color: var(--text-2); font-size: 22px; }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -187,10 +202,14 @@
   }
 
   /* Library: Collections | Notes | Documents (phones only). */
-  .library-seg { display: none; }
+  .library-seg, .library-filter-row { display: none; }
   @media (max-width: 720px) {
     .library-seg { width: 100%; flex: 0 0 auto; box-sizing: border-box; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; margin: 0 0 var(--s-3); background: var(--surface-2); border-radius: var(--r-lg); }
     .library-seg-btn { min-height: 36px; border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-medium); cursor: pointer; transition: background var(--t-med) var(--ease), color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+    .library-filter-row { display: flex; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-3); }
+    .library-filter-btn { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 36px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-md); cursor: pointer; }
+    .library-filter-btn.on { background: var(--accent-soft, var(--surface-2)); border-color: transparent; color: var(--accent); font-weight: var(--fw-semibold); }
+    .library-filter-clear { min-height: 36px; padding: 0 var(--s-2); border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); cursor: pointer; }
     .library-quick { width: 100%; flex: 0 0 auto; box-sizing: border-box; margin: 0 0 var(--s-3); }
     .docs-pane .library-seg { width: calc(100% - 2 * var(--s-4)); margin: 0 var(--s-4) var(--s-3); }
     .library-quick-title { margin: 0 var(--s-1) var(--s-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
@@ -1705,6 +1724,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
+    <div id="me-head"><h1>Me</h1><button id="me-more" type="button" aria-label="More" aria-haspopup="menu"><svg class="icon icon-lg"><use href="#icon-more"></use></svg></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
@@ -3661,7 +3681,7 @@
     let activeKey = chatOpen ? "chat" : tlOpen ? (tabs.some((t) => t.key === timelineTab) ? timelineTab : tabs.some((t) => t.key === "timeline") ? "timeline" : "search") : inGroups ? "groups" : currentView;
     // Library covers Collections, Notes (All notes) and Documents.
     if (!chatOpen && !tlOpen && tabs.some((t) => t.key === "groups") && !tabs.some((t) => t.key === "all") &&
-        (inGroups || (docsApi && docsApi.isOpen()) || currentView === "all")) activeKey = "groups";
+        (inGroups || (docsApi && docsApi.isOpen()) || isLibraryView())) activeKey = "groups";
     // Me, while its page is open, owns the highlight.
     if (isDrawerMode() && sidebarEl.classList.contains("open")) activeKey = "more";
     const onTab = tabs.some((tab) => tab.key === activeKey);
@@ -3746,10 +3766,55 @@
     if (docsApi && addonOn("documents")) out.push({ key: "docs", label: "Documents", icon: "file", n: allDocuments().length, run: () => openDocuments() });
     return out;
   }
+  // Notes live in Library; Favourites, Pinned, Unread, Reminders, Archive, Trash, folders and tags are
+  // filters of that one place, picked from one "Filters" button.
+  const LIBRARY_VIEWS = ["all", "saved", "pinned", "unread", "reminders", "notes", "commands", "archive", "trash"];
+  const isLibraryView = () => typeof currentView === "object" || LIBRARY_VIEWS.includes(currentView);
   function renderLibrarySlot() {
     const slot = document.getElementById("library-seg-slot");
     if (!slot) return;
-    slot.replaceChildren(...(currentView === "all" ? [libraryBar("notes")] : []));
+    if (!isLibraryView()) { slot.replaceChildren(); return; }
+    const row = document.createElement("div");
+    row.className = "library-filter-row";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.id = "library-filter-btn";
+    btn.className = "library-filter-btn" + (currentView !== "all" ? " on" : "");
+    btn.innerHTML = icon("filter") + "<span></span>";
+    btn.querySelector("span").textContent = currentView === "all" ? "Filters" : currentViewLabel();
+    btn.addEventListener("click", openLibraryFilters);
+    row.appendChild(btn);
+    if (currentView !== "all") {
+      const clear = document.createElement("button");
+      clear.type = "button"; clear.id = "library-filter-clear"; clear.className = "library-filter-clear"; clear.textContent = "Show all";
+      clear.addEventListener("click", () => switchView("all"));
+      row.appendChild(clear);
+    }
+    slot.replaceChildren(libraryBar("notes"), row);
+  }
+  function openLibraryFilters() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const actions = [];
+    for (const key of ["all", "saved", "pinned", "unread", "reminders", "commands", "archive", "trash"]) {
+      const item = NAV_ITEMS.find((n) => n.key === key);
+      const n = countForNav(key);
+      if (item.hideWhenEmpty && !n && currentView !== key) continue;
+      actions.push({ label: item.label + (key === "all" ? "" : " (" + n + ")"), icon: item.icon, run: () => switchView(key) });
+    }
+    if (folderCache.length) actions.push({ label: "Folders…", icon: "folder", run: () => openLibraryFolders() });
+    if (tagCache.length) actions.push({ label: "Tags…", icon: "tag", run: () => openLibraryTags() });
+    actions.push({ label: "New folder", icon: "folder-plus", run: () => openFolderPopover(document.getElementById("library-filter-btn"), null) });
+    openSheet("Show", actions);
+  }
+  function openLibraryFolders() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const path = (f) => (f.parentId && folderById(f.parentId) ? path(folderById(f.parentId)) + " › " : "") + f.name;
+    const list = folderCache.slice().sort((a, b) => path(a).localeCompare(path(b)));
+    openSheet("Folders", list.map((f) => ({ label: path(f) + " (" + cache.filter((i) => i.folderId === f.id && live(i)).length + ")", icon: "folder", run: () => switchView({ folder: f.id }) })));
+  }
+  function openLibraryTags() {
+    const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
+    const list = tagCache.slice().sort((a, b) => a.name.localeCompare(b.name));
+    openSheet("Tags", list.map((t) => ({ label: t.name + " (" + cache.filter((i) => (i.tags || []).includes(t.id) && live(i)).length + ")", icon: "tag", run: () => switchView({ tag: t.id }) })));
   }
 
   // Changing views cross-fades the list where the browser supports the
@@ -7160,6 +7225,7 @@
     if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return true; }
     if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return true; }
     if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return true; }
+    if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return true; }
     if (document.getElementById("palette-overlay")) { closePalette(); return true; }
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
     if (placeholderModal) { placeholderModal.remove(); return true; }
@@ -8792,6 +8858,7 @@
     if (e.key === "Escape") {
       if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return; }
       if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return; }
+      if (document.getElementById("me-menu-overlay")) { closeMeMenu(); return; }
       if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return; }
       if (sidebarEl.classList.contains("open")) { closeSidebarOnMobile(); return; }
       if (!settingsOverlay.classList.contains("hidden")) { settingsStepBack(); return; }
@@ -10385,6 +10452,33 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
+  // Me (phones): the ⋯ menu holds everything that is not one of the three rows.
+  function closeMeMenu() { const o = document.getElementById("me-menu-overlay"); if (o) o.remove(); }
+  function openMeMenu() {
+    closeMeMenu();
+    const overlay = document.createElement("div");
+    overlay.id = "me-menu-overlay";
+    const menu = document.createElement("div");
+    menu.id = "me-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "More");
+    [["settings", "gear", "All settings", () => openSettings()],
+     ["addons", "grid", "Add-ons", () => openSettings("addons")],
+     ["passwords", "dice", "Password generator", () => openPasswordGenerator()],
+     ["privacy", "shield-check", "Privacy page", () => window.open("privacy.html", "_blank", "noopener")],
+     ["help", "info", "Help and about", () => openSettings("about")]].forEach(([key, ic, label, run]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.act = key;
+      b.innerHTML = icon(ic) + "<span></span>";
+      b.querySelector("span").textContent = label;
+      b.addEventListener("click", () => { closeMeMenu(); run(); });
+      menu.appendChild(b);
+    });
+    overlay.appendChild(menu);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMeMenu(); });
+    document.body.appendChild(overlay);
+    menu.querySelector("button").focus();
+  }
+  document.getElementById("me-more").addEventListener("click", openMeMenu);
+
   // Me (phones): "Back up your Stash" and "App lock is off", shown at the top of the menu.
   function renderMeCards() {
     const box = document.getElementById("me-cards");
@@ -10411,18 +10505,16 @@
     const rowsBox = document.getElementById("me-rows");
     if (rowsBox) {
       const rows = [
-        ["palette", "Look", "Theme, colour, text size, motion", "appearance"],
-        ["database", "Your data", "Back up, restore, import, sync to Drive", "data"],
-        ["vault", "Privacy and Vault", "App lock, the encrypted Vault", "lock"],
-        ["grid", "Add-ons", "Switch features on or off", "addons"],
-        ["info", "Help and about", "Shortcuts, privacy page, version", "about"]
-      ].map(([ic, name, hint, page]) => {
+        ["vault", "Vault", "Encrypted notes and keys", () => switchView("vault")],
+        ["database", "Your data", "Back up, restore, import, sync", () => openSettings("data")],
+        ["palette", "Look", "Theme, text size, motion", () => openSettings("appearance")]
+      ].map(([ic, name, hint, run]) => {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "me-row"; b.dataset.page = page;
+        b.type = "button"; b.className = "me-row"; b.dataset.row = name.toLowerCase().replace(/\s+/g, "-");
         b.innerHTML = '<span class="me-card-ic">' + icon(ic) + '</span><span class="me-card-text"><b></b><small></small></span><span class="me-chev">' + icon("chevron-right") + "</span>";
         b.querySelector("b").textContent = name;
         b.querySelector("small").textContent = hint;
-        b.addEventListener("click", () => openSettings(page));
+        b.addEventListener("click", run);
         return b;
       });
       rowsBox.replaceChildren(...rows);
