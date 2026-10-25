@@ -288,3 +288,27 @@ test("Library › Notes has one Filters button for Favourites, Pinned, Archive, 
   await page.locator("#action-sheet button", { hasText: "Work" }).tap();
   await expect(page.locator("#list-title")).toHaveText("Work");
 });
+
+test("sheets and menus open and close repeatedly without leaving a dark screen behind", async ({ page }) => {
+  const overlays = () => page.evaluate(() => [...document.querySelectorAll("body > *")].filter((e) => {
+    const cs = getComputedStyle(e), r = e.getBoundingClientRect();
+    return cs.position === "fixed" && cs.display !== "none" && cs.visibility !== "hidden" && r.width >= innerWidth - 2 && r.height >= innerHeight - 2 && /overlay|backdrop|scrim/i.test(e.id + " " + e.className);
+  }).map((e) => e.id || e.className));
+  for (let round = 0; round < 3; round++) {
+    await page.tap('.tab-btn[data-tab="more"]');
+    await page.tap("#me-more");
+    await page.keyboard.press("Escape");
+    await page.tap('.tab-btn[data-tab="groups"]');
+    await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+    await page.tap("#library-filter-btn");
+    await page.keyboard.press("Escape");
+    await page.tap("#tab-bar .tab-btn.plus");
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForTimeout(400);
+  expect(await overlays()).toEqual([]);
+  await page.tap('.tab-btn[data-tab="more"]');
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.waitForTimeout(400);
+  expect(await overlays()).toEqual([]);
+});

@@ -420,3 +420,11 @@ test("a checklist note's preview shows boxes for every line, not '- [ ]'", async
   await expect(sub).toContainText("eggs");
   await expect(sub).not.toContainText("[ ]");
 });
+
+test("on a phone, Stash opens at the Inbox every time", async ({ page }) => {
+  const now = Date.now();
+  await seed(page, { items: [{ id: "s1", type: "note", content: "Corner Tea House bill 240", createdAt: now, updatedAt: now, schemaVersion: 2 }] });
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-startinbox", "1"); localStorage.setItem("copypaster-start", "inbox"); });
+  await page.reload();
+  await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);
+});

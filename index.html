@@ -78,7 +78,7 @@
     --line: rgba(255, 255, 255, 0.07);
     --line-strong: rgba(255, 255, 255, 0.12);
     --text: #ececf0; --text-2: #a3a6b0; --text-3: #868a96; /* all at least 4.5:1 on --bg (WCAG AA) */
-    --accent: #4c8dff; --accent-hover: #6aa0ff; --accent-text: #ffffff;
+    --accent: #4c8dff; --accent-hover: #6aa0ff; --accent-text: #ffffff; --accent-ink: color-mix(in srgb, var(--accent) 72%, white); /* the accent as text on a dark page */
     --accent-grad: linear-gradient(145deg, #5b9bff, #6a6cff); --accent-glow: rgba(76, 110, 255, 0.65);
     --accent-soft: rgba(76, 141, 255, 0.14); --accent-ring: rgba(76, 141, 255, 0.35);
     --danger: #ff5f57; --danger-soft: rgba(255, 95, 87, 0.12);
@@ -107,7 +107,7 @@
     --line: rgba(20, 20, 30, 0.08);
     --line-strong: rgba(20, 20, 30, 0.14);
     --text: #17181c; --text-2: #5c5f68; --text-3: #676a73;
-    --accent: #0a6cff; --accent-hover: #2a80ff; --accent-text: #ffffff;
+    --accent: #0a6cff; --accent-hover: #2a80ff; --accent-text: #ffffff; --accent-ink: var(--accent);
     --accent-soft: rgba(10, 108, 255, 0.09); --accent-ring: rgba(10, 108, 255, 0.28);
     --danger: #e5352b; --danger-soft: rgba(229, 53, 43, 0.08);
     --success: #12a150; --warning: #c98a0c;
@@ -165,17 +165,30 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+  /* Phones: every tap target is at least 44 px, and rows give a small press-down so taps feel answered. */
+  @media (max-width: 720px) {
+    .icon-btn, #view-mode-btn, #select-mode-btn, #sidebar-collapse-btn { min-width: 44px; min-height: 44px; }
+    .library-seg-btn, .library-filter-btn, .library-filter-clear, .tl-when-chip, .tl-filter-btn, .row-icon-btn { min-height: 44px; }
+    .row-icon-btn { min-width: 44px; }
+    .gp-home .btn.primary { min-height: 44px; }
+  }
+  @media (hover: none) and (prefers-reduced-motion: no-preference) {
+    .item-row, .cx-msg, .library-quick-chip, .library-seg-btn, .library-filter-btn, .me-row, .me-card, .tl-when-chip, .nav-item, .settings-nav-item { transition: transform 120ms ease, background-color 120ms ease; }
+    .cx-msg:active, .library-quick-chip:active, .me-card:active { transform: scale(0.985); }
+    .item-row:active, .me-row:active, .nav-item:active, .settings-nav-item:active { transform: scale(0.985); background-color: var(--surface-2); }
+    .library-seg-btn:active, .library-filter-btn:active, .tl-when-chip:active { transform: scale(0.96); }
+  }
   /* Me (phones): a backup card and an App lock card at the top. */
   #me-cards, #me-rows, #me-head { display: none; }
   @media (max-width: 720px) {
     /* The Me page is short: a header with ⋯, the profile, two cards and three rows. The older menu is not shown on phones. */
-    #brand, #sidebar-search, #sidebar-scroll, #sidebar-footer { display: none; }
-    #me-head { display: flex; align-items: center; justify-content: space-between; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-4); }
+    #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-scroll, #sidebar #sidebar-footer { display: none; }
+    #me-head { display: flex; align-items: center; justify-content: space-between; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
     #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
     #me-more { width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
     #me-more:hover { background: var(--surface-2); }
     #me-more .icon { font-size: 24px; }
-    #profile-btn { order: 1; }
+    #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
     #me-cards { order: 2; }
     #me-rows { order: 3; }
     #me-menu-overlay { position: fixed; inset: 0; z-index: var(--z-palette); background: var(--scrim); animation: fadeIn var(--t-fast) ease; }
@@ -192,13 +205,13 @@
     .me-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .me-card-text b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
     .me-card-text small { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
-    .me-card button.me-go { min-height: 40px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
+    .me-card button.me-go { min-height: 44px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
     #me-rows { display: block; margin: 0 var(--s-2) var(--s-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
     .me-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-2) var(--s-3); border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
     .me-row + .me-row { border-top: 1px solid var(--line); }
     .me-row .me-card-ic { width: 36px; height: 36px; }
     .me-row .me-chev { color: var(--text-3); }
-    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent); }
+    .me-card:not(.soft) button.me-go { background: var(--accent-soft, var(--surface-2)); color: var(--accent-ink, var(--accent)); }
   }
 
   /* Library: Collections | Notes | Documents (phones only). */
@@ -323,11 +336,6 @@
   select { cursor: pointer; }
   input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; margin: 0; }
 
-  /* Toggle switch */
-  .switch { width: 36px; height: 22px; border-radius: var(--r-full); background: var(--surface-3); position: relative; cursor: pointer; transition: background var(--t-med) var(--ease); flex-shrink: 0; }
-  .switch.on { background: var(--accent); }
-  .switch-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform var(--t-med) var(--ease); }
-  .switch.on .switch-knob { transform: translateX(14px); }
 
   /* Chips (filters, properties, tags) */
   .chip {
@@ -378,7 +386,7 @@
   .profile-avatar {
     width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; display: inline-flex;
     align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: var(--fw-bold); color: #fff;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+    background-image: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
   }
 
   #sidebar-search {
@@ -673,7 +681,7 @@
   #empty-state .empty-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
     background: var(--accent); color: var(--accent-text); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
   #empty-state .empty-steps b { color: var(--text); display: block; }
-  #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
+  #empty-state .empty-second { display: flex; align-items: center; gap: 6px; margin: var(--s-2) auto 0; background: none; border: none; color: var(--accent-ink, var(--accent)); font-weight: var(--fw-semibold); cursor: pointer; padding: 6px 10px; }
   #empty-state .empty-second:hover { background: var(--surface-2); }
   #empty-state .empty-second .icon { width: 16px; height: 16px; font-size: 16px; }
 
@@ -1465,7 +1473,7 @@
       transition: color var(--t-fast), transform var(--t-fast);
     }
     .tab-btn .icon { width: 23px; height: 23px; font-size: 23px; }
-    .tab-btn.active { color: var(--accent); }
+    .tab-btn.active { color: var(--accent-ink, var(--accent)); }
     .tab-btn:active { transform: scale(0.94); }
     body.select-mode #tab-bar { display: none; }
     #bulk-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 16; margin: 0 8px calc(8px + env(safe-area-inset-bottom)); padding-bottom: 10px; }
@@ -2565,7 +2573,7 @@
   // "stash" is the brand look: violet buttons, the blue → violet → pink → peach gradient.
   const STASH_GRAD = "linear-gradient(135deg, #27d5ff 0%, #7b61ff 38%, #ff5db8 72%, #ffb36b 100%)";
   const ACCENT_PICKED_KEY = "copypaster-accent-picked";
-  const ACCENTS = [["stash", "Stash", "#7b61ff"], ["blue", "Blue", "#4c8dff"], ["indigo", "Indigo", "#6366f1"], ["violet", "Violet", "#8b5cf6"], ["pink", "Pink", "#ec4899"],
+  const ACCENTS = [["stash", "Stash", "#745af7"], ["blue", "Blue", "#4c8dff"], ["indigo", "Indigo", "#6366f1"], ["violet", "Violet", "#8b5cf6"], ["pink", "Pink", "#ec4899"],
     ["red", "Red", "#ef4444"], ["orange", "Orange", "#f97316"], ["amber", "Amber", "#f59e0b"], ["lime", "Lime", "#84cc16"], ["green", "Green", "#16a34a"],
     ["teal", "Teal", "#0d9488"], ["cyan", "Cyan", "#06b6d4"], ["mono", "Graphite", "#9ca3af"]];
   const ACCENT_PROPS = ["--accent", "--accent-hover", "--accent-text", "--accent-soft", "--accent-ring", "--primary-shadow", "--accent-grad", "--accent-glow"];
@@ -3569,6 +3577,8 @@
       b.addEventListener("click", async () => {
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
         if (tab.key === "more") { openSidebarDrawer(); return; }
+        // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
+        if (isDrawerMode() && sidebarEl.classList.contains("open")) closeSidebarOnMobile();
         if (tab.key === "new") { openNewMenu(); return; }
         if (tab.key === "search") { timelineTab = "search"; openTimeline({ focus: true }); return; }
         if (tab.key === "timeline") {
@@ -8827,8 +8837,12 @@
     const KEY = "copypaster-started";
     let seen = true;
     try { seen = !!localStorage.getItem(KEY); localStorage.setItem(KEY, "1"); } catch {}
-    if (seen || cache.length || !window.matchMedia("(max-width: 720px)").matches || !chatApi) return;
-    openChat();
+    if (!window.matchMedia("(max-width: 720px)").matches || !chatApi) return;
+    // On a phone Stash always opens at the Inbox, unless a shortcut or a share already opened something.
+    if (!seen && !cache.length) { openChat(); return; }
+    let where = "inbox";
+    try { where = localStorage.getItem("copypaster-start") || "inbox"; } catch {}
+    if (where === "inbox" && !chatApi.isOpen() && !currentId && !(timelineApi && timelineApi.isOpen()) && currentView === "all") openChat();
   }
 
   async function handleLaunchParams() {
@@ -10726,7 +10740,7 @@
       const P = (t) => (window.CPFormat && i.type === "note" ? window.CPFormat.plain(t) : t);
       const fileName = i.files && i.files[0] ? i.files[0].name : "";
       const title = i.title || P(lines[0] || "").replace(/^[\u2610\u2611\u2022]\s*/, "") || fileName || (i.checklist && i.checklist[0] ? i.checklist[0].text : "") || (i.audio.length ? "Voice note" : i.images.length ? "Photo" : "Untitled");
-      let sub = P(i.title ? lines[0] || "" : lines.slice(1).join("  "));
+      let sub = i.title ? P(lines[0] || "") : lines.slice(1).map(P).join("  ");
       if (i.checklist && i.checklist.length) sub = i.checklist.filter((c) => c.done).length + " of " + i.checklist.length + " done";
       if (kind === "link") sub = hostOf(lines[0]) || sub;
       const folder = i.folderId && folderById(i.folderId);

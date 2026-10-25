@@ -41,6 +41,7 @@ const test = base.test.extend({
     // Tests start with every add-on on (new people get Commands, Passwords and the Template store off); one test checks the default.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-addondefault")) localStorage.setItem("copypaster-addons", JSON.stringify({ passwords: true, commands: true, templates: true })); } catch {} });
     // Tests start past the first run (a phone's first run opens the Inbox); one test checks it.
+    await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-startinbox")) localStorage.setItem("copypaster-start", "notes"); } catch {} });
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-firstrun")) localStorage.setItem("copypaster-started", "1"); } catch {} });
     // Tests type into the plain-text editor; the rich editor has its own tests.
     await page.addInitScript(() => { try { if (!sessionStorage.getItem("cp-test-rich") && !localStorage.getItem("copypaster-editor")) localStorage.setItem("copypaster-editor", "plain"); } catch {} });
