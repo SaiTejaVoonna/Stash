@@ -6,7 +6,7 @@
 // (bump CACHE when they do).
 // Your items are never touched here: they live in IndexedDB, not in this cache.
 
-const CACHE = "stash-v62";
+const CACHE = "stash-v63";
 const APP_SHELL = [
   "./",
   "./index.html",
