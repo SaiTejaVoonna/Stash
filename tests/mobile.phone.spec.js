@@ -212,6 +212,11 @@ test("Library tab: three pages, hold to pick, no bar on the page, the dock stays
   await page.locator('#lib-menu button[data-page="docs"]').tap();
   await expect(page.locator("#docs-pane")).toBeVisible();
   expect(await label()).toBe("Documents");
+  // Holding the tab on the Documents page opens the menu on top of it (it used to hide behind the page).
+  await holdLibrary(page);
+  const menuTop = await page.evaluate(() => { const m = document.getElementById("lib-menu").getBoundingClientRect(); const e = document.elementFromPoint(m.x + m.width / 2, m.y + 24); return !!(e && e.closest("#lib-menu")); });
+  expect(menuTop).toBe(true);
+  await page.locator('#lib-menu button[data-page="docs"]').tap();
   // Documents is a page, not a cover: the dock is still there, on top, and tapping Inbox leaves it.
   const dock = await page.locator("#tab-bar").boundingBox();
   const top = await page.evaluate(({ x, y }) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest("#tab-bar")); }, { x: dock.x + dock.width / 2, y: dock.y + dock.height / 2 });
