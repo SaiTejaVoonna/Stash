@@ -3695,11 +3695,11 @@
         const inLibBefore = inLibraryNow(); // read before the Inbox or Search is closed below
         if (tab.key === "groups" && held) { held = false; return; }
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
-        if (tab.key === "more") { openSidebarDrawer(); return; }
+        if (tab.key === "more") { if (docsApi && docsApi.isOpen()) docsApi.close(); openSidebarDrawer(); return; }
         // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
         if (isDrawerMode() && sidebarEl.classList.contains("open")) closeSidebarOnMobile();
         if (tab.key === "new") { openNewMenu(); return; }
-        if (tab.key === "search") { timelineTab = "search"; openTimeline({ focus: true }); return; }
+        if (tab.key === "search") { if (docsApi && docsApi.isOpen()) docsApi.close(); timelineTab = "search"; openTimeline({ focus: true }); return; }
         if (tab.key === "timeline") {
           if (tlOpen && timelineTab === "timeline") { timelineApi.close(); renderTabBar(); renderNav(); return; }
           timelineTab = "timeline"; openTimeline({ q: tlOpen ? undefined : "" }); return;
@@ -3761,6 +3761,7 @@
   }
   function goLibraryPage(key) {
     if (!libraryPageList().some((p) => p.key === key)) key = "collections";
+    const alreadyThere = currentLibraryPage() === key;
     try { localStorage.setItem(LIBRARY_PAGE_KEY, key); } catch {}
     closeLibraryMenu();
     if (docsApi && docsApi.isOpen() && key !== "docs") docsApi.close();
@@ -3769,7 +3770,7 @@
     else if (key === "notes") { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); if (!isLibraryView()) switchView("all"); else if (currentView !== "all" && typeof currentView === "string") switchView(currentView); }
     else { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); openDocuments(); }
     renderTabBar();
-    risePage();
+    if (!alreadyThere) risePage();
   }
   // The new page rises into place (a short fade and lift); nothing moves with reduced motion.
   function risePage() {
