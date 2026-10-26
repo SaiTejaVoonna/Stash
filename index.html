@@ -181,13 +181,25 @@
   /* Me (phones): a backup card and an App lock card at the top. */
   #me-cards, #me-rows, #me-head { display: none; }
   @media (max-width: 720px) {
-    /* The Me page is short: a header with ⋯, the profile, two cards and three rows. The older menu is not shown on phones. */
-    #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-scroll, #sidebar #sidebar-footer { display: none; }
+    /* More: the profile, a small backup bar, then one scroll with every place (counts and +), and Settings pinned at the bottom.
+       Tapping Settings swaps the page to the seven Settings folders (a "settings-mode" page). */
+    #sidebar #brand, #sidebar #sidebar-search, #sidebar #pwgen-btn { display: none; }
+    #sidebar-scroll { order: 3; }
+    #sidebar-footer { order: 5; }
     #me-head { display: flex; align-items: center; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
     #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
     #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
     #me-cards { order: 2; }
-    #me-rows { order: 3; }
+    #me-rows { order: 4; display: none; }
+    #me-back { display: none; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); place-items: center; cursor: pointer; }
+    #sidebar.settings-mode #me-back { display: grid; }
+    #sidebar.settings-mode #me-rows { display: block; }
+    #sidebar.settings-mode #sidebar-scroll, #sidebar.settings-mode #sidebar-footer { display: none; }
+    #sidebar:not(.settings-mode) #me-lock { display: none; }
+    #sidebar:not(.settings-mode) #me-cards { padding-bottom: var(--s-2); }
+    #sidebar:not(.settings-mode) .me-card { padding: var(--s-2) var(--s-3); }
+    #sidebar:not(.settings-mode) .me-card-ic { width: 32px; height: 32px; }
+    #sidebar-footer { border-top: 1px solid var(--line); }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -198,7 +210,7 @@
     .me-card-text b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
     .me-card-text small { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
     .me-card button.me-go { min-height: 44px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-full); font: inherit; font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; background: var(--accent); color: var(--accent-text, #fff); }
-    #me-rows { display: block; margin: 0 var(--s-2) var(--s-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+    #me-rows { margin: 0 var(--s-2) var(--s-3); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
     .me-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-2) var(--s-3); border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
     .me-row + .me-row { border-top: 1px solid var(--line); }
     .me-row .me-card-ic { width: 36px; height: 36px; }
@@ -1413,10 +1425,12 @@
       transition: transform var(--t-slow) var(--ease), opacity var(--t-med) ease, visibility 0s linear var(--t-slow);
     }
     #sidebar.open { transform: none; opacity: 1; visibility: visible; transition-delay: 0s; }
-    /* The whole Me page scrolls as one, so nothing gets squeezed or cut off. */
-    #sidebar { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-    #sidebar-scroll { flex: 0 0 auto; overflow: visible; min-height: auto; }
+    /* More: the list scrolls and Settings stays pinned. Settings mode scrolls as one page. */
+    #sidebar { overflow: hidden; }
+    #sidebar.settings-mode { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    #sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     #sidebar > * { flex-shrink: 0; }
+    #sidebar > #sidebar-scroll { flex-shrink: 1; }
     /* The page fills the screen, so the see-through tab bar sits on top of it instead of showing what is behind. */
     body.sidebar-open #tab-bar { z-index: calc(var(--z-drawer) + 1); }
     #sidebar-backdrop, body.sidebar-open #sidebar-backdrop { display: none !important; }
@@ -1569,7 +1583,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
-    <div id="me-head"><h1>Settings</h1></div>
+    <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
@@ -2846,6 +2860,19 @@
     if (page === "addons") renderAddons();
     if (page === "data") { renderBackupInfo(); renderStorage(); const sl = document.getElementById("snap-location"); if (sl) sl.checked = snapLocationOn(); const ss = document.getElementById("snap-see"); if (ss) ss.checked = snapSeeOn(); }
   }
+  // Settings (phones): the More page swaps to the seven Settings folders, and back.
+  function enterSettingsMode() {
+    sidebarEl.classList.add("settings-mode");
+    document.querySelector("#me-head h1").textContent = "Settings";
+    renderMeCards();
+    sidebarEl.scrollTop = 0;
+  }
+  function exitSettingsMode() {
+    sidebarEl.classList.remove("settings-mode");
+    document.querySelector("#me-head h1").textContent = "More";
+  }
+  document.getElementById("me-back").innerHTML = icon("chevron-left");
+  document.getElementById("me-back").addEventListener("click", exitSettingsMode);
   // Settings (phones): each row on the Settings page opens one group of pages together.
   const SETTINGS_GROUPS = {
     privacy: ["Privacy and lock", ["lock", "vault"]],
@@ -2875,7 +2902,7 @@
   function closeSettings() { settingsOverlay.classList.add("hidden"); delete settingsPanel.dataset.group; }
   // Back on phones: from a section to the list, then closed.
   function settingsStepBack() {
-    if (settingsPanel.dataset.group) { closeSettings(); if (settingsIsStacked()) openSidebarDrawer(); return; } // a group opened from a Settings row goes straight back to it
+    if (settingsPanel.dataset.group) { closeSettings(); if (settingsIsStacked()) { openSidebarDrawer(); enterSettingsMode(); } return; } // a group opened from a Settings row goes straight back to it
     if (settingsIsStacked() && settingsPanel.classList.contains("at-page")) {
       settingsPanel.classList.remove("at-page");
       document.getElementById("settings-title").textContent = "Settings";
@@ -2885,7 +2912,7 @@
   }
   document.querySelectorAll(".settings-nav-item").forEach((b) => b.addEventListener("click", () => showSettingsPage(b.dataset.page)));
   document.getElementById("settings-back-btn").addEventListener("click", settingsStepBack);
-  document.getElementById("settings-btn").addEventListener("click", () => openSettings());
+  document.getElementById("settings-btn").addEventListener("click", () => { if (settingsIsStacked()) enterSettingsMode(); else openSettings(); });
   document.getElementById("settings-close-btn").addEventListener("click", closeSettings);
   settingsOverlay.addEventListener("click", (e) => {
     if (e.target === settingsOverlay) closeSettings();
@@ -3409,7 +3436,7 @@
     for (const item of NAV_ITEMS) {
       const chatOpen = !!(chatApi && chatApi.isOpen());
     const isActive = item.key === "timeline" ? tlOpen : item.key === "chat" ? chatOpen : currentView === item.key && !elsewhere && !chatOpen;
-      if (item.hideWhenEmpty && !isActive && countForNav(item.key) === 0) continue;
+      if (item.hideWhenEmpty && !isActive && countForNav(item.key) === 0 && !(item.key !== "commands" && window.matchMedia("(max-width: 720px)").matches)) continue;
       if (item.key === "commands" && !addonOn("commands") && !isActive && countForNav("commands") === 0) continue;
       if (item.addon && !addonOn(item.addon)) continue;
       const el = document.createElement("div");
@@ -3457,8 +3484,8 @@
   const DOCK_KEY = "copypaster-dock";
   const DOCK_CHOICES = [
     { key: "chat", label: "Inbox", icon: "inbox" },
-    { key: "all", label: "All notes", icon: "note" },
-    { key: "groups", label: "Library", icon: "library", needsGroups: true },
+    { key: "all", label: "Library", icon: "library" },
+    { key: "groups", label: "Collections", icon: "layers", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
     { key: "saved", label: "Favourites", icon: "star" },
@@ -3478,7 +3505,7 @@
     const picked = keys.map((k) => DOCK_CHOICES.find((c) => c.key === k))
       .map((c) => (c.needsGroups && !groupsOn ? DOCK_CHOICES.find((x) => x.key === "saved") : c));
     const mid = dockMiddle() === "new" ? { key: "new", label: "New", icon: "plus" } : { key: "snap", label: "Snap", icon: "camera" };
-    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "Settings", icon: "gear" }];
+    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "More", icon: "menu" }];
   }
   // The big middle button: New (default: one sheet for text, photo, scan, drawing) or Snap (one tap to the camera; hold it for the New menu).
   const DOCK_MID_KEY = "copypaster-dock-middle";
@@ -7114,6 +7141,7 @@
     if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return true; }
     if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return true; }
     if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return true; }
+    if (sidebarEl.classList.contains("settings-mode") && sidebarEl.classList.contains("open") && settingsOverlay.classList.contains("hidden")) { exitSettingsMode(); return true; }
     if (document.getElementById("palette-overlay")) { closePalette(); return true; }
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
     if (placeholderModal) { placeholderModal.remove(); return true; }
@@ -8808,6 +8836,7 @@
     const wasOpen = sidebarEl.classList.contains("open");
     sidebarEl.classList.remove("open");
     document.body.classList.remove("sidebar-open");
+    exitSettingsMode();
     if (wasOpen) renderTabBar();
   }
   document.getElementById("menu-btn").addEventListener("click", () => {

@@ -71,10 +71,10 @@ test("long-press opens the action sheet; pin and move to folder work from it", a
   expect((await storedItems(page)).find((i) => i.id === "alpha").folderId).toBe("f1");
 });
 
-test("Settings opens a short page and closes; its Vault row opens the Vault; Library's New folder box is on top", async ({ page }) => {
+test("More opens a page and closes; its Vault row opens the Vault; Library's New folder box is on top", async ({ page }) => {
   await menuBtn(page).tap();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator('#me-rows .me-row[data-row="vault"]').tap();
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
   await expect(page.locator("#list-title")).toHaveText("Vault");
   await expect(page.locator("#sidebar")).not.toHaveClass(/open/);
 
@@ -138,8 +138,8 @@ test("profile switcher opens as a sheet on phones", async ({ page }) => {
   await expect(page.locator("#profile-name")).toHaveText("Work");
 });
 
-test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
-  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Library", "Snap", "Search", "Settings"]);
+test("the dock: Inbox, Collections, Snap, Search, More; New is the + at the top; no second menu button; Settings goes list → section → back", async ({ page }) => {
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveText(["Inbox", "Collections", "Snap", "Search", "More"]);
   await expect(page.locator("#menu-btn")).toBeHidden(); // More in the dock is the one menu button
   await expect(page.locator("#new-btn")).toBeVisible(); // with Snap in the middle, New is the round + at the top
   await page.tap('.tab-btn[data-tab="search"]');
@@ -154,7 +154,7 @@ test("the dock: Me, Collections, Snap, Search, More; New is the + at the top; no
   await expect(page.locator('.tab-btn[data-tab="chat"]')).toHaveClass(/active/);
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await page.locator('#me-rows .me-row[data-row="vault"]').tap();
+  await page.locator("#sidebar .nav-item", { hasText: "Vault" }).tap();
   await expect(page.locator("#list-title")).toHaveText("Vault");
   await page.tap('.tab-btn[data-tab="more"]');
   await openSettingsFromMe(page, "privacy");
@@ -179,10 +179,10 @@ test("on a phone the tag picker slides up from the bottom", async ({ page }) => 
   await expect(sheet).toHaveCount(0);
 });
 
-test("Me opens as a full page above the dock, with no dark layer behind it; Search sits at the bottom", async ({ page }) => {
+test("More opens as a full page above the dock, with no dark layer behind it; Search sits at the bottom", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
-  await expect(page.locator("#me-rows .me-row").first()).toBeVisible();
+  await expect(page.locator("#sidebar-scroll .nav-item").first()).toBeVisible();
   await expect(page.locator("#sidebar-backdrop")).toBeHidden();
   const box = await page.locator("#sidebar").boundingBox();
   const view = page.viewportSize();
@@ -201,7 +201,7 @@ test("Me opens as a full page above the dock, with no dark layer behind it; Sear
 test("Library: Collections, Notes and Documents are one place, with one bar to hop between them", async ({ page }) => {
   const seg = (key) => page.locator('.library-seg-btn[data-lib="' + key + '"]:visible').first();
   await page.tap('.tab-btn[data-tab="groups"]');
-  await expect(page.locator("#tab-bar .tab-btn[data-tab='groups']")).toHaveText("Library");
+  await expect(page.locator("#tab-bar .tab-btn[data-tab='groups']")).toHaveText("Collections");
   await expect(page.locator(".gp-home-title h1")).toHaveText("Collections");
   await expect(seg("collections")).toHaveClass(/on/);
   await seg("notes").tap();
@@ -216,10 +216,12 @@ test("Library: Collections, Notes and Documents are one place, with one bar to h
   await expect(page.locator(".gp-home-title h1")).toBeVisible();
 });
 
-test("Me starts with a backup card and an App lock card", async ({ page }) => {
+test("More starts with a small backup bar; Settings adds the App lock card", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator("#me-backup")).toContainText("Back up your Stash");
   await expect(page.locator("#me-backup")).toContainText("No backup yet");
+  await expect(page.locator("#me-lock")).toBeHidden();
+  await page.tap("#settings-btn");
   await expect(page.locator("#me-lock")).toContainText("App lock is off");
   await page.locator("#me-lock .me-go").tap();
   await expect(page.locator("#lock-settings")).toBeVisible(); // Turn on opens the App lock page
@@ -250,24 +252,27 @@ test("Library shows 'Sorted for you' with counts; a chip opens that view", async
   await expect(page.locator("#tl-search")).toHaveValue("type:link");
 });
 
-test("Settings lights its own tab and lists seven folders; Add-ons holds the password generator", async ({ page }) => {
+test("More lights its own tab; Settings is one tap away and lists seven folders; Add-ons holds the password generator", async ({ page }) => {
   await page.tap('.tab-btn[data-tab="search"]');
   await page.tap('.tab-btn[data-tab="more"]');
   await expect(page.locator('.tab-btn[data-tab="more"]')).toHaveClass(/active/);
   await expect(page.locator('.tab-btn[data-tab="search"]')).not.toHaveClass(/active/);
-  await expect(page.locator("#me-head h1")).toHaveText("Settings");
+  await expect(page.locator("#me-head h1")).toHaveText("More");
   await expect(page.locator("#me-more")).toHaveCount(0); // no ⋯ menu
+  await expect(page.locator("#sidebar-scroll .nav-item").first()).toBeVisible();
+  await expect(page.locator("#pwgen-btn")).toBeHidden(); // the generator lives in Add-ons now
+  await page.tap("#settings-btn");
+  await expect(page.locator("#me-head h1")).toHaveText("Settings");
   await expect(page.locator("#me-rows .me-row b")).toHaveText(["Vault", "Privacy and lock", "Your data", "Look", "Library", "Add-ons", "Help and about"]);
-  // The older menu is gone from phones.
   await expect(page.locator("#sidebar-scroll")).toBeHidden();
-  await expect(page.locator("#sidebar-footer")).toBeHidden();
   await page.locator('.me-row[data-row="addons"]').tap();
   await expect(page.locator("#settings-title")).toHaveText("Add-ons");
   await expect(page.locator("#open-passgen")).toBeVisible();
   await page.tap("#settings-back-btn");
-  await page.locator('.me-row[data-row="library"]').tap();
-  await expect(page.locator("#settings-title")).toHaveText("Library");
-  await expect(page.locator('.settings-page.active')).toHaveCount(3); // Collections, Tags, Your words
+  await expect(page.locator("#me-head h1")).toHaveText("Settings"); // back lands on the Settings page, not More
+  await page.tap("#me-back");
+  await expect(page.locator("#me-head h1")).toHaveText("More");
+  await expect(page.locator("#sidebar-scroll")).toBeVisible();
 });
 
 test("one sync cloud: hidden when all is well, a popover instead of a redirect when tapped", async ({ page }) => {
