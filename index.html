@@ -227,14 +227,16 @@
     .library-filter-btn { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 36px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-md); cursor: pointer; }
     .library-filter-btn.on { background: var(--accent-soft, var(--surface-2)); border-color: transparent; color: var(--accent); font-weight: var(--fw-semibold); }
     .library-filter-clear { min-height: 36px; padding: 0 var(--s-2); border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-md); cursor: pointer; }
+    /* "Sorted for you": one slim row of chips (icon, number, name) so the page stays light. */
     .library-quick { width: 100%; flex: 0 0 auto; box-sizing: border-box; margin: 0 0 var(--s-3); }
     .docs-pane .library-seg { width: calc(100% - 2 * var(--s-4)); margin: 0 var(--s-4) var(--s-3); }
-    .library-quick-title { margin: 0 var(--s-1) var(--s-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
-    .library-quick-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s-2); }
-    .library-quick-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s-2) var(--s-1); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-1); color: var(--text); font: inherit; cursor: pointer; }
-    .library-quick-chip .icon { color: var(--accent); }
-    .library-quick-chip b { font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: 1.2; }
-    .library-quick-chip small { font-size: var(--fs-xs); color: var(--text-2); }
+    .library-quick-title { display: none; }
+    .library-quick-row { display: flex; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; padding: 1px 0; }
+    .library-quick-row::-webkit-scrollbar { display: none; }
+    .library-quick-chip { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; min-height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; cursor: pointer; white-space: nowrap; }
+    .library-quick-chip .icon { color: var(--accent); font-size: 18px; width: 18px; height: 18px; }
+    .library-quick-chip b { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+    .library-quick-chip small { font-size: var(--fs-md); color: var(--text-2); }
     .library-seg-btn.on { background: var(--surface-1); color: var(--text); font-weight: var(--fw-semibold); box-shadow: var(--shadow-sm); }
     #library-seg-slot:empty { display: none; }
   }
