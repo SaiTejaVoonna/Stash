@@ -283,17 +283,19 @@ body.timeline-mode:not(.detail-open) #detail-pane { display: none !important; }
 .tab-btn .plus-ring .icon { width: 24px !important; height: 24px !important; font-size: 24px !important; }
 .tab-btn.plus.active { color: var(--text-3); }
 @media (max-width: 720px) {
-  /* The dock's + replaces the floating one, and More replaces the ☰. */
-  body.has-dock #new-btn { display: none; }
+  /* With + in the dock, the page + steps back; otherwise each page has its own round + at the top. More replaces the ☰. */
+  body.has-dock.dock-new #new-btn { display: none; }
   body.has-dock #menu-btn { display: none !important; }
   body.has-dock .gp-menu-btn { display: none !important; }
-  /* With Snap in the middle, New is a round + at the top, like a chat app. */
-  body.has-dock.dock-snap #new-btn {
-    display: inline-flex; position: static; width: 40px; height: 40px; padding: 0; margin: 0 0 0 4px; border-radius: 50%;
-    justify-content: center; box-shadow: none;
+  /* One round, colourful + at the top right of every page (Notes, Inbox, Collections; a camera on Documents). */
+  body.has-dock:not(.dock-new) #new-btn, body.has-dock .page-plus {
+    display: inline-flex; position: static; width: 44px; height: 44px; min-width: 44px; padding: 0; margin: 0 0 0 4px; border: 0; border-radius: 50%;
+    align-items: center; justify-content: center; background: var(--accent-grad); color: #fff; box-shadow: 0 6px 16px -6px var(--accent-glow);
   }
-  body.has-dock.dock-snap #new-btn .icon { width: 22px; height: 22px; font-size: 22px; }
-  body.has-dock.dock-snap.select-mode #new-btn { display: none; }
+  body.has-dock:not(.dock-new) #new-btn .icon, body.has-dock .page-plus .icon { width: 24px; height: 24px; font-size: 24px; color: #fff; }
+  body.has-dock .page-plus span { display: none; }
+  body.has-dock.dock-new .page-plus:not(#docs-scan) { display: none; }
+  body.has-dock.select-mode #new-btn { display: none; }
 
   /* A floating, see-through dock: content scrolls on underneath it. */
   body.has-dock #tab-bar {

@@ -37,6 +37,7 @@ test("Search tab: the Timeline with one Filter sheet; a note opened from it goes
 
 test("the dock's + makes a sketch and a group entry", async ({ page }) => {
   await page.tap("#new-btn");
+  await page.tap("#new-menu-more"); // the short sheet keeps the rest behind More
   await page.tap("#new-menu [data-new='entry']");
   // No groups yet: it offers to make one.
   await page.locator(".gp-tpl", { hasText: "Food" }).tap();
@@ -45,6 +46,7 @@ test("the dock's + makes a sketch and a group entry", async ({ page }) => {
   await page.goBack();
   await page.goBack();
   await page.tap("#new-btn");
+  await page.tap("#new-menu-more");
   await page.tap("#new-menu [data-new='sketch']");
   await expect(page.locator("#sk-canvas")).toBeVisible();
   const box = await page.locator("#sk-canvas").boundingBox();

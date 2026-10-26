@@ -367,16 +367,55 @@ test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap sugg
   await expect(page.locator("#chat-pane .cx-msg")).toContainText("random thought");
 });
 
-test("The dock's middle button is + by default: one sheet to add text, a photo, a scan or a drawing", async ({ page }) => {
+test("The dock is four tabs by default; each page has its own + and holding Inbox opens the short New sheet", async ({ page }) => {
   await page.evaluate(() => { sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-dock-middle"); });
   await page.reload();
-  await expect(page.locator("#tab-bar [data-tab='new']")).toBeVisible();
-  await expect(page.locator("#tab-bar [data-tab='snap']")).toHaveCount(0);
-  await page.tap("#tab-bar [data-tab='new']");
-  await expect(page.locator("#new-menu")).toBeVisible();
-  await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
-  await expect(page.locator("#new-menu [data-new='snap']")).toBeVisible();
+  await expect(page.locator("#tab-bar .tab-btn")).toHaveCount(4);
+  await expect(page.locator("#tab-bar [data-tab='new'], #tab-bar [data-tab='snap']")).toHaveCount(0);
+  await expect(page.locator("#new-btn")).toBeVisible(); // the page's own round +
+  // Hold Inbox: the New sheet from anywhere.
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="chat"]');
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 12, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
+  });
+  await expect(page.locator("#new-menu")).toBeVisible({ timeout: 3000 });
+  await expect(page.locator("#new-menu .nm-big")).toHaveCount(4); // Note, Photo, Scan, Checklist
+  await expect(page.locator("#new-menu [data-new='sketch']")).toBeHidden();
+  await page.tap("#new-menu-more");
   await expect(page.locator("#new-menu [data-new='sketch']")).toBeVisible();
+  await expect(page.locator("#new-menu [data-new='snap']")).toBeVisible();
+  await page.keyboard.press("Escape");
+  // The Inbox and Collections pages have the same +.
+  await page.tap('.tab-btn[data-tab="chat"]');
+  await expect(page.locator("#cx-new")).toBeVisible();
+  await page.tap("#cx-new");
+  await expect(page.locator("#new-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+});
+
+test("Hold More: Settings and Back up now", async ({ page }) => {
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="more"]');
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 13, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
+  });
+  await expect(page.locator('#lib-menu [data-act="settings"]')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('#lib-menu [data-act="backup"]')).toBeVisible();
+  await page.locator('#lib-menu [data-act="settings"]').tap();
+  await expect(page.locator("#me-head h1")).toHaveText("Settings");
+});
+
+test("Settings › Look: Stash opens on the Inbox or the notes list", async ({ page }) => {
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-startinbox", "1"); localStorage.setItem("copypaster-start", "inbox"); });
+  await page.reload();
+  await page.tap('.tab-btn[data-tab="more"]');
+  await openSettingsFromMe(page, "look");
+  await expect(page.locator("#open-on")).toHaveValue("inbox");
+  await page.selectOption("#open-on", "notes");
+  await page.reload();
+  await expect(page.locator("#chat-pane")).toBeHidden();
+  await expect(page.locator("#list-title")).toBeVisible();
 });
 
 test("Inbox: a message that looks like a key or a card number offers the Vault", async ({ page }) => {
@@ -398,7 +437,7 @@ test("Inbox: a message that looks like a key or a card number offers the Vault",
 test("A new person doesn't get Commands, Passwords or the Template store until they switch them on", async ({ page }) => {
   await page.evaluate(() => { sessionStorage.setItem("cp-test-addondefault", "1"); sessionStorage.setItem("cp-test-dockdefault", "1"); localStorage.removeItem("copypaster-addons"); localStorage.removeItem("copypaster-dock-middle"); });
   await page.reload();
-  await page.tap("#tab-bar [data-tab='new']");
+  await page.tap("#new-btn");
   await expect(page.locator("#new-menu [data-new='note']")).toBeVisible();
   await expect(page.locator("#new-menu [data-new='command']")).toHaveCount(0);
   await expect(page.locator("#new-menu [data-new='password']")).toHaveCount(0);

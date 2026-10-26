@@ -184,6 +184,13 @@
     body:has(#doc-viewer) #tab-bar { display: none; }
     .docs-pane .docs-list { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
   }
+  /* The short New sheet on phones, and the More hold menu. */
+  #new-menu .nm-big { min-height: 96px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; }
+  .nm-more { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 52px; margin-top: 6px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-lg); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-semibold); text-align: left; cursor: pointer; }
+  .nm-more span { flex: 1; }
+  .nm-more, .nm-extras { grid-column: 1 / -1; }
+  .nm-extras { margin-top: 6px; padding: 0; }
+  .nm-extras[hidden] { display: none; }
   /* Library tab: three dots for the three pages, a pop-up menu on hold, and chips for Notes. */
   .tab-btn[data-tab="groups"] { touch-action: none; position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .lib-dots { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; pointer-events: none; }
@@ -3544,12 +3551,15 @@
     const keys = dockChoice() || ["chat", "groups", "search"];
     const picked = keys.map((k) => DOCK_CHOICES.find((c) => c.key === k))
       .map((c) => (c.needsGroups && !groupsOn ? DOCK_CHOICES.find((x) => x.key === "saved") : c));
+    const more = { key: "more", label: "More", icon: "menu" };
+    // Default: four equal tabs. Each page has its own + at the top; holding Inbox opens the New sheet from anywhere.
+    if (dockMiddle() === "none") return [picked[0], picked[1], picked[2], more];
     const mid = dockMiddle() === "new" ? { key: "new", label: "New", icon: "plus" } : { key: "snap", label: "Snap", icon: "camera" };
-    return [picked[0], picked[1], mid, picked[2], { key: "more", label: "More", icon: "menu" }];
+    return [picked[0], picked[1], mid, picked[2], more];
   }
   // The big middle button: New (default: one sheet for text, photo, scan, drawing) or Snap (one tap to the camera; hold it for the New menu).
   const DOCK_MID_KEY = "copypaster-dock-middle";
-  function dockMiddle() { try { return localStorage.getItem(DOCK_MID_KEY) === "snap" ? "snap" : "new"; } catch { return "new"; } }
+  function dockMiddle() { let v = null; try { v = localStorage.getItem(DOCK_MID_KEY); } catch {} return v === "snap" || v === "new" ? v : "none"; }
   let timelineTab = "search"; // which dock tab opened the Timeline
   function renderDockSettings() {
     const box = document.getElementById("dock-picker");
@@ -3560,7 +3570,7 @@
     midSel.className = "input dock-slot";
     midSel.id = "dock-middle";
     midSel.setAttribute("aria-label", "Middle button");
-    [["snap", "Snap (hold for New)"], ["new", "New"]].forEach(([v, label]) => {
+    [["none", "Nothing (four tabs)"], ["snap", "Snap (hold for New)"], ["new", "New"]].forEach(([v, label]) => {
       const o = document.createElement("option");
       o.value = v; o.textContent = label; o.selected = dockMiddle() === v;
       midSel.appendChild(o);
@@ -3620,6 +3630,19 @@
       if (slot === 1) box.appendChild(midWrap);
     });
     box.appendChild(startWrap);
+    const openSel = document.createElement("select");
+    openSel.className = "input dock-slot"; openSel.id = "open-on";
+    openSel.setAttribute("aria-label", "Stash opens on");
+    let openNow = "inbox";
+    try { openNow = localStorage.getItem("copypaster-start") || "inbox"; } catch {}
+    [["inbox", "Inbox"], ["notes", "Notes list"]].forEach(([v, label]) => { const o = document.createElement("option"); o.value = v; o.textContent = label; o.selected = openNow === v; openSel.appendChild(o); });
+    openSel.addEventListener("change", () => { try { localStorage.setItem("copypaster-start", openSel.value); } catch {} showToast("Stash will open on " + (openSel.value === "inbox" ? "the Inbox" : "your notes")); });
+    const openWrap = document.createElement("label");
+    openWrap.className = "dock-slot-wrap";
+    const openLab = document.createElement("span");
+    openLab.textContent = "Stash opens on";
+    openWrap.append(openLab, openSel);
+    box.appendChild(openWrap);
   }
   // One highlight slides from the old tab to the new one. The bar is redrawn on every
   // change, so the highlight is kept in the page and only the tabs are replaced.
@@ -3645,6 +3668,7 @@
     const bar = document.getElementById("tab-bar");
     document.body.classList.add("has-dock");
     document.body.classList.toggle("dock-snap", dockMiddle() === "snap");
+    document.body.classList.toggle("dock-new", dockMiddle() === "new");
     const inGroups = !!(groupsApi && groupsApi.enabled() && groupsApi.isActive());
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const tabs = dockTabs();
@@ -3686,6 +3710,18 @@
         b.addEventListener("pointerup", cancel);
         b.addEventListener("contextmenu", (e) => e.preventDefault());
       }
+      if (tab.key === "chat" || tab.key === "more") {
+        // Hold Inbox: the New sheet from anywhere. Hold More: Settings and Back up now.
+        let t2 = null, sx2 = 0, sy2 = 0;
+        const stop = () => { clearTimeout(t2); t2 = null; };
+        b.addEventListener("pointerdown", (e) => {
+          held = false; stop(); sx2 = e.clientX; sy2 = e.clientY;
+          t2 = setTimeout(() => { held = true; if (navigator.vibrate) navigator.vibrate(10); if (tab.key === "chat") openNewMenu(); else openMoreMenu(); }, 450);
+        });
+        b.addEventListener("pointermove", (e) => { if (t2 && Math.hypot(e.clientX - sx2, e.clientY - sy2) > 14) stop(); });
+        b.addEventListener("pointerup", stop);
+        b.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
       // Holding Snap opens the New menu instead.
       if (tab.key === "snap") {
         let timer = null;
@@ -3696,7 +3732,7 @@
       }
       b.addEventListener("click", async () => {
         const inLibBefore = inLibraryNow(); // read before the Inbox or Search is closed below
-        if (tab.key === "groups" && held) { held = false; return; }
+        if ((tab.key === "groups" || tab.key === "chat" || tab.key === "more") && held) { held = false; return; }
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
         if (tab.key === "more") { if (docsApi && docsApi.isOpen()) docsApi.close(); openSidebarDrawer(); return; }
         // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
@@ -3776,17 +3812,6 @@
     else if (key === "notes") { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); if (!isLibraryView()) switchView("all"); else if (currentView !== "all" && typeof currentView === "string") switchView(currentView); }
     else { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); openDocuments(); }
     renderTabBar();
-    if (!alreadyThere) risePage();
-  }
-  // The new page rises into place (a short fade and lift); nothing moves with reduced motion.
-  function risePage() {
-    if (!motionOK()) return;
-    requestAnimationFrame(() => {
-      const page = currentLibraryPage();
-      const pane = page === "docs" ? document.getElementById("docs-pane") : page === "collections" ? document.getElementById("group-pane") : document.getElementById("list-pane");
-      if (!pane || pane.hidden || !pane.animate) return;
-      pane.animate([{ opacity: 0.3, transform: "translateY(18px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
-    });
   }
   function closeLibraryMenu() { const m = document.getElementById("lib-menu"); if (m) m.remove(); }
   function openLibraryMenu(anchorOld) {
@@ -3810,6 +3835,26 @@
     setTimeout(() => document.addEventListener("pointerdown", function off(e) { if (!menu.contains(e.target)) { closeLibraryMenu(); document.removeEventListener("pointerdown", off); } }), 0);
   }
   function libraryBar() { return document.createDocumentFragment(); }
+  function openMoreMenu() {
+    closeLibraryMenu();
+    const anchor = document.querySelector('#tab-bar .tab-btn[data-tab="more"]');
+    const menu = document.createElement("div");
+    menu.id = "lib-menu"; menu.className = "more-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "More");
+    [["settings", "gear", "Settings", () => { closeLibraryMenu(); if (!(isDrawerMode() && sidebarEl.classList.contains("open"))) openSidebarDrawer(); enterSettingsMode(); }],
+     ["backup", "cloud", "Back up now", () => { closeLibraryMenu(); document.getElementById("export-btn").click(); }]].forEach(([key, ic, label, run]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.act = key;
+      b.innerHTML = icon(ic) + "<span></span>";
+      b.querySelector("span").textContent = label;
+      b.addEventListener("click", run);
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    const r = anchor ? anchor.getBoundingClientRect() : { left: window.innerWidth - 80, width: 60, top: window.innerHeight - 90 };
+    menu.style.left = Math.max(12, Math.min(window.innerWidth - 232, r.left + r.width / 2 - 170)) + "px";
+    menu.style.bottom = Math.max(100, window.innerHeight - r.top + 14) + "px";
+    setTimeout(() => document.addEventListener("pointerdown", function off(e) { if (!menu.contains(e.target)) { closeLibraryMenu(); document.removeEventListener("pointerdown", off); } }), 0);
+  }
   function libraryQuick() {
     const n = (q) => (timelineApi && timelineApi.count ? timelineApi.count(q) : 0);
     const out = [
@@ -7764,6 +7809,24 @@
     });
     const highlight = () => buttons.forEach((b, i) => b.classList.toggle("active", i === active));
     panel.appendChild(menu);
+    // Phones: four big choices first; everything else waits behind one "More" row.
+    if (isDrawerMode()) {
+      const firstKeys = ["note", "photo", "scan", "checklist"];
+      const extras = buttons.filter((b) => !firstKeys.includes(b.dataset.new));
+      buttons.filter((b) => firstKeys.includes(b.dataset.new)).sort((a, b) => firstKeys.indexOf(a.dataset.new) - firstKeys.indexOf(b.dataset.new)).forEach((b) => { b.classList.add("nm-big"); menu.appendChild(b); });
+      if (extras.length) {
+        const more = document.createElement("button");
+        more.type = "button"; more.id = "new-menu-more"; more.className = "nm-more";
+        more.innerHTML = icon("grid") + "<span></span>" + icon("chevron-right");
+        const names = extras.map((b) => b.querySelector(".cm-label").textContent.toLowerCase());
+        more.querySelector("span").textContent = "More: " + names.slice(0, 3).join(", ") + (names.length > 3 ? " and " + (names.length - 3) + " more" : "");
+        const box = document.createElement("div");
+        box.className = "command-menu nm-extras"; box.hidden = true;
+        extras.forEach((b) => box.appendChild(b));
+        more.addEventListener("click", () => { box.hidden = false; more.remove(); });
+        menu.append(more, box); // inside the menu, so arrow keys and "#new-menu [data-new=…]" still reach them
+      }
+    }
     overlay.appendChild(panel);
     overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeNewMenu(); });
     panel.querySelector(".nm-head button").addEventListener("click", closeNewMenu);
@@ -11362,6 +11425,7 @@
     try {
       chatApi = window.CPChat.init({
         icon,
+        openNew: () => openNewMenu(),
         secretOf: (n) => detectSecret([n.title, n.content].filter(Boolean).join("\n")),
         toVault: async (n) => { await moveToVault(n); if (chatApi) chatApi.render(); },
         items: () => cache.filter((i) => i.chat && !i.deletedAt && !i.vaulted && !i._locked).sort((a, b) => a.createdAt - b.createdAt),

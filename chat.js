@@ -47,7 +47,8 @@
       h("div", { class: "cx-title" }, h("b", null, "Inbox"), h("small", null, "Drop anything. Sort it later.")),
       h("button", { class: "btn icon ghost", id: "cx-search-btn", "aria-label": "Search the Inbox", title: "Search", onclick: () => toggleSearch(!ui.searching) }, ic("search")),
       h("button", { class: "btn icon ghost", id: "cx-cleanup", "aria-label": "Clean up", title: "Clean up", onclick: () => openCleanup() }, ic("sparkle")),
-      h("button", { class: "btn gp-small cx-select", id: "cx-select", onclick: () => setSelecting(!ui.selecting) }, "Select"));
+      h("button", { class: "btn gp-small cx-select", id: "cx-select", onclick: () => setSelecting(!ui.selecting) }, "Select"),
+      api.openNew ? h("button", { class: "btn icon page-plus", id: "cx-new", "aria-label": "New", title: "New", onclick: () => api.openNew() }, ic("plus")) : null);
     searchEl = h("div", { class: "cx-searchbar", hidden: true },
       h("label", { class: "search-wrap" }, ic("search"), h("input", { id: "cx-q", type: "search", "data-search-scope": "inbox", placeholder: "Search the Inbox", "aria-label": "Search the Inbox", oninput: (e) => { ui.q = e.target.value; render(); } })));
     filterEl = h("div", { class: "cx-filters", id: "cx-filters", role: "tablist" });

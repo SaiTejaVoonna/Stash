@@ -557,7 +557,7 @@
 
   function renderHome() {
     headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
-      h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
+      h("button", { class: "btn icon ghost page-plus", id: "gp-new", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
     if (api.libraryBar) headEl.append(api.libraryBar("collections"));
     // Phones: the same search pill as everywhere; tapping it opens the one Search page for Collections.
     headEl.append(h("label", { class: "search-wrap scope-pill" }, ic("search"),
