@@ -230,10 +230,8 @@
     /* On a phone the demo data lives on the Settings page, not inside Your data. */
     .settings-section:has(#demo-load) { display: none; }
     #sidebar.settings-mode #sidebar-scroll { display: none; }
-    #sidebar:not(.settings-mode) #me-lock { display: none; }
-    #sidebar:not(.settings-mode) #me-cards { padding-bottom: var(--s-2); }
-    #sidebar:not(.settings-mode) .me-card { padding: var(--s-2) var(--s-3); }
-    #sidebar:not(.settings-mode) .me-card-ic { width: 32px; height: 32px; }
+    /* The backup and App lock cards live on the Settings page only, not on More. */
+    #sidebar:not(.settings-mode) #me-cards { display: none; }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -10619,7 +10617,17 @@
     const d = Math.floor((Date.now() - ts) / 86400000);
     return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
   }
-  // Settings (phones): the profile, an App lock card when it is off, then seven rows.
+  // " · Synced just now" when Google Drive sync is on (nothing at all when it is off).
+  function syncLine() {
+    const st = syncApi && syncApi.status && syncApi.status();
+    if (!st || !st.on) return "";
+    if (st.error) return " \u00b7 Sync needs attention";
+    if (st.busy) return " \u00b7 Syncing\u2026";
+    if (st.pending || !st.last) return " \u00b7 Waiting to sync";
+    const mins = Math.round((Date.now() - st.last) / 60000);
+    return " \u00b7 Synced " + (mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : "today");
+  }
+  // Settings (phones): the profile, a backup card, an App lock card when it is off, then seven rows.
   function renderMeCards() {
     const box = document.getElementById("me-cards");
     if (!box) return;
@@ -10636,8 +10644,9 @@
       card.appendChild(go);
       return card;
     };
-    // Backup lives in Settings › Your data (and hold More); the Inbox nudges when one is due.
-    const cards = [];
+    const last = readNum(LAST_BACKUP_KEY);
+    const backupLine = (last ? "Last backup " + daysAgoText(last) : "No backup yet. Browsers can clear saved data.") + syncLine();
+    const cards = [make("soft", "cloud", "Back up your Stash", backupLine, "Back up", () => document.getElementById("export-btn").click(), "me-backup")];
     if (!(window.CPLock && window.CPLock.on())) {
       cards.push(make("", "lock-open", "App lock is off", "A PIN or Face ID hides Stash. The Vault is what encrypts.", "Turn on", () => openSettingsGroup("privacy"), "me-lock"));
     }
