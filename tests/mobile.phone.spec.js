@@ -349,3 +349,16 @@ test("every search field is the same pill, and each one opens the one Search pag
   await page.locator('.tl-scope-chip[data-scope="all"]').tap();
   expect(await scope()).toBe("Everything");
 });
+
+test("Settings page: Demo data sits at the bottom, adds made-up things and removes them", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="more"]');
+  await expect(page.locator("#me-demo")).toBeHidden(); // not on the More list
+  await page.tap("#me-gear");
+  await expect(page.locator("#me-demo")).toBeVisible();
+  await expect(page.locator("#me-demo-remove")).toBeHidden();
+  await page.tap("#me-demo-load");
+  await expect(page.locator("#me-demo-remove")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("#me-demo-load")).toBeHidden();
+  await page.tap("#me-demo-remove");
+  await expect(page.locator("#me-demo-load")).toBeVisible({ timeout: 15000 });
+});

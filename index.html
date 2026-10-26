@@ -199,7 +199,7 @@
   .library-chip { flex: 0 0 auto; min-height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-semibold); cursor: pointer; white-space: nowrap; }
   .library-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text, #fff); }
   /* Me (phones): a backup card and an App lock card at the top. */
-  #me-cards, #me-rows, #me-head { display: none; }
+  #me-cards, #me-rows, #me-head, #me-demo { display: none; }
   @media (max-width: 720px) {
     /* More: the profile, a small backup bar, then one scroll with every place (counts and +), and Settings pinned at the bottom.
        Tapping Settings swaps the page to the seven Settings folders (a "settings-mode" page). */
@@ -216,6 +216,11 @@
     #me-back { display: none; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); place-items: center; cursor: pointer; }
     #sidebar.settings-mode #me-back { display: grid; }
     #sidebar.settings-mode #me-rows { display: block; }
+    #sidebar.settings-mode #me-demo { display: block; order: 5; margin: 0 var(--s-2) var(--s-3); }
+    #me-demo .me-card { margin: 0; }
+    #me-demo .me-go.danger { background: var(--danger-soft, var(--surface-2)); color: var(--danger, #ff453a); }
+    /* On a phone the demo data lives on the Settings page, not inside Your data. */
+    .settings-section:has(#demo-load) { display: none; }
     #sidebar.settings-mode #sidebar-scroll { display: none; }
     #sidebar:not(.settings-mode) #me-lock { display: none; }
     #sidebar:not(.settings-mode) #me-cards { padding-bottom: var(--s-2); }
@@ -1609,6 +1614,7 @@
     <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1><button id="me-gear" type="button" aria-label="Settings"></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
+    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -10965,9 +10971,11 @@
   }
   function renderDemoLine() {
     const on = !!demoIds();
-    const add = document.getElementById("demo-load"), rm = document.getElementById("demo-remove");
-    if (add) add.hidden = on;
-    if (rm) rm.hidden = !on;
+    for (const [a, r] of [["demo-load", "demo-remove"], ["me-demo-load", "me-demo-remove"]]) {
+      const add = document.getElementById(a), rm = document.getElementById(r);
+      if (add) add.hidden = on;
+      if (rm) rm.hidden = !on;
+    }
   }
   let demoLoading = false;
   async function loadDemo() {
@@ -11009,6 +11017,9 @@
     renderDemoLine();
     showToast("Demo data removed. Your own things weren't touched.");
   }
+  document.getElementById("me-demo-load").addEventListener("click", loadDemo);
+  document.getElementById("me-demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
+  document.querySelector("#me-demo .me-card-ic").innerHTML = icon("sparkle");
   document.getElementById("demo-load").addEventListener("click", loadDemo);
   document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   renderDemoLine();
