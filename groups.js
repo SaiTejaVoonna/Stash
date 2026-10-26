@@ -2627,7 +2627,7 @@
         icon: s ? s.icon : g.icon, color: s ? s.color : g.color, photo: e.photos[0] || null,
         tags: e.tags.slice(), tagLabels: e.tags.map((k) => ({ key: k, label: tagLabel(k) })),
         where, amount: e.amount || 0, amountText: e.amount ? money(e, g) : null, rating: e.rating || 0,
-        groups: e.refs.map((r) => r.g), types: ["entry", ...(e.photos.length ? ["photo"] : []), ...(e.link ? ["link"] : [])],
+        hasFile: !!(e.files && e.files.length), groups: e.refs.map((r) => r.g), types: ["entry", ...(e.photos.length ? ["photo"] : []), ...(e.link ? ["link"] : [])],
         flags: {}, status: null, text
       });
     }

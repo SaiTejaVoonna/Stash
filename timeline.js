@@ -74,7 +74,7 @@
     ui.open = true;
     if (typeof opts.q === "string") ui.q = opts.q;
     ui.scope = SCOPES.some(([k]) => k === opts.scope) ? opts.scope : "all";
-    if (titleEl) titleEl.textContent = isPhone() && opts.focus ? "Search" : "Timeline"; // the phone Search tab and the pills say Search
+    if (titleEl) titleEl.textContent = isPhone() && (opts.focus || opts.scope || (typeof opts.q === "string" && opts.q)) ? "Search" : "Timeline"; // the phone Search tab and the pills say Search
     ui.shown = PAGE;
     ui.kbd = -1;
     pane.hidden = false;
