@@ -814,3 +814,25 @@ body.cx-previewing #tab-bar { display: none !important; }
 .sk-penonly { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 10px; border-radius: var(--r-full); font-size: var(--fs-sm); flex: none; }
 .sk-penonly.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .shortcut-hint { color: var(--text-3); font-size: var(--fs-sm); text-align: right; max-width: 60%; }
+
+/* One look for every search field: a pill with a magnifier (notes, Documents, Inbox, Search). */
+#search-input, #docs-q, #cx-q, .tl-searchbar input {
+  box-sizing: border-box; height: 40px !important; padding: 0 14px 0 38px !important; border-radius: var(--r-full) !important;
+  border: 1px solid var(--line) !important; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-md);
+}
+#search-input:focus, #docs-q:focus, #cx-q:focus, .tl-searchbar input:focus { border-color: var(--accent) !important; background: var(--surface-1); }
+.search-wrap > .icon { left: 14px; }
+.docs-tools .search-wrap { flex: 1; min-width: 0; }
+.cx-searchbar .search-wrap { width: 100%; }
+
+/* One page header on phones: the same big title on every tab page, no back arrow on tab pages. */
+@media (max-width: 720px) {
+  #search-input, #docs-q, #cx-q, .tl-searchbar input { height: 44px !important; }
+  .cx-title b, .docs-title b { font-size: var(--fs-3xl); letter-spacing: -0.03em; line-height: 1.2; }
+  .cx-head, .docs-head { border-bottom: 0; padding-left: var(--s-4); padding-right: var(--s-4); }
+  .docs-head #docs-close, .docs-title small { display: none; }
+  .doc-where-btn { min-width: 44px; min-height: 44px; }
+}
+@media (max-width: 720px) {
+  #sort-select { height: 44px; border-radius: var(--r-full); }
+}

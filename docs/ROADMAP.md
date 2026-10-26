@@ -219,3 +219,5 @@ Not quite right:
 - "App Lock is only a screen": true, and Stash says so in Settings. The Vault is the encrypted part.
 - The dollar "valuation" and hour estimates are guesses, not something to plan by.
 - "No persistent storage request": it was already there.
+- [x] Settings and Me are one page (the Settings tab): profile, backup card, seven folders, no ⋯ menu. The sync light is a small cloud that explains itself in place.
+- [x] The More tab is the old one-scroll menu in the new look (every place with counts, Settings pinned); the dock default is Inbox · Collections · + · Search · More and can be changed in Settings › Look.

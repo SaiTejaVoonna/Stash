@@ -39,8 +39,7 @@ test("Filter sheet: every section spaced the same, tap twice to hide, custom dat
 
 test("dock: pick tabs in Settings; Timeline gets its own tab without the keyboard", async ({ page }) => {
   await page.tap("#tab-bar [data-tab='more']");
-  await openSettingsFromMe(page);
-  await page.tap('.settings-nav-item[data-page="appearance"]');
+  await openSettingsFromMe(page, "look");
   await page.selectOption("#dock-slot-2", "timeline");
   await expect(page.locator("#tab-bar [data-tab='timeline']")).toHaveCount(1);
   await expect(page.locator("#tab-bar [data-tab='search']")).toHaveCount(0);
@@ -65,8 +64,7 @@ test("the phone Filter sheet and dock settings say Collection, never group", asy
   await page.keyboard.press("Escape");
   await page.goto("./");
   await page.tap("#tab-bar [data-tab='more']");
-  await openSettingsFromMe(page);
-  await page.tap('.settings-nav-item[data-page="appearance"]');
+  await openSettingsFromMe(page, "look");
   const options = await page.locator("#dock-slot-0 option").allInnerTexts();
   expect(options).toContain("Library");
   expect(options.join(" ")).not.toMatch(/group/i);
@@ -97,8 +95,7 @@ test("Snap is the dock's middle button; holding it opens New; Settings can put N
   await page.keyboard.press("Escape");
   // Settings → Appearance → Middle: New.
   await page.tap("#tab-bar [data-tab='more']");
-  await openSettingsFromMe(page);
-  await page.tap('.settings-nav-item[data-page="appearance"]');
+  await openSettingsFromMe(page, "look");
   await page.selectOption("#dock-middle", "new");
   await expect(page.locator("#tab-bar [data-tab='new']")).toHaveCount(1);
   await expect(page.locator("#tab-bar [data-tab='snap']")).toHaveCount(0);
@@ -404,8 +401,7 @@ test("A new person doesn't get Commands, Passwords or the Template store until t
   await expect(page.locator("#new-menu [data-new='password']")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.tap("#tab-bar [data-tab='more']");
-  await openSettingsFromMe(page);
-  await page.tap('.settings-nav-item[data-page="addons"]');
+  await openSettingsFromMe(page, "addons");
   await expect(page.locator('#addons-settings [data-addon="passwords"]')).not.toBeChecked();
   await expect(page.locator('#addons-settings [data-addon="templates"]')).not.toBeChecked();
 });
