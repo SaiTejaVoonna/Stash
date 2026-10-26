@@ -816,18 +816,18 @@ body.cx-previewing #tab-bar { display: none !important; }
 .shortcut-hint { color: var(--text-3); font-size: var(--fs-sm); text-align: right; max-width: 60%; }
 
 /* One look for every search field: a pill with a magnifier (notes, Documents, Inbox, Search). */
-#search-input, #docs-q, #cx-q, .tl-searchbar input {
+#search-input, #docs-q, #cx-q, .scope-pill input, .tl-searchbar input {
   box-sizing: border-box; height: 40px !important; padding: 0 14px 0 38px !important; border-radius: var(--r-full) !important;
   border: 1px solid var(--line) !important; background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-md);
 }
-#search-input:focus, #docs-q:focus, #cx-q:focus, .tl-searchbar input:focus { border-color: var(--accent) !important; background: var(--surface-1); }
+#search-input:focus, #docs-q:focus, #cx-q:focus, .scope-pill input:focus, .tl-searchbar input:focus { border-color: var(--accent) !important; background: var(--surface-1); }
 .search-wrap > .icon { left: 14px; }
 .docs-tools .search-wrap { flex: 1; min-width: 0; }
 .cx-searchbar .search-wrap { width: 100%; }
 
 /* One page header on phones: the same big title on every tab page, no back arrow on tab pages. */
 @media (max-width: 720px) {
-  #search-input, #docs-q, #cx-q, .tl-searchbar input { height: 44px !important; }
+  #search-input, #docs-q, #cx-q, .scope-pill input, .tl-searchbar input { height: 44px !important; }
   .cx-title b, .docs-title b { font-size: var(--fs-3xl); letter-spacing: -0.03em; line-height: 1.2; }
   .cx-head, .docs-head { border-bottom: 0; padding-left: var(--s-4); padding-right: var(--s-4); }
   .docs-head #docs-close, .docs-title small { display: none; }
@@ -835,4 +835,18 @@ body.cx-previewing #tab-bar { display: none !important; }
 }
 @media (max-width: 720px) {
   #sort-select { height: 44px; border-radius: var(--r-full); }
+}
+
+/* Search scope chips on the Search page, and one search pill on every phone page. */
+.tl-scope { display: none; }
+.scope-pill { display: none; }
+@media (max-width: 720px) {
+  #tl-pane .tl-scope { order: 2; display: flex; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; margin: 0 var(--s-4) var(--s-2); }
+  .tl-scope::-webkit-scrollbar { display: none; }
+  .tl-scope-chip { flex: 0 0 auto; min-height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-semibold); cursor: pointer; white-space: nowrap; }
+  .tl-scope-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text, #fff); }
+  .scope-pill { display: flex; width: 100%; margin: 0 0 var(--s-3); }
+  .scope-pill input { width: 100%; }
+  .cx-searchbar, .cx-searchbar[hidden] { display: block; }
+  #cx-search-btn { display: none !important; }
 }

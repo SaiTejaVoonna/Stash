@@ -559,6 +559,9 @@
     headEl.append(h("div", { class: "gp-home-title" }, h("h1", null, "Collections"),
       h("button", { class: "btn icon ghost", "aria-label": "New collection", title: "New collection", onclick: () => openNewGroup() }, ic("plus"))));
     if (api.libraryBar) headEl.append(api.libraryBar("collections"));
+    // Phones: the same search pill as everywhere; tapping it opens the one Search page for Collections.
+    headEl.append(h("label", { class: "search-wrap scope-pill" }, ic("search"),
+      h("input", { class: "input", type: "search", "data-search-scope": "collections", placeholder: "Search Collections", "aria-label": "Search Collections", autocomplete: "off" })));
     if (api.libraryQuick) {
       const quick = api.libraryQuick();
       if (quick.length) headEl.append(h("div", { class: "library-quick" },

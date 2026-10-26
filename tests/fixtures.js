@@ -130,4 +130,25 @@ const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name }
 // Phones: More › Settings, then a row (default: Look, where the dock choices are).
 const openSettingsFromMe = async (page, row = "look") => { await page.tap("#settings-btn"); await page.tap('.me-row[data-row="' + row + '"]'); };
 
-module.exports = { openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
+// Phones: the Library tab holds three pages. Flick up on the tab (a touch-style drag) to go to the next one.
+const libTab = (page) => page.locator('#tab-bar .tab-btn[data-tab="groups"]');
+async function flickLibrary(page) {
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
+    const r = b.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const o = { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, clientX: x };
+    b.dispatchEvent(new PointerEvent("pointerdown", { ...o, clientY: y }));
+    b.dispatchEvent(new PointerEvent("pointermove", { ...o, clientY: y - 44 }));
+    b.dispatchEvent(new PointerEvent("pointerup", { ...o, clientY: y - 44 }));
+  });
+}
+async function libraryTo(page, key) {
+  const names = { collections: "Collections", notes: "Notes", docs: "Documents" };
+  await libTab(page).tap();
+  for (let i = 0; i < 3; i++) {
+    if ((await libTab(page).textContent()).trim() === names[key]) return;
+    await flickLibrary(page);
+  }
+}
+
+module.exports = { libTab, flickLibrary, libraryTo, openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
