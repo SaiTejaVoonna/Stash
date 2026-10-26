@@ -185,7 +185,7 @@
     .docs-pane .docs-list { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
   }
   /* Library tab: three dots for the three pages, a pop-up menu on hold, and chips for Notes. */
-  .tab-btn[data-tab="groups"] { touch-action: none; position: relative; }
+  .tab-btn[data-tab="groups"] { touch-action: none; position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .lib-dots { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; pointer-events: none; }
   .lib-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .35; }
   .lib-dots i.on { opacity: 1; }
@@ -2917,12 +2917,20 @@
   function openSettingsGroup(key) {
     const g = SETTINGS_GROUPS[key];
     if (!g) { openSettings(); return; }
-    openSettings(g[1][0]);
+    openSettingsRaw(g[1][0]);
     g[1].slice(1).forEach((p) => { const sec = document.querySelector('.settings-page[data-page="' + p + '"]'); if (sec) { sec.classList.add("active"); renderSettingsPage(p); } });
     document.getElementById("settings-title").textContent = g[0];
     settingsPanel.dataset.group = key;
   }
+  // On a phone a single page always opens inside its folder, so Back goes to the Settings page (never the old long list).
   function openSettings(page) {
+    if (page && settingsIsStacked()) {
+      const key = Object.keys(SETTINGS_GROUPS).find((k) => SETTINGS_GROUPS[k][1].includes(page));
+      if (key) { openSettingsGroup(key); return; }
+    }
+    openSettingsRaw(page);
+  }
+  function openSettingsRaw(page) {
     delete settingsPanel.dataset.group;
     closeSidebarOnMobile();
     settingsOverlay.classList.remove("hidden");
@@ -2944,7 +2952,7 @@
   document.querySelectorAll(".settings-nav-item").forEach((b) => b.addEventListener("click", () => showSettingsPage(b.dataset.page)));
   document.getElementById("settings-back-btn").addEventListener("click", settingsStepBack);
   document.getElementById("settings-btn").addEventListener("click", () => { if (settingsIsStacked()) enterSettingsMode(); else openSettings(); });
-  document.getElementById("settings-close-btn").addEventListener("click", closeSettings);
+  document.getElementById("settings-close-btn").addEventListener("click", () => { if (settingsPanel.dataset.group) settingsStepBack(); else closeSettings(); });
   settingsOverlay.addEventListener("click", (e) => {
     if (e.target === settingsOverlay) closeSettings();
   });
@@ -3766,12 +3774,16 @@
   // The new page rises into place (a short fade and lift); nothing moves with reduced motion.
   function risePage() {
     if (!motionOK()) return;
-    const pane = [document.getElementById("docs-pane"), document.getElementById("group-pane"), document.getElementById("list-pane")].find((e) => e && !e.hidden && e.offsetParent !== null) || document.getElementById("list-pane");
-    if (!pane || !pane.animate) return;
-    pane.animate([{ opacity: 0.3, transform: "translateY(18px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
+    requestAnimationFrame(() => {
+      const page = currentLibraryPage();
+      const pane = page === "docs" ? document.getElementById("docs-pane") : page === "collections" ? document.getElementById("group-pane") : document.getElementById("list-pane");
+      if (!pane || pane.hidden || !pane.animate) return;
+      pane.animate([{ opacity: 0.3, transform: "translateY(18px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
+    });
   }
   function closeLibraryMenu() { const m = document.getElementById("lib-menu"); if (m) m.remove(); }
-  function openLibraryMenu(anchor) {
+  function openLibraryMenu(anchorOld) {
+    const anchor = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]') || anchorOld; // the dock may have been redrawn during the hold
     closeLibraryMenu();
     const menu = document.createElement("div");
     menu.id = "lib-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "Library pages");
@@ -3787,7 +3799,7 @@
     document.body.appendChild(menu);
     const r = anchor.getBoundingClientRect();
     menu.style.left = Math.max(12, Math.min(window.innerWidth - 232, r.left + r.width / 2 - 110)) + "px";
-    menu.style.bottom = (window.innerHeight - r.top + 14) + "px";
+    menu.style.bottom = Math.max(100, window.innerHeight - r.top + 14) + "px";
     setTimeout(() => document.addEventListener("pointerdown", function off(e) { if (!menu.contains(e.target)) { closeLibraryMenu(); document.removeEventListener("pointerdown", off); } }), 0);
   }
   function libraryBar() { return document.createDocumentFragment(); }
@@ -11002,7 +11014,7 @@
     renderAllViews();
     if (chatApi) chatApi.render();
     renderDemoLine();
-    showToast("Demo data added: notes, Inbox and 4 collections. Remove it any time in Settings → Your data");
+    showToast("Demo data added: notes, Inbox and 4 collections. Remove it any time " + (settingsIsStacked() ? "at the bottom of Settings" : "in Settings → Your data"));
   }
   async function removeDemo() {
     const ids = demoIds();

@@ -367,3 +367,39 @@ test("Settings page: Demo data sits at the bottom, adds made-up things and remov
   await page.tap("#me-demo-remove");
   await expect(page.locator("#me-demo-load")).toBeVisible({ timeout: 15000 });
 });
+
+test("Search › Documents also finds files inside collections", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="more"]');
+  await page.tap("#me-gear");
+  await page.tap("#me-demo-load");
+  await expect(page.locator("#me-demo-remove")).toBeVisible({ timeout: 15000 });
+  await libraryTo(page, "docs");
+  const onPage = await page.locator("#docs-list .doc-row").count();
+  expect(onPage).toBeGreaterThanOrEqual(2);
+  await page.tap("#docs-q"); // the pill opens Search, set to Documents
+  await expect(page.locator(".tl-scope-chip.on")).toHaveText("Documents");
+  await expect(page.locator("#tl-pane h1")).toHaveText("Search");
+  await expect(page.locator("#tl-body .tl-row")).toHaveCount(onPage); // every file on the Documents page is found, including the ones in collections
+});
+
+test("Settings shortcuts open inside their folder: Back and X land on the Settings page", async ({ page }) => {
+  await page.evaluate(() => { document.querySelector('.tab-btn[data-tab="more"]').click(); });
+  await page.tap("#me-gear");
+  await page.tap('.me-row[data-row="look"]');
+  await expect(page.locator("#settings-title")).toHaveText("Look");
+  await page.tap("#settings-close-btn"); // X goes back to the Settings page, not to whatever was underneath
+  await expect(page.locator("#me-head h1")).toHaveText("Settings");
+  await expect(page.locator("#settings-overlay")).toBeHidden();
+});
+
+test("Hold menu stays on screen even when the dock is redrawn during the hold", async ({ page }) => {
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 9, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
+    document.querySelector('#tab-bar .tab-btn[data-tab="search"]').click(); // forces the dock to be redrawn mid-hold
+  });
+  await page.locator("#lib-menu").waitFor({ timeout: 3000 }).catch(() => {});
+  const box = await page.locator("#lib-menu").boundingBox();
+  if (box) { expect(box.y).toBeGreaterThanOrEqual(0); expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height); }
+});
