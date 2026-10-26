@@ -128,6 +128,24 @@ const lastToast = (page) => page.locator(".toast-item").last();
 const nav = (page, name) => page.locator("#sidebar .nav-item", { hasText: name });
 
 // Phones: More › Settings, then a row (default: Look, where the dock choices are).
-const openSettingsFromMe = async (page, row = "look") => { await page.tap("#settings-btn"); await page.tap('.me-row[data-row="' + row + '"]'); };
+const openSettingsFromMe = async (page, row = "look") => { await page.tap("#me-gear"); await page.tap('.me-row[data-row="' + row + '"]'); };
 
-module.exports = { openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };
+// Phones: the Library tab holds three pages. Hold the tab (a long touch) to pick one from its menu.
+const libTab = (page) => page.locator('#tab-bar .tab-btn[data-tab="groups"]');
+async function holdLibrary(page) {
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 8, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
+  });
+  await page.locator("#lib-menu").waitFor({ timeout: 3000 });
+}
+async function libraryTo(page, key) {
+  const names = { collections: "Collections", notes: "Notes", docs: "Documents" };
+  await libTab(page).tap();
+  if ((await libTab(page).textContent()).trim() === names[key]) return;
+  await holdLibrary(page);
+  await page.locator('#lib-menu button[data-page="' + key + '"]').tap();
+}
+
+module.exports = { libTab, holdLibrary, libraryTo, openSettingsFromMe, routeCdn, samplePdf, test, expect, openApp, seed, storedItems, newNote, paste, rowTexts, lastToast, nav, newBtn, menuBtn };

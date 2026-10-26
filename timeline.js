@@ -14,8 +14,11 @@
 
   let api = null;
   let pane, headEl, barEl, activeEl, bodyEl, searchEl, countEl;
-  const ui = { open: false, q: "", sort: "newest", shown: PAGE, kbd: -1 };
+  const ui = { open: false, q: "", sort: "newest", shown: PAGE, kbd: -1, scope: "all" };
+  const SCOPES = [["all", "Everything"], ["notes", "Notes"], ["inbox", "Inbox"], ["collections", "Collections"], ["docs", "Documents"]];
+  const inScope = (r) => ui.scope === "all" || (ui.scope === "notes" ? r.kind === "note" && !r.chat : ui.scope === "inbox" ? r.kind === "note" && !!r.chat : ui.scope === "collections" ? r.kind === "entry" : !!r.hasFile);
   let rowsCache = [];
+  let scopeEl = null, titleEl = null;
 
   const isPhone = () => window.matchMedia("(max-width: 720px)").matches;
   const fmtMonth = (t) => new Date(t).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -52,9 +55,10 @@
     headEl.append(
       h("div", { class: "tl-title" },
         h("button", { class: "btn icon ghost tl-menu-btn", "aria-label": "Menu", onclick: () => api.openSidebarDrawer() }, ic("menu", "icon-lg")),
-        h("h1", null, "Timeline"), countEl,
+        (titleEl = h("h1", null, "Timeline")), countEl,
         h("button", { class: "btn primary tl-new", id: "tl-new", title: "New item", onclick: () => api.openNew() }, ic("plus"), h("span", null, "New"))),
-      h("div", { class: "tl-searchbar" }, h("label", { class: "search-wrap" }, ic("search"), searchEl)));
+      h("div", { class: "tl-searchbar" }, h("label", { class: "search-wrap" }, ic("search"), searchEl)),
+      scopeEl = h("div", { class: "tl-scope", role: "tablist", "aria-label": "Where to search" }));
     barEl = h("div", { class: "tl-bar", role: "toolbar", "aria-label": "Filters" });
     activeEl = h("div", { class: "tl-active", "aria-label": "Active filters" });
     headEl.append(barEl, activeEl);
@@ -69,6 +73,8 @@
     if (!ui.open) await api.onEnter();
     ui.open = true;
     if (typeof opts.q === "string") ui.q = opts.q;
+    ui.scope = SCOPES.some(([k]) => k === opts.scope) ? opts.scope : "all";
+    if (titleEl) titleEl.textContent = isPhone() && opts.focus ? "Search" : "Timeline"; // the phone Search tab and the pills say Search
     ui.shown = PAGE;
     ui.kbd = -1;
     pane.hidden = false;
@@ -191,11 +197,17 @@
     if (chips.length > 1) activeEl.append(h("button", { class: "gp-clear-all", onclick: () => { ui.sort = "newest"; saveSort(); setQ(""); } }, "Clear all"));
   }
 
+  function renderScope() {
+    if (!scopeEl) return;
+    scopeEl.replaceChildren(...SCOPES.map(([k, label]) => h("button", { type: "button", role: "tab", "data-scope": k, "aria-selected": String(ui.scope === k), class: "tl-scope-chip" + (ui.scope === k ? " on" : ""),
+      onclick: () => { ui.scope = k; ui.shown = PAGE; renderResults(); } }, label)));
+  }
   function renderResults() {
     if (!ui.open) return;
     const p = S.parse(ui.q, ctx());
     renderBar();
-    const rows = sortRows(allRows().filter((r) => matches(r, p)));
+    const rows = sortRows(allRows().filter((r) => inScope(r) && matches(r, p)));
+    renderScope();
     lastResult = rows;
     countEl.textContent = rows.length === 1 ? "1 thing" : rows.length + " things";
     bodyEl.replaceChildren();

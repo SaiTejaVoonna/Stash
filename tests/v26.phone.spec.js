@@ -1,6 +1,6 @@
 // 2.6 on a phone: the Filter sheet (same spacing everywhere, hide with a
 // second tap, custom dates) and a dock you can change.
-const { test, expect, openApp, newNote, openSettingsFromMe, seed } = require("./fixtures");
+const { test, expect, openApp, newNote, openSettingsFromMe, seed, libraryTo, libTab, holdLibrary } = require("./fixtures");
 
 test.beforeEach(async ({ page }) => { await openApp(page); });
 
@@ -144,7 +144,7 @@ test("words typed just before the app closes are kept", async ({ page }) => {
 const PNG1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 test("Me chat: message yourself with text, photos and a PDF; select and forward into a collection, section and page", async ({ page }) => {
   // A space with a page to forward into.
-  await page.tap("#tab-bar [data-tab='groups']");
+  await libraryTo(page, "collections");
   await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
   await page.locator(".gp-tpl", { hasText: "Vehicles" }).tap();
   await page.fill("#gp-new-name", "Bike");
@@ -286,9 +286,12 @@ test("Inbox tools: filters, search, select all, archive with Undo, clean up empt
   await expect(msgs).toHaveCount(1);
   await page.locator(".cx-filter[data-filter='all']").tap();
   // Search.
-  await page.tap("#cx-search-btn");
-  await page.fill("#cx-q", "milk");
-  await expect(msgs).toHaveCount(2);
+  await page.tap("#cx-q"); // the pill opens the one Search page, set to the Inbox
+  await expect(page.locator("#tl-pane")).toBeVisible();
+  await expect(page.locator(".tl-scope-chip.on")).toHaveText("Inbox");
+  await page.fill("#tl-search", "milk");
+  await expect(page.locator("#tl-body .tl-row")).toHaveCount(2);
+  await page.goBack();
   await page.goBack();
   await expect(msgs).toHaveCount(4);
   // Clean up: the second "Buy milk" is a repeat, picked already.
@@ -311,7 +314,7 @@ test("Inbox tools: filters, search, select all, archive with Undo, clean up empt
 
 test("Smart sorting: @ and # lists while typing, spotted amounts, a one-tap suggestion, Sort many; typed #words stay text", async ({ page }) => {
   // A Food collection with a page "Nimrah Cafe".
-  await page.tap("#tab-bar [data-tab='groups']");
+  await libraryTo(page, "collections");
   await page.locator(".gp-empty button", { hasText: "New collection" }).tap();
   await page.locator(".gp-tpl", { hasText: "Food" }).first().tap();
   await page.tap(".gp-sheet button:has-text('Create collection')");
@@ -410,8 +413,7 @@ test("a checklist note's preview shows boxes for every line, not '- [ ]'", async
   const now = Date.now();
   await seed(page, { items: [{ id: "cl1", type: "note", content: "Buy milk\n- [ ] eggs\n- [ ] bread", createdAt: now, updatedAt: now, schemaVersion: 2 }] });
   await page.reload();
-  await page.tap('.tab-btn[data-tab="groups"]');
-  await page.locator('.library-seg-btn[data-lib="notes"]:visible').first().tap();
+  await libraryTo(page, "notes");
   const sub = page.locator(".item-row .item-subtext").first();
   await expect(sub).toContainText("eggs");
   await expect(sub).not.toContainText("[ ]");

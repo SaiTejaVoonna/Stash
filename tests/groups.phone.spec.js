@@ -1,7 +1,7 @@
 // Groups on a phone: tab bar, one screen at a time, Snap, the back button.
 const path = require("path");
 const fs = require("fs");
-const { test, expect, openApp, lastToast } = require("./fixtures");
+const { test, expect, openApp, lastToast, libraryTo, libTab, holdLibrary } = require("./fixtures");
 
 // A small real PNG, made on the fly.
 function pngFile() {
@@ -22,7 +22,7 @@ test("Groups tab, a group screen, Snap, and back steps out one screen at a time"
   await page.reload();
   await expect(page.locator("#tab-bar [data-tab='groups']")).toBeVisible();
 
-  await page.click("#tab-bar [data-tab='groups']");
+  await libraryTo(page, "collections");
   await page.click(".gp-empty button:has-text('New collection')");
   await page.locator(".gp-tpl", { hasText: "Bike" }).click();
   await page.click(".gp-sheet button:has-text('Create collection')");
@@ -48,7 +48,7 @@ test("Groups tab, a group screen, Snap, and back steps out one screen at a time"
   await chooser.setFiles(pngFile());
   await expect(lastToast(page)).toContainText("Saved");
   await expect(page.locator("#chat-pane .cx-msg")).toHaveCount(1);
-  await page.click("#tab-bar [data-tab='groups']");
+  await libraryTo(page, "collections");
 
   // Inside a sub-chat, Snap saves straight there.
   await page.locator(".gp-home-sub", { hasText: "Spare parts" }).click();

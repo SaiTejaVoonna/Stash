@@ -49,7 +49,7 @@
       h("button", { class: "btn icon ghost", id: "cx-cleanup", "aria-label": "Clean up", title: "Clean up", onclick: () => openCleanup() }, ic("sparkle")),
       h("button", { class: "btn gp-small cx-select", id: "cx-select", onclick: () => setSelecting(!ui.selecting) }, "Select"));
     searchEl = h("div", { class: "cx-searchbar", hidden: true },
-      h("label", { class: "search-wrap" }, ic("search"), h("input", { id: "cx-q", type: "search", placeholder: "Search the Inbox", "aria-label": "Search the Inbox", oninput: (e) => { ui.q = e.target.value; render(); } })));
+      h("label", { class: "search-wrap" }, ic("search"), h("input", { id: "cx-q", type: "search", "data-search-scope": "inbox", placeholder: "Search the Inbox", "aria-label": "Search the Inbox", oninput: (e) => { ui.q = e.target.value; render(); } })));
     filterEl = h("div", { class: "cx-filters", id: "cx-filters", role: "tablist" });
     sheetEl = h("div", { class: "cx-sheet-wrap", id: "cx-sheet", hidden: true });
     bodyEl = h("div", { class: "cx-body", id: "cx-body" });

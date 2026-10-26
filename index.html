@@ -178,14 +178,36 @@
     .item-row:active, .me-row:active, .nav-item:active, .settings-nav-item:active { transform: scale(0.985); background-color: var(--surface-2); }
     .library-seg-btn:active, .library-filter-btn:active, .tl-when-chip:active { transform: scale(0.96); }
   }
+  @media (max-width: 720px) {
+    /* Documents is a page, not a cover: the dock stays on top of it (only the file viewer is truly full screen). */
+    body:has(#docs-pane:not([hidden])) #tab-bar { z-index: calc(var(--z-settings) + 1); }
+    body:has(#doc-viewer) #tab-bar { display: none; }
+    .docs-pane .docs-list { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  }
+  /* Library tab: three dots for the three pages, a pop-up menu on hold, and chips for Notes. */
+  .tab-btn[data-tab="groups"] { touch-action: none; position: relative; }
+  .lib-dots { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; pointer-events: none; }
+  .lib-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .35; }
+  .lib-dots i.on { opacity: 1; }
+  #lib-menu { position: fixed; z-index: calc(var(--z-drawer) + 3); width: 220px; background: var(--elevated); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: 6px; display: flex; flex-direction: column; gap: 2px; animation: popIn var(--t-fast) ease; }
+  #lib-menu button { display: flex; align-items: center; gap: var(--s-3); min-height: 48px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-lg); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-md); cursor: pointer; text-align: left; }
+  #lib-menu button span { flex: 1; }
+  #lib-menu button:active, #lib-menu button:focus-visible { background: var(--accent-soft, var(--surface-2)); }
+  #lib-menu .icon { color: var(--text-2); font-size: 22px; }
+  .library-chips { display: flex; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--s-4)); padding: 2px var(--s-4) var(--s-2); }
+  .library-chips::-webkit-scrollbar { display: none; }
+  .library-chip { flex: 0 0 auto; min-height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface-1); color: var(--text); font: inherit; font-size: var(--fs-sm); font-weight: var(--fw-semibold); cursor: pointer; white-space: nowrap; }
+  .library-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text, #fff); }
   /* Me (phones): a backup card and an App lock card at the top. */
-  #me-cards, #me-rows, #me-head { display: none; }
+  #me-cards, #me-rows, #me-head, #me-demo { display: none; }
   @media (max-width: 720px) {
     /* More: the profile, a small backup bar, then one scroll with every place (counts and +), and Settings pinned at the bottom.
        Tapping Settings swaps the page to the seven Settings folders (a "settings-mode" page). */
-    #sidebar #brand, #sidebar #sidebar-search, #sidebar #pwgen-btn { display: none; }
+    #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-footer { display: none; }
+    #me-gear { margin-left: auto; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+    #me-gear .icon { width: 24px; height: 24px; font-size: 24px; }
+    #sidebar.settings-mode #me-gear { display: none; }
     #sidebar-scroll { order: 3; }
-    #sidebar-footer { order: 5; }
     #me-head { display: flex; align-items: center; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
     #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
     #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
@@ -194,12 +216,16 @@
     #me-back { display: none; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); place-items: center; cursor: pointer; }
     #sidebar.settings-mode #me-back { display: grid; }
     #sidebar.settings-mode #me-rows { display: block; }
-    #sidebar.settings-mode #sidebar-scroll, #sidebar.settings-mode #sidebar-footer { display: none; }
+    #sidebar.settings-mode #me-demo { display: block; order: 5; margin: 0 var(--s-2) var(--s-3); }
+    #me-demo .me-card { margin: 0; }
+    #me-demo .me-go.danger { background: var(--danger-soft, var(--surface-2)); color: var(--danger, #ff453a); }
+    /* On a phone the demo data lives on the Settings page, not inside Your data. */
+    .settings-section:has(#demo-load) { display: none; }
+    #sidebar.settings-mode #sidebar-scroll { display: none; }
     #sidebar:not(.settings-mode) #me-lock { display: none; }
     #sidebar:not(.settings-mode) #me-cards { padding-bottom: var(--s-2); }
     #sidebar:not(.settings-mode) .me-card { padding: var(--s-2) var(--s-3); }
     #sidebar:not(.settings-mode) .me-card-ic { width: 32px; height: 32px; }
-    #sidebar-footer { border-top: 1px solid var(--line); }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -1585,9 +1611,10 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
-    <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1></div>
+    <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1><button id="me-gear" type="button" aria-label="Settings"></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
+    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -1636,7 +1663,7 @@
       <div id="library-seg-slot"></div>
       <div id="search-sort-row">
         <label class="search-wrap"><svg class="icon"><use href="#icon-search"></use></svg>
-          <input id="search-input" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search items"><span class="kbd">/</span></label>
+          <input id="search-input" type="search" data-search-scope="notes" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search items"><span class="kbd">/</span></label>
         <select id="sort-select" title="Sort by" aria-label="Sort by">
           <option value="updated-desc">Newest updated</option>
           <option value="updated-asc">Oldest updated</option>
@@ -2874,6 +2901,8 @@
     document.querySelector("#me-head h1").textContent = "More";
   }
   document.getElementById("me-back").innerHTML = icon("chevron-left");
+  document.getElementById("me-gear").innerHTML = icon("gear");
+  document.getElementById("me-gear").addEventListener("click", enterSettingsMode);
   document.getElementById("me-back").addEventListener("click", exitSettingsMode);
   // Settings (phones): each row on the Settings page opens one group of pages together.
   const SETTINGS_GROUPS = {
@@ -3486,8 +3515,8 @@
   const DOCK_KEY = "copypaster-dock";
   const DOCK_CHOICES = [
     { key: "chat", label: "Inbox", icon: "inbox" },
-    { key: "all", label: "Library", icon: "library" },
-    { key: "groups", label: "Collections", icon: "layers", needsGroups: true },
+    { key: "all", label: "All notes", icon: "note" },
+    { key: "groups", label: "Library", icon: "library", needsGroups: true },
     { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "search", label: "Search", icon: "search" },
     { key: "saved", label: "Favourites", icon: "star" },
@@ -3537,6 +3566,22 @@
     const midLab = document.createElement("span");
     midLab.textContent = "Middle";
     midWrap.append(midLab, midSel);
+    const startSel = document.createElement("select");
+    startSel.className = "input dock-slot"; startSel.id = "library-start";
+    startSel.setAttribute("aria-label", "Library opens on");
+    let startNow = "last";
+    try { startNow = localStorage.getItem(LIBRARY_START_KEY) || "last"; } catch {}
+    [["last", "The page I used last"]].concat(libraryPageList().map((p) => [p.key, p.label])).forEach(([v, label]) => {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = label; o.selected = startNow === v;
+      startSel.appendChild(o);
+    });
+    startSel.addEventListener("change", () => { try { localStorage.setItem(LIBRARY_START_KEY, startSel.value); } catch {} showToast("Library updated"); });
+    const startWrap = document.createElement("label");
+    startWrap.className = "dock-slot-wrap";
+    const startLab = document.createElement("span");
+    startLab.textContent = "Library opens on";
+    startWrap.append(startLab, startSel);
     [0, 1, 2].forEach((slot) => {
       const sel = document.createElement("select");
       sel.className = "input dock-slot";
@@ -3565,6 +3610,7 @@
       box.appendChild(wrap);
       if (slot === 1) box.appendChild(midWrap);
     });
+    box.appendChild(startWrap);
   }
   // One highlight slides from the old tab to the new one. The bar is redrawn on every
   // change, so the highlight is kept in the page and only the tabs are replaced.
@@ -3602,7 +3648,8 @@
     if (isDrawerMode() && sidebarEl.classList.contains("open")) activeKey = "more";
     const onTab = tabs.some((tab) => tab.key === activeKey);
     [...bar.children].forEach((c) => { if (!c.classList.contains("tab-pill")) c.remove(); });
-    for (const tab of tabs) {
+    for (const baseTab of tabs) {
+      const tab = baseTab.key === "groups" ? { ...baseTab, ...libraryTabFace() } : baseTab;
       const b = document.createElement("button");
       b.type = "button";
       const big = tab.key === "new" || tab.key === "snap";
@@ -3610,8 +3657,25 @@
       b.dataset.tab = tab.key;
       b.setAttribute("aria-label", tab.label);
       b.innerHTML = (big ? '<span class="plus-ring">' + icon(tab.icon) + "</span>" : icon(tab.icon)) + "<span>" + tab.label + "</span>";
-      // Holding Snap opens the New menu instead.
       let held = false;
+      if (tab.key === "groups") {
+        // Library: three little dots show which page; hold the tab to pick one.
+        const pages = libraryPageList(), cur = pages.findIndex((p) => p.key === currentLibraryPage());
+        const dots = document.createElement("span");
+        dots.className = "lib-dots"; dots.setAttribute("aria-hidden", "true");
+        pages.forEach((p, i) => { const d = document.createElement("i"); if (i === cur) d.className = "on"; dots.appendChild(d); });
+        b.appendChild(dots);
+        b.setAttribute("aria-label", "Library: " + tab.label + ". Hold to choose another page.");
+        let timer = null;
+        const cancel = () => { clearTimeout(timer); timer = null; };
+        b.addEventListener("pointerdown", (e) => {
+          held = false; cancel();
+          timer = setTimeout(() => { held = true; if (navigator.vibrate) navigator.vibrate(10); openLibraryMenu(b); }, 450);
+        });
+        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, cancel));
+        b.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      // Holding Snap opens the New menu instead.
       if (tab.key === "snap") {
         let timer = null;
         const cancel = () => { clearTimeout(timer); timer = null; };
@@ -3620,6 +3684,8 @@
         b.addEventListener("contextmenu", (e) => e.preventDefault());
       }
       b.addEventListener("click", async () => {
+        const inLibBefore = inLibraryNow(); // read before the Inbox or Search is closed below
+        if (tab.key === "groups" && held) { held = false; return; }
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
         if (tab.key === "more") { openSidebarDrawer(); return; }
         // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
@@ -3632,7 +3698,13 @@
         }
         if (tab.key === "chat") { openChat(); return; }
         if (chatApi && chatApi.isOpen()) chatApi.close();
-        if (tab.key === "groups") { closeTimeline(); groupsApi.showHome(); return; }
+        if (tab.key === "groups") {
+          let first = false;
+          try { first = !localStorage.getItem(LIBRARY_HINT_KEY); localStorage.setItem(LIBRARY_HINT_KEY, "1"); } catch {}
+          if (first) showToast("Hold Library to pick Collections, Notes or Documents.", { ms: 5000 });
+          goLibraryPage(inLibBefore ? currentLibraryPage() : libraryStartPage());
+          return;
+        }
         if (tlOpen) closeTimeline();
         if (inGroups) { groupsApi.exit(); switchView(tab.key); return; }
         if (currentView === tab.key && !tlOpen) { itemsEl.scrollTo({ top: 0, behavior: motionOK() ? "smooth" : "auto" }); return; }
@@ -3645,35 +3717,80 @@
 
   // Library: Collections, Notes and Documents are three views of one place. On a
   // phone each of them shows this bar at the top, to hop between them.
-  function libraryBar(active) {
-    const parts = [["collections", "Collections"], ["notes", "Notes"]];
-    if (window.CPDocs && addonOn("documents")) parts.push(["docs", "Documents"]);
-    const bar = document.createElement("div");
-    bar.className = "library-seg";
-    bar.setAttribute("role", "tablist");
-    bar.setAttribute("aria-label", "Library");
-    for (const [key, label] of parts) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.setAttribute("role", "tab");
-      b.dataset.lib = key;
-      b.setAttribute("aria-selected", key === active ? "true" : "false");
-      b.className = "library-seg-btn" + (key === active ? " on" : "");
-      b.textContent = label;
-      b.addEventListener("click", () => {
-        if (key === active) return;
-        if (docsApi && docsApi.isOpen()) docsApi.close();
-        if (chatApi && chatApi.isOpen()) chatApi.close();
-        if (key === "collections") { closeTimeline(); groupsApi.showHome(); }
-        else if (key === "notes") { if (groupsApi && groupsApi.isActive()) groupsApi.exit(); switchView("all"); }
-        else openDocuments();
-        renderTabBar();
-      });
-      bar.appendChild(b);
-    }
-    return bar;
+  // The Library tab holds three pages (Collections, Notes, Documents). Hold the tab to pick one,
+  // and the app remembers the last page. The pages themselves carry no switching bar.
+  const LIBRARY_PAGE_KEY = "copypaster-library-page", LIBRARY_START_KEY = "copypaster-library-start", LIBRARY_HINT_KEY = "copypaster-library-hint";
+  function libraryPageList() {
+    const list = [{ key: "collections", label: "Collections", icon: "layers" }, { key: "notes", label: "Notes", icon: "note" }];
+    if (window.CPDocs && addonOn("documents")) list.push({ key: "docs", label: "Documents", icon: "file" });
+    return list;
   }
-  // "Sorted for you": things Stash grouped by what they are, one tap to see them.
+  function savedLibraryPage() {
+    let k = "collections";
+    try { k = localStorage.getItem(LIBRARY_PAGE_KEY) || "collections"; } catch {}
+    return libraryPageList().some((p) => p.key === k) ? k : "collections";
+  }
+  function libraryStartPage() {
+    let start = "last";
+    try { start = localStorage.getItem(LIBRARY_START_KEY) || "last"; } catch {}
+    return start !== "last" && libraryPageList().some((p) => p.key === start) ? start : savedLibraryPage();
+  }
+  // True only while one of the three Library pages is what you are looking at (not the Inbox or Search).
+  function inLibraryNow() {
+    if ((chatApi && chatApi.isOpen()) || (timelineApi && timelineApi.isOpen())) return false;
+    return !!((docsApi && docsApi.isOpen()) || (groupsApi && groupsApi.enabled() && groupsApi.isActive()) || isLibraryView());
+  }
+  function currentLibraryPage() {
+    if (!inLibraryNow()) return savedLibraryPage();
+    if (docsApi && docsApi.isOpen()) return "docs";
+    if (groupsApi && groupsApi.enabled() && groupsApi.isActive()) return "collections";
+    return "notes";
+  }
+  function libraryTabFace() {
+    const pages = libraryPageList();
+    const p = pages.find((x) => x.key === currentLibraryPage()) || pages[0];
+    return { label: p.label, icon: p.icon };
+  }
+  function goLibraryPage(key) {
+    if (!libraryPageList().some((p) => p.key === key)) key = "collections";
+    try { localStorage.setItem(LIBRARY_PAGE_KEY, key); } catch {}
+    closeLibraryMenu();
+    if (docsApi && docsApi.isOpen() && key !== "docs") docsApi.close();
+    if (chatApi && chatApi.isOpen()) chatApi.close();
+    if (key === "collections") { closeTimeline(); groupsApi.showHome(); }
+    else if (key === "notes") { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); if (!isLibraryView()) switchView("all"); else if (currentView !== "all" && typeof currentView === "string") switchView(currentView); }
+    else { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); openDocuments(); }
+    renderTabBar();
+    risePage();
+  }
+  // The new page rises into place (a short fade and lift); nothing moves with reduced motion.
+  function risePage() {
+    if (!motionOK()) return;
+    const pane = [document.getElementById("docs-pane"), document.getElementById("group-pane"), document.getElementById("list-pane")].find((e) => e && !e.hidden && e.offsetParent !== null) || document.getElementById("list-pane");
+    if (!pane || !pane.animate) return;
+    pane.animate([{ opacity: 0.3, transform: "translateY(18px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+  function closeLibraryMenu() { const m = document.getElementById("lib-menu"); if (m) m.remove(); }
+  function openLibraryMenu(anchor) {
+    closeLibraryMenu();
+    const menu = document.createElement("div");
+    menu.id = "lib-menu"; menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", "Library pages");
+    const cur = currentLibraryPage();
+    libraryPageList().forEach((p) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "menuitem"); b.dataset.page = p.key;
+      b.innerHTML = icon(p.icon) + "<span></span>" + (p.key === cur ? icon("check") : "");
+      b.querySelector("span").textContent = p.label;
+      b.addEventListener("click", () => goLibraryPage(p.key));
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    const r = anchor.getBoundingClientRect();
+    menu.style.left = Math.max(12, Math.min(window.innerWidth - 232, r.left + r.width / 2 - 110)) + "px";
+    menu.style.bottom = (window.innerHeight - r.top + 14) + "px";
+    setTimeout(() => document.addEventListener("pointerdown", function off(e) { if (!menu.contains(e.target)) { closeLibraryMenu(); document.removeEventListener("pointerdown", off); } }), 0);
+  }
+  function libraryBar() { return document.createDocumentFragment(); }
   function libraryQuick() {
     const n = (q) => (timelineApi && timelineApi.count ? timelineApi.count(q) : 0);
     const out = [
@@ -3693,21 +3810,24 @@
     if (!slot) return;
     if (!isLibraryView()) { slot.replaceChildren(); return; }
     const row = document.createElement("div");
-    row.className = "library-filter-row";
-    const btn = document.createElement("button");
-    btn.type = "button"; btn.id = "library-filter-btn";
-    btn.className = "library-filter-btn" + (currentView !== "all" ? " on" : "");
-    btn.innerHTML = icon("filter") + "<span></span>";
-    btn.querySelector("span").textContent = currentView === "all" ? "Filters" : currentViewLabel();
-    btn.addEventListener("click", openLibraryFilters);
-    row.appendChild(btn);
-    if (currentView !== "all") {
-      const clear = document.createElement("button");
-      clear.type = "button"; clear.id = "library-filter-clear"; clear.className = "library-filter-clear"; clear.textContent = "Show all";
-      clear.addEventListener("click", () => switchView("all"));
-      row.appendChild(clear);
-    }
-    slot.replaceChildren(libraryBar("notes"), row);
+    row.className = "library-chips"; row.setAttribute("role", "tablist"); row.setAttribute("aria-label", "Notes");
+    const add = (key, label, on) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "tab"); b.dataset.view = key;
+      b.className = "library-chip" + (on ? " on" : "");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      const n = key === "__other" ? 0 : countForNav(key);
+      b.textContent = label + (key !== "__other" && n ? " " + n : "");
+      b.addEventListener("click", () => { if (key !== "__other") switchView(key); });
+      row.appendChild(b);
+      return b;
+    };
+    if (typeof currentView === "object") add("__other", currentViewLabel(), true);
+    [["all", "All"], ["saved", "Favourites"], ["pinned", "Pinned"], ["unread", "Unread"], ["reminders", "Reminders"], ["archive", "Archive"], ["trash", "Trash"]]
+      .forEach(([k, l]) => add(k, l, currentView === k));
+    slot.replaceChildren(row);
+    const lit = row.querySelector(".library-chip.on");
+    if (lit && lit.scrollIntoView) lit.scrollIntoView({ inline: "center", block: "nearest" });
   }
   function openLibraryFilters() {
     const live = (i) => !i.vaulted && !i.deletedAt && !i.archivedAt && !i.chat;
@@ -7143,6 +7263,7 @@
     if (toolsApi && toolsApi.isOpen()) { toolsApi.close(); return true; }
     if (document.getElementById("action-sheet-overlay")) { closeActionSheet(); return true; }
     if (document.getElementById("new-menu-overlay")) { closeNewMenu(); return true; }
+    if (document.getElementById("lib-menu")) { closeLibraryMenu(); return true; }
     if (sidebarEl.classList.contains("settings-mode") && sidebarEl.classList.contains("open") && settingsOverlay.classList.contains("hidden")) { exitSettingsMode(); return true; }
     if (document.getElementById("palette-overlay")) { closePalette(); return true; }
     const placeholderModal = document.getElementById("placeholder-modal-overlay");
@@ -7167,6 +7288,10 @@
       if (currentId) { closeDetail(); return true; }
       timelineApi.stepBack();
       renderNav(); renderTabBar();
+      if (!timelineApi.isOpen() && searchReturn) {
+        const back = searchReturn; searchReturn = null;
+        if (back === "chat") openChat(); else if (back === "docs") openDocuments(); else if (groupsApi) groupsApi.showHome();
+      }
       return true;
     }
     if (sidebarEl.classList.contains("open")) { closeSidebarOnMobile(); return true; }
@@ -10783,7 +10908,7 @@
       if (i.remindAt) where.push({ label: (i.remindAt <= Date.now() ? "Due " : "") + shortWhen(i.remindAt), icon: "bell", color: "var(--warning)" });
       const st = i.type === "note" && statusOf(i.status);
       out.push({
-        kind: "note", id: i.id, at: i.createdAt, edited: i.updatedAt,
+        kind: "note", id: i.id, at: i.createdAt, edited: i.updatedAt, chat: !!i.chat, hasFile: !!(i.files && i.files.length),
         title, sub: sub.slice(0, 160), icon: i.checklist ? "checklist" : fileName ? "file" : i.audio.length && !i.images.length ? "mic" : KIND_ICONS[kind],
         color: "var(--" + (kind === "image" ? "image" : kind) + ")", photo: i.images[0] || null,
         tags: tagObjs.map((t) => tagKey(t.name)), tagLabels: tagObjs.map((t) => ({ key: tagKey(t.name), label: t.name })),
@@ -10796,6 +10921,7 @@
   }
   async function openTimeline(opts = {}) {
     if (!timelineApi) return;
+    if (!opts.scope) searchReturn = null;
     if (chatApi && chatApi.isOpen()) chatApi.close();
     await timelineApi.open(opts);
     renderNav();
@@ -10804,6 +10930,22 @@
   function closeTimeline() {
     if (timelineApi && timelineApi.isOpen()) timelineApi.close();
   }
+  // Phones: every search field is a pill that opens the one Search page, set to where you came from.
+  let searchReturn = null; // where Back from a pill's Search page should land
+  function openScopedSearch(scope) {
+    timelineTab = "search";
+    searchReturn = chatApi && chatApi.isOpen() ? "chat" : docsApi && docsApi.isOpen() ? "docs" : groupsApi && groupsApi.isActive() ? "collections" : null;
+    if (docsApi && docsApi.isOpen()) docsApi.close();
+    if (groupsApi && groupsApi.isActive()) groupsApi.exit();
+    openTimeline({ focus: true, scope });
+  }
+  document.addEventListener("focusin", (e) => {
+    const f = e.target;
+    if (!f || !f.matches || !f.matches("[data-search-scope]")) return;
+    if (!window.matchMedia("(max-width: 720px)").matches) return;
+    f.blur();
+    openScopedSearch(f.dataset.searchScope);
+  });
   // ---------- Me chat ----------
   let chatApi = null;
   async function openChat() {
@@ -10829,9 +10971,11 @@
   }
   function renderDemoLine() {
     const on = !!demoIds();
-    const add = document.getElementById("demo-load"), rm = document.getElementById("demo-remove");
-    if (add) add.hidden = on;
-    if (rm) rm.hidden = !on;
+    for (const [a, r] of [["demo-load", "demo-remove"], ["me-demo-load", "me-demo-remove"]]) {
+      const add = document.getElementById(a), rm = document.getElementById(r);
+      if (add) add.hidden = on;
+      if (rm) rm.hidden = !on;
+    }
   }
   let demoLoading = false;
   async function loadDemo() {
@@ -10873,6 +11017,9 @@
     renderDemoLine();
     showToast("Demo data removed. Your own things weren't touched.");
   }
+  document.getElementById("me-demo-load").addEventListener("click", loadDemo);
+  document.getElementById("me-demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
+  document.querySelector("#me-demo .me-card-ic").innerHTML = icon("sparkle");
   document.getElementById("demo-load").addEventListener("click", loadDemo);
   document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   renderDemoLine();

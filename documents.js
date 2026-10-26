@@ -132,7 +132,7 @@
 
   // ---------- The Documents list ----------
   function build() {
-    searchEl = h("input", { class: "input", id: "docs-q", type: "search", placeholder: "Search documents", "aria-label": "Search documents", oninput: (e) => { ui.q = e.target.value; render(); } });
+    searchEl = h("input", { class: "input", id: "docs-q", type: "search", "data-search-scope": "docs", placeholder: "Search documents", "aria-label": "Search documents", oninput: (e) => { ui.q = e.target.value; render(); } });
     const sort = h("select", { class: "input gp-select", id: "docs-sort", "aria-label": "Sort", onchange: (e) => { ui.sort = e.target.value; render(); } },
       h("option", { value: "new" }, "Newest first"), h("option", { value: "old" }, "Oldest first"), h("option", { value: "name" }, "Name"), h("option", { value: "size" }, "Biggest"));
     listEl = h("div", { class: "docs-list", id: "docs-list" });
