@@ -81,9 +81,12 @@ test("More opens a page and closes; its Vault row opens the Vault; the New folde
   // More › Folders › + (the box opens on top of everything).
   await page.tap('.tab-btn[data-tab="more"]');
   await page.tap("#add-folder-btn");
-  const box = await page.locator(".popover").boundingBox();
-  const onTop = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y).closest(".popover"), { x: box.x + box.width / 2, y: box.y + 30 });
-  expect(onTop).toBe(true);
+  // The box slides up when it opens, so wait until it has settled before checking what is on top (slower machines read it mid-slide).
+  await expect.poll(async () => {
+    const box = await page.locator(".popover").boundingBox();
+    if (!box) return false;
+    return page.evaluate(({ x, y }) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest(".popover")); }, { x: box.x + box.width / 2, y: box.y + 30 });
+  }, { timeout: 5000 }).toBe(true);
 });
 
 test("select mode shows the bulk bar inside the screen", async ({ page }) => {
@@ -412,4 +415,42 @@ test("Holding the Library tab still opens the menu if the phone sends a stray po
     setTimeout(() => { b.dispatchEvent(new PointerEvent("pointerleave", o)); b.dispatchEvent(new PointerEvent("pointercancel", o)); }, 150);
   });
   await expect(page.locator("#lib-menu")).toBeVisible({ timeout: 3000 });
+});
+
+// From Documents, every dock destination must leave it (it is a separate fixed pane that used to stay on top).
+for (const [name, tabs, keys] of [
+  ["Inbox, All notes, Library", ["chat", "all", "groups"], ["chat", "all", "groups", "more"]],
+  ["Timeline, Search, Favourites", ["timeline", "search", "saved"], ["timeline", "search", "saved", "more"]],
+  ["Reminders, Unread, Notes", ["reminders", "unread", "notes"], ["reminders", "unread", "notes", "more"]]
+]) {
+  test("Documents → every dock tab leaves Documents (" + name + ")", async ({ page }) => {
+    await page.evaluate((t) => { localStorage.setItem("copypaster-dock", JSON.stringify(t)); }, tabs);
+    await page.reload();
+    await page.waitForSelector('#tab-bar .tab-btn[data-tab="more"]');
+    for (const key of keys) {
+      // open Documents from the More list, then tap the tab
+      await page.tap('.tab-btn[data-tab="more"]');
+      await page.locator("#sidebar .nav-item", { hasText: "Documents" }).tap();
+      await expect(page.locator("#docs-pane")).toBeVisible();
+      if (key === "groups") {
+        await page.tap('.tab-btn[data-tab="groups"]'); // the Library tab keeps Documents (it is the page you are on)
+        await expect(page.locator("#docs-pane")).toBeVisible();
+        continue;
+      }
+      await page.locator('#tab-bar .tab-btn[data-tab="' + key + '"]').tap();
+      await expect(page.locator("#docs-pane"), "tab " + key).toBeHidden();
+    }
+  });
+}
+
+test("Tapping the Documents tab again does not replay the rise animation, and Library from the Inbox still does", async ({ page }) => {
+  await libraryTo(page, "docs");
+  const anims = () => page.evaluate(() => document.getElementById("docs-pane").getAnimations().length);
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.tap('.tab-btn[data-tab="groups"]');
+  await page.waitForTimeout(100);
+  expect(await anims()).toBe(0);
+  await page.tap('.tab-btn[data-tab="chat"]');
+  await page.tap('.tab-btn[data-tab="groups"]'); // coming back from the Inbox: the page rises in
+  await expect(page.locator("#docs-pane")).toBeVisible();
 });

@@ -3702,6 +3702,8 @@
         // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
         if (isDrawerMode() && sidebarEl.classList.contains("open")) closeSidebarOnMobile();
         if (tab.key === "new") { openNewMenu(); return; }
+        // Documents is a separate fixed pane: every dock destination except the Library tab itself must close it first.
+        if (tab.key !== "groups" && docsApi && docsApi.isOpen()) docsApi.close();
         if (tab.key === "search") { if (docsApi && docsApi.isOpen()) docsApi.close(); timelineTab = "search"; openTimeline({ focus: true }); return; }
         if (tab.key === "timeline") {
           if (tlOpen && timelineTab === "timeline") { timelineApi.close(); renderTabBar(); renderNav(); return; }
@@ -3713,7 +3715,7 @@
           let first = false;
           try { first = !localStorage.getItem(LIBRARY_HINT_KEY); localStorage.setItem(LIBRARY_HINT_KEY, "1"); } catch {}
           if (first) showToast("Hold Library to pick Collections, Notes or Documents.", { ms: 5000 });
-          goLibraryPage(inLibBefore ? currentLibraryPage() : libraryStartPage());
+          goLibraryPage(inLibBefore ? currentLibraryPage() : libraryStartPage(), inLibBefore);
           return;
         }
         if (tlOpen) closeTimeline();
@@ -3762,9 +3764,10 @@
     const p = pages.find((x) => x.key === currentLibraryPage()) || pages[0];
     return { label: p.label, icon: p.icon };
   }
-  function goLibraryPage(key) {
+  // wasInLibrary: pass true/false when the caller has already closed the Inbox or Search (so "already there" can't be misread).
+  function goLibraryPage(key, wasInLibrary) {
     if (!libraryPageList().some((p) => p.key === key)) key = "collections";
-    const alreadyThere = currentLibraryPage() === key;
+    const alreadyThere = (wasInLibrary === undefined ? inLibraryNow() : wasInLibrary) && currentLibraryPage() === key;
     try { localStorage.setItem(LIBRARY_PAGE_KEY, key); } catch {}
     closeLibraryMenu();
     if (docsApi && docsApi.isOpen() && key !== "docs") docsApi.close();
