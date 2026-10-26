@@ -1,4 +1,4 @@
-const { test, expect, openApp, seed, storedItems, rowTexts, lastToast, newBtn, menuBtn, openSettingsFromMe, libraryTo, libTab, flickLibrary } = require("./fixtures");
+const { test, expect, openApp, seed, storedItems, rowTexts, lastToast, newBtn, menuBtn, openSettingsFromMe, libraryTo, libTab, holdLibrary } = require("./fixtures");
 
 const t = Date.now();
 const notes = (...names) => names.map((n, i) => ({ id: n, type: "note", content: n, createdAt: t - i, updatedAt: t - i, schemaVersion: 2 }));
@@ -195,42 +195,37 @@ test("More opens as a full page above the dock, with no dark layer behind it; Se
   expect(field.y + field.height).toBeLessThanOrEqual(dock.y + 2); // and above the dock
 });
 
-test("Library tab: three pages, flick up for the next, hold to pick, and it remembers the last page", async ({ page }) => {
+test("Library tab: three pages, hold to pick, no bar on the page, the dock stays, and it remembers the last page", async ({ page }) => {
   const label = async () => (await libTab(page).textContent()).trim();
   await libraryTo(page, "collections");
   await expect(page.locator("#tab-bar .tab-btn[data-tab='groups']")).toHaveText("Collections");
   await expect(page.locator(".gp-home-title h1")).toHaveText("Collections");
   await expect(page.locator(".library-seg-btn")).toHaveCount(0); // no bar on the page any more
   await expect(page.locator(".lib-dots i")).toHaveCount(3);
-  await flickLibrary(page); // one flick up: Notes
-  await expect(page.locator("#list-title")).toHaveText("All notes");
-  expect(await label()).toBe("Notes");
-  await expect(page.locator('.tab-btn[data-tab="groups"]')).toHaveClass(/active/);
-  await flickLibrary(page); // another: Documents
-  await expect(page.locator("#docs-pane")).toBeVisible();
-  expect(await label()).toBe("Documents");
-  await flickLibrary(page); // and round to the start
-  await expect(page.locator(".gp-home-title h1")).toBeVisible();
-  expect(await label()).toBe("Collections");
-  // Hold: a small menu to pick any page.
-  await page.evaluate(() => {
-    const b = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
-    const r = b.getBoundingClientRect();
-    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 8, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
-  });
-  await expect(page.locator("#lib-menu")).toBeVisible({ timeout: 3000 });
+  await holdLibrary(page);
   await expect(page.locator("#lib-menu button")).toHaveText(["Collections", "Notes", "Documents"]);
   await page.locator('#lib-menu button[data-page="notes"]').tap();
   await expect(page.locator("#list-title")).toHaveText("All notes");
-  // It remembers: go to the Inbox, then come back with one tap.
+  expect(await label()).toBe("Notes");
+  await expect(page.locator('.tab-btn[data-tab="groups"]')).toHaveClass(/active/);
+  await holdLibrary(page);
+  await page.locator('#lib-menu button[data-page="docs"]').tap();
+  await expect(page.locator("#docs-pane")).toBeVisible();
+  expect(await label()).toBe("Documents");
+  // Documents is a page, not a cover: the dock is still there, on top, and tapping Inbox leaves it.
+  const dock = await page.locator("#tab-bar").boundingBox();
+  const top = await page.evaluate(({ x, y }) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest("#tab-bar")); }, { x: dock.x + dock.width / 2, y: dock.y + dock.height / 2 });
+  expect(top).toBe(true);
   await page.tap('.tab-btn[data-tab="chat"]');
+  await expect(page.locator("#chat-pane")).toBeVisible();
+  // It remembers: one tap on Library returns to Documents, and after a reload too.
   await page.tap('.tab-btn[data-tab="groups"]');
-  await expect(page.locator("#list-title")).toHaveText("All notes");
-  // ...and it still does after the app is closed and opened again.
-  await page.evaluate(() => sessionStorage.setItem("cp-test-startinbox", "1"));
+  await expect(page.locator("#docs-pane")).toBeVisible();
+  await page.evaluate(() => { sessionStorage.setItem("cp-test-startinbox", "1"); localStorage.setItem("copypaster-start", "inbox"); });
   await page.reload();
+  await expect(page.locator("#chat-pane")).toBeVisible(); // the app has finished starting, at the Inbox
   await page.tap('.tab-btn[data-tab="groups"]');
-  await expect(page.locator("#list-title")).toHaveText("All notes");
+  await expect(page.locator("#docs-pane")).toBeVisible();
 });
 
 test("Settings › Look: Library opens on a page you choose", async ({ page }) => {
@@ -262,7 +257,7 @@ test("More lights its own tab; Settings is one tap away and lists seven folders;
   await expect(page.locator("#me-more")).toHaveCount(0); // no ⋯ menu
   await expect(page.locator("#sidebar-scroll .nav-item").first()).toBeVisible();
   await expect(page.locator("#pwgen-btn")).toBeHidden(); // the generator lives in Add-ons now
-  await page.tap("#settings-btn");
+  await page.tap("#me-gear");
   await expect(page.locator("#me-head h1")).toHaveText("Settings");
   await expect(page.locator("#me-rows .me-row b")).toHaveText(["Vault", "Privacy and lock", "Your data", "Look", "Library", "Add-ons", "Help and about"]);
   await expect(page.locator("#sidebar-scroll")).toBeHidden();

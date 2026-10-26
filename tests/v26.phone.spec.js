@@ -1,6 +1,6 @@
 // 2.6 on a phone: the Filter sheet (same spacing everywhere, hide with a
 // second tap, custom dates) and a dock you can change.
-const { test, expect, openApp, newNote, openSettingsFromMe, seed, libraryTo, libTab, flickLibrary } = require("./fixtures");
+const { test, expect, openApp, newNote, openSettingsFromMe, seed, libraryTo, libTab, holdLibrary } = require("./fixtures");
 
 test.beforeEach(async ({ page }) => { await openApp(page); });
 

@@ -850,3 +850,6 @@ body.cx-previewing #tab-bar { display: none !important; }
   .cx-searchbar, .cx-searchbar[hidden] { display: block; }
   #cx-search-btn { display: none !important; }
 }
+@media (max-width: 720px) {
+  .docs-tools .gp-select { height: 44px; border-radius: var(--r-full); background: var(--surface-2); border: 1px solid var(--line); color: var(--text); padding: 0 var(--s-3); font: inherit; font-size: var(--fs-md); }
+}

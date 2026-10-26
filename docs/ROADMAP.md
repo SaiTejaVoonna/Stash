@@ -221,4 +221,4 @@ Not quite right:
 - "No persistent storage request": it was already there.
 - [x] Settings and Me are one page (the Settings tab): profile, backup card, seven folders, no ⋯ menu. The sync light is a small cloud that explains itself in place.
 - [x] The More tab is the old one-scroll menu in the new look (every place with counts, Settings pinned); the dock default is Inbox · Collections · + · Search · More and can be changed in Settings › Look.
-- [x] One Library tab with three pages (flick up, hold to choose, remembers the last page); one search pill on every phone page that opens the one Search page, scoped to where you were.
+- [x] One Library tab with three pages (hold to choose, remembers the last page; the dock stays on every page); one search pill on every phone page that opens the one Search page, scoped to where you were.

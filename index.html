@@ -178,6 +178,12 @@
     .item-row:active, .me-row:active, .nav-item:active, .settings-nav-item:active { transform: scale(0.985); background-color: var(--surface-2); }
     .library-seg-btn:active, .library-filter-btn:active, .tl-when-chip:active { transform: scale(0.96); }
   }
+  @media (max-width: 720px) {
+    /* Documents is a page, not a cover: the dock stays on top of it (only the file viewer is truly full screen). */
+    body:has(#docs-pane:not([hidden])) #tab-bar { z-index: calc(var(--z-settings) + 1); }
+    body:has(#doc-viewer) #tab-bar { display: none; }
+    .docs-pane .docs-list { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  }
   /* Library tab: three dots for the three pages, a pop-up menu on hold, and chips for Notes. */
   .tab-btn[data-tab="groups"] { touch-action: none; position: relative; }
   .lib-dots { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; pointer-events: none; }
@@ -197,9 +203,11 @@
   @media (max-width: 720px) {
     /* More: the profile, a small backup bar, then one scroll with every place (counts and +), and Settings pinned at the bottom.
        Tapping Settings swaps the page to the seven Settings folders (a "settings-mode" page). */
-    #sidebar #brand, #sidebar #sidebar-search, #sidebar #pwgen-btn { display: none; }
+    #sidebar #brand, #sidebar #sidebar-search, #sidebar #sidebar-footer { display: none; }
+    #me-gear { margin-left: auto; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
+    #me-gear .icon { width: 24px; height: 24px; font-size: 24px; }
+    #sidebar.settings-mode #me-gear { display: none; }
     #sidebar-scroll { order: 3; }
-    #sidebar-footer { order: 5; }
     #me-head { display: flex; align-items: center; order: 0; padding: calc(var(--s-3) + env(safe-area-inset-top)) var(--s-2) var(--s-2) var(--s-2); }
     #me-head h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: -0.03em; }
     #profile-btn { order: 1; margin: 0 var(--s-2) var(--s-3); height: 52px; }
@@ -208,12 +216,11 @@
     #me-back { display: none; width: 44px; height: 44px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--text); place-items: center; cursor: pointer; }
     #sidebar.settings-mode #me-back { display: grid; }
     #sidebar.settings-mode #me-rows { display: block; }
-    #sidebar.settings-mode #sidebar-scroll, #sidebar.settings-mode #sidebar-footer { display: none; }
+    #sidebar.settings-mode #sidebar-scroll { display: none; }
     #sidebar:not(.settings-mode) #me-lock { display: none; }
     #sidebar:not(.settings-mode) #me-cards { padding-bottom: var(--s-2); }
     #sidebar:not(.settings-mode) .me-card { padding: var(--s-2) var(--s-3); }
     #sidebar:not(.settings-mode) .me-card-ic { width: 32px; height: 32px; }
-    #sidebar-footer { border-top: 1px solid var(--line); }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -1599,7 +1606,7 @@
     <div id="brand"><span id="brand-dot"><img src="icons/icon-192.png" alt=""></span><span id="brand-label">Stash</span>
       <button id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg class="icon"><use href="#icon-sidebar"></use></svg></button>
     </div>
-    <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1></div>
+    <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1><button id="me-gear" type="button" aria-label="Settings"></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
@@ -2888,6 +2895,8 @@
     document.querySelector("#me-head h1").textContent = "More";
   }
   document.getElementById("me-back").innerHTML = icon("chevron-left");
+  document.getElementById("me-gear").innerHTML = icon("gear");
+  document.getElementById("me-gear").addEventListener("click", enterSettingsMode);
   document.getElementById("me-back").addEventListener("click", exitSettingsMode);
   // Settings (phones): each row on the Settings page opens one group of pages together.
   const SETTINGS_GROUPS = {
@@ -3642,24 +3651,20 @@
       b.dataset.tab = tab.key;
       b.setAttribute("aria-label", tab.label);
       b.innerHTML = (big ? '<span class="plus-ring">' + icon(tab.icon) + "</span>" : icon(tab.icon)) + "<span>" + tab.label + "</span>";
-      let held = false, flicked = false;
+      let held = false;
       if (tab.key === "groups") {
-        // Library: three little dots show which page; flick up for the next page; hold to pick one.
+        // Library: three little dots show which page; hold the tab to pick one.
         const pages = libraryPageList(), cur = pages.findIndex((p) => p.key === currentLibraryPage());
         const dots = document.createElement("span");
         dots.className = "lib-dots"; dots.setAttribute("aria-hidden", "true");
         pages.forEach((p, i) => { const d = document.createElement("i"); if (i === cur) d.className = "on"; dots.appendChild(d); });
         b.appendChild(dots);
-        b.setAttribute("aria-label", "Library: " + tab.label + ". Flick up for the next page, or hold to choose.");
-        let sx = 0, sy = 0, timer = null;
+        b.setAttribute("aria-label", "Library: " + tab.label + ". Hold to choose another page.");
+        let timer = null;
         const cancel = () => { clearTimeout(timer); timer = null; };
         b.addEventListener("pointerdown", (e) => {
-          held = false; flicked = false; sx = e.clientX; sy = e.clientY; cancel();
+          held = false; cancel();
           timer = setTimeout(() => { held = true; if (navigator.vibrate) navigator.vibrate(10); openLibraryMenu(b); }, 450);
-        });
-        b.addEventListener("pointermove", (e) => {
-          if (flicked || held || !timer) return;
-          if (sy - e.clientY > 28 && Math.abs(e.clientX - sx) < 44) { flicked = true; cancel(); if (navigator.vibrate) navigator.vibrate(8); if (isDrawerMode() && sidebarEl.classList.contains("open")) closeSidebarOnMobile(); nextLibraryPage(); }
         });
         ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, cancel));
         b.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -3673,7 +3678,8 @@
         b.addEventListener("contextmenu", (e) => e.preventDefault());
       }
       b.addEventListener("click", async () => {
-        if (tab.key === "groups" && (held || flicked)) { held = false; flicked = false; return; }
+        const inLibBefore = inLibraryNow(); // read before the Inbox or Search is closed below
+        if (tab.key === "groups" && held) { held = false; return; }
         if (tab.key === "snap") { if (held) { held = false; return; } snapNow(); return; }
         if (tab.key === "more") { openSidebarDrawer(); return; }
         // Any other tab leaves the Me page, even when that tab's screen is already the one underneath.
@@ -3689,8 +3695,8 @@
         if (tab.key === "groups") {
           let first = false;
           try { first = !localStorage.getItem(LIBRARY_HINT_KEY); localStorage.setItem(LIBRARY_HINT_KEY, "1"); } catch {}
-          if (first) showToast("Flick up on Library to switch pages. Hold it to pick one.", { ms: 5000 });
-          goLibraryPage(inGroups || (docsApi && docsApi.isOpen()) || isLibraryView() ? currentLibraryPage() : libraryStartPage());
+          if (first) showToast("Hold Library to pick Collections, Notes or Documents.", { ms: 5000 });
+          goLibraryPage(inLibBefore ? currentLibraryPage() : libraryStartPage());
           return;
         }
         if (tlOpen) closeTimeline();
@@ -3705,8 +3711,8 @@
 
   // Library: Collections, Notes and Documents are three views of one place. On a
   // phone each of them shows this bar at the top, to hop between them.
-  // The Library tab holds three pages (Collections, Notes, Documents). Flick up on the tab for the next one,
-  // hold it to pick one, and the app remembers the last page. The pages themselves carry no switching bar.
+  // The Library tab holds three pages (Collections, Notes, Documents). Hold the tab to pick one,
+  // and the app remembers the last page. The pages themselves carry no switching bar.
   const LIBRARY_PAGE_KEY = "copypaster-library-page", LIBRARY_START_KEY = "copypaster-library-start", LIBRARY_HINT_KEY = "copypaster-library-hint";
   function libraryPageList() {
     const list = [{ key: "collections", label: "Collections", icon: "layers" }, { key: "notes", label: "Notes", icon: "note" }];
@@ -3723,11 +3729,16 @@
     try { start = localStorage.getItem(LIBRARY_START_KEY) || "last"; } catch {}
     return start !== "last" && libraryPageList().some((p) => p.key === start) ? start : savedLibraryPage();
   }
+  // True only while one of the three Library pages is what you are looking at (not the Inbox or Search).
+  function inLibraryNow() {
+    if ((chatApi && chatApi.isOpen()) || (timelineApi && timelineApi.isOpen())) return false;
+    return !!((docsApi && docsApi.isOpen()) || (groupsApi && groupsApi.enabled() && groupsApi.isActive()) || isLibraryView());
+  }
   function currentLibraryPage() {
+    if (!inLibraryNow()) return savedLibraryPage();
     if (docsApi && docsApi.isOpen()) return "docs";
     if (groupsApi && groupsApi.enabled() && groupsApi.isActive()) return "collections";
-    if (isLibraryView()) return "notes";
-    return savedLibraryPage();
+    return "notes";
   }
   function libraryTabFace() {
     const pages = libraryPageList();
@@ -3745,11 +3756,6 @@
     else { closeTimeline(); if (groupsApi && groupsApi.isActive()) groupsApi.exit(); openDocuments(); }
     renderTabBar();
     risePage();
-  }
-  function nextLibraryPage() {
-    const pages = libraryPageList();
-    const i = pages.findIndex((p) => p.key === currentLibraryPage());
-    goLibraryPage(pages[(i + 1) % pages.length].key);
   }
   // The new page rises into place (a short fade and lift); nothing moves with reduced motion.
   function risePage() {

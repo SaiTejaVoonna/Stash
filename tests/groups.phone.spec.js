@@ -1,7 +1,7 @@
 // Groups on a phone: tab bar, one screen at a time, Snap, the back button.
 const path = require("path");
 const fs = require("fs");
-const { test, expect, openApp, lastToast, libraryTo, libTab, flickLibrary } = require("./fixtures");
+const { test, expect, openApp, lastToast, libraryTo, libTab, holdLibrary } = require("./fixtures");
 
 // A small real PNG, made on the fly.
 function pngFile() {
