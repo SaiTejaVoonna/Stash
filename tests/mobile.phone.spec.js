@@ -403,3 +403,13 @@ test("Hold menu stays on screen even when the dock is redrawn during the hold", 
   const box = await page.locator("#lib-menu").boundingBox();
   if (box) { expect(box.y).toBeGreaterThanOrEqual(0); expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height); }
 });
+
+test("Holding the Library tab still opens the menu if the phone sends a stray pointercancel or pointerleave mid-hold", async ({ page }) => {
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="groups"]');
+    const r = b.getBoundingClientRect(), o = { pointerId: 11, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 };
+    b.dispatchEvent(new PointerEvent("pointerdown", o));
+    setTimeout(() => { b.dispatchEvent(new PointerEvent("pointerleave", o)); b.dispatchEvent(new PointerEvent("pointercancel", o)); }, 150);
+  });
+  await expect(page.locator("#lib-menu")).toBeVisible({ timeout: 3000 });
+});

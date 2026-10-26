@@ -218,6 +218,7 @@
     #sidebar.settings-mode #me-rows { display: block; }
     #sidebar.settings-mode #me-demo { display: block; order: 5; margin: 0 var(--s-2) var(--s-3); }
     #me-demo .me-card { margin: 0; }
+    #me-build { margin: var(--s-2) 0 0 var(--s-2); font-size: var(--fs-xs); color: var(--text-3); }
     #me-demo .me-go.danger { background: var(--danger-soft, var(--surface-2)); color: var(--danger, #ff453a); }
     /* On a phone the demo data lives on the Settings page, not inside Your data. */
     .settings-section:has(#demo-load) { display: none; }
@@ -1614,7 +1615,7 @@
     <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1><button id="me-gear" type="button" aria-label="Settings"></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
-    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div></div>
+    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div><p id="me-build"></p></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -3674,13 +3675,15 @@
         pages.forEach((p, i) => { const d = document.createElement("i"); if (i === cur) d.className = "on"; dots.appendChild(d); });
         b.appendChild(dots);
         b.setAttribute("aria-label", "Library: " + tab.label + ". Hold to choose another page.");
-        let timer = null;
+        let timer = null, sx = 0, sy = 0;
         const cancel = () => { clearTimeout(timer); timer = null; };
         b.addEventListener("pointerdown", (e) => {
-          held = false; cancel();
+          held = false; cancel(); sx = e.clientX; sy = e.clientY;
           timer = setTimeout(() => { held = true; if (navigator.vibrate) navigator.vibrate(10); openLibraryMenu(b); }, 450);
         });
-        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, cancel));
+        // Only a lift or a real drag stops the hold. (iPhones can send a stray pointercancel or pointerleave during a long press, which used to cancel it.)
+        b.addEventListener("pointermove", (e) => { if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 14) cancel(); });
+        b.addEventListener("pointerup", cancel);
         b.addEventListener("contextmenu", (e) => e.preventDefault());
       }
       // Holding Snap opens the New menu instead.
@@ -11032,6 +11035,8 @@
   document.getElementById("me-demo-load").addEventListener("click", loadDemo);
   document.getElementById("me-demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   document.querySelector("#me-demo .me-card-ic").innerHTML = icon("sparkle");
+  // Which build is running (so "is this the new version?" is easy to answer).
+  if (window.caches && caches.keys) caches.keys().then((ks) => { const k = ks.filter((x) => /^stash-v\d+$/.test(x)).sort((a, b) => parseInt(b.slice(7)) - parseInt(a.slice(7)))[0]; const el = document.getElementById("me-build"); if (el && k) el.textContent = "Stash build " + k.slice(7); }).catch(() => {});
   document.getElementById("demo-load").addEventListener("click", loadDemo);
   document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   renderDemoLine();
