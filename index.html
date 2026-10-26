@@ -1601,6 +1601,43 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
   }
+
+  /* ---------- Phone polish: one type scale, one set of corners, one header line, roomy tap targets ---------- */
+  @media (max-width: 720px) {
+    :root { --fs-2xs: 11px; --fs-xs: 11px; --fs-sm: 13px; --fs-md: 15px; --fs-lg: 16px; --fs-xl: 20px; --fs-2xl: 22px; --fs-3xl: 28px;
+      --r-xs: 8px; --r-sm: 8px; --r-md: 12px; --r-lg: 12px; --r-xl: 20px; --r-2xl: 20px; }
+    body.has-dock .tab-btn { font-size: 11px; }
+    /* Every tab page's header: the same height, the title on the same line, the + in the same spot. */
+    body.has-dock .cx-head, body.has-dock #list-title-row, body.has-dock .gp-home-title, body.has-dock .docs-head, body.has-dock #tl-pane .tl-title, body.has-dock #me-head {
+      box-sizing: border-box; min-height: calc(60px + env(safe-area-inset-top)); padding-top: calc(8px + env(safe-area-inset-top)) !important; padding-bottom: 4px !important; align-items: center; }
+    body.has-dock .cx-title small { display: none; }
+    body.has-dock #list-header, body.has-dock .gp-head { padding-top: 0 !important; }
+    body.has-dock .cx-title b, body.has-dock .docs-title b, body.has-dock #list-title, body.has-dock .gp-home-title h1, body.has-dock #tl-pane .tl-title h1, body.has-dock #me-head h1 { line-height: 42px; }
+    body.has-dock .page-plus, body.has-dock:not(.dock-new) #new-btn { height: 44px !important; min-height: 44px; }
+    /* Search pills all start at the same 16 px edge. */
+    body.has-dock .cx-searchbar { padding-left: 16px; padding-right: 16px; }
+    body.has-dock .docs-tools { padding-left: 16px; padding-right: 16px; }
+    /* Tap targets: chips and small buttons get at least 40 px (44 for icon buttons). */
+    body.has-dock .cx-filter { height: 40px; }
+    body.has-dock #cx-cleanup { width: 44px; height: 44px; }
+    body.has-dock #cx-select, body.has-dock .gp-small { min-height: 40px; }
+    body.has-dock .section-add-btn { width: 44px; height: 44px; }
+    body.has-dock .section-title-click { min-height: 44px; }
+    body.has-dock .gp-twisty { height: 44px; }
+    body.has-dock #cx-snap { width: 40px; height: 40px; }
+    /* Contrast: the red Remove button and profile letters. */
+    #me-demo .me-go.danger { color: #b42318; }
+    html[data-theme="dark"] #me-demo .me-go.danger, :root:not([data-theme="light"]) #me-demo .me-go.danger { color: #ff8a80; }
+    .profile-avatar { background-image: linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.3)); }
+    body.has-dock .docs-tools #docs-sort { height: 44px !important; min-height: 44px; border-radius: var(--r-full); }
+    body.has-dock .gp-twisty { width: 40px; }
+  }
+  /* Small coloured text on a light page needs the darker shade of its colour to stay readable. */
+  html[data-theme="light"] .row-remind { color: #8a5300; }
+  html[data-theme="light"] .gp-amount { color: #116b2f; }
+  .nav-item.active .count { color: var(--text-2); }
+  @media (max-width: 720px) {
+  }
 </style>
 </head>
 <body>

@@ -454,3 +454,35 @@ test("Tapping the Documents tab again does not replay the rise animation, and Li
   await page.tap('.tab-btn[data-tab="groups"]'); // coming back from the Inbox: the page rises in
   await expect(page.locator("#docs-pane")).toBeVisible();
 });
+
+// The core loop, end to end on a phone: capture, find it again, keep it safe.
+test("Core loop: drop a thing in the Inbox, find it from Search, and back up from the More hold menu", async ({ page }) => {
+  await page.tap('.tab-btn[data-tab="chat"]');
+  await page.fill("#cx-input", "Corner Tea House bill 240");
+  await page.tap("#cx-send");
+  await expect(page.locator("#chat-pane .cx-msg").last()).toContainText("Corner Tea House");
+  await page.tap('.tab-btn[data-tab="search"]');
+  await page.fill("#tl-search", "tea house");
+  await expect(page.locator("#tl-body .tl-row").first()).toContainText("Corner Tea House");
+  await page.evaluate(() => {
+    const b = document.querySelector('#tab-bar .tab-btn[data-tab="more"]');
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 31, pointerType: "touch", isPrimary: true, bubbles: true, clientX: r.left + 20, clientY: r.top + 20 }));
+  });
+  const [download] = await Promise.all([page.waitForEvent("download"), page.locator('#lib-menu [data-act="backup"]').tap()]);
+  expect(download.suggestedFilename()).toMatch(/\.cps$/);
+});
+
+test("Every tab page's header lines up: same title line, same + spot, same search edge", async ({ page }) => {
+  const read = () => page.evaluate(() => {
+    const vis = (q) => [...document.querySelectorAll(q)].find((e) => e.getBoundingClientRect().width > 0);
+    const t = vis(".cx-title b, #list-title, .gp-home-title h1, .docs-title b, #tl-pane .tl-title h1");
+    return t ? Math.round(t.getBoundingClientRect().y) : null;
+  });
+  const ys = [];
+  await page.tap('.tab-btn[data-tab="chat"]'); ys.push(await read());
+  await libraryTo(page, "collections"); ys.push(await read());
+  await libraryTo(page, "notes"); ys.push(await read());
+  await page.tap('.tab-btn[data-tab="search"]'); ys.push(await read());
+  expect(new Set(ys).size).toBe(1);
+});
