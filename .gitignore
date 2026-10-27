@@ -2,3 +2,10 @@ node_modules/
 test-results/
 playwright-report/
 dist/
+
+# Local and editor files
+.DS_Store
+.env
+.env.*
+*.log
+.wrangler/

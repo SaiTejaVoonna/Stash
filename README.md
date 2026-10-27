@@ -7,7 +7,7 @@ Stash is a local-first notes, Inbox and collections app. You drop things in
 Stash remembers them, suggests where they belong, and finds them again.
 
 - Live: <https://stash.stvoonna.workers.dev> (works in any modern browser; add it to your Home Screen on a phone)
-- Status: **a personal project in active development.** It is not a released product, and it has no users or clients.
+- Status: **v1, a personal project in active development.** It is not a commercial product, and it has no clients.
 - Plain JavaScript web app (PWA). No framework, no server of ours, no account.
 
 ## Privacy, in plain words
