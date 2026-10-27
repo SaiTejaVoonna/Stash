@@ -436,8 +436,8 @@ body.chat-mode:not(.detail-open) #detail-pane { display: none !important; }
 .cx-empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; }
 .cx-bar { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
 .cx-bar[hidden], .cx-selbar[hidden], .cx-plus-menu[hidden] { display: none; }
-.cx-box { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 44px; padding: 4px 4px 4px 14px; border-radius: 22px; border: 1px solid var(--line-strong); background: var(--surface-1); }
-#cx-input { flex: 1; resize: none; border: none; background: none; color: var(--text); font: inherit; font-size: 16px; line-height: 1.35; padding: 8px 0; max-height: 140px; outline: none; }
+.cx-box { flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 4px; min-height: 44px; padding: 4px 4px 4px 14px; border-radius: 22px; border: 1px solid var(--line-strong); background: var(--surface-1); }
+#cx-input { flex: 1; min-width: 0; width: 100%; resize: none; border: none; background: none; color: var(--text); font: inherit; font-size: 16px; line-height: 1.35; padding: 8px 0; max-height: 140px; outline: none; }
 .cx-selbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg); }
 .cx-count { flex: 1; font-size: var(--fs-sm); color: var(--text-2); }
 /* Phones: one line that scrolls sideways; the count stays short. */
