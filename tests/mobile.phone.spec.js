@@ -496,3 +496,14 @@ test("More shows Collections as one row (no long list, no second Notes row), and
   await expect(page.locator("#sidebar")).not.toHaveClass(/\bopen\b/);
   await expect(page.locator(".gp-home-title")).toBeVisible();
 });
+
+test("The dock tells screen readers which tab you are on, and the text sizes follow the browser's font size", async ({ page }) => {
+  await expect(page.locator('#tab-bar .tab-btn[aria-current="page"]')).toHaveCount(1);
+  await page.locator("#tab-bar .tab-btn[data-tab='search']").tap();
+  await expect(page.locator('#tab-bar .tab-btn[data-tab="search"]')).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('#tab-bar .tab-btn[aria-current="page"]')).toHaveCount(1);
+  const small = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("#tab-bar .tab-btn span")).fontSize));
+  await page.evaluate(() => { document.documentElement.style.fontSize = "24px"; });
+  const big = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("#tab-bar .tab-btn span")).fontSize));
+  expect(big).toBeGreaterThan(small * 1.4);
+});

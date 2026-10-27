@@ -57,7 +57,7 @@ test("a PIN locks Stash when it opens; a wrong PIN is refused; turning it off ne
 });
 
 test("text size: Large makes text bigger and is remembered", async ({ page }) => {
-  const size = () => page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fs-md")));
+  const size = () => page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
   expect(await size()).toBe(13.5);
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="appearance"]');
