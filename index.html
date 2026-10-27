@@ -232,6 +232,7 @@
     #sidebar.settings-mode #sidebar-scroll { display: none; }
     /* The backup and App lock cards live on the Settings page only, not on More. */
     #sidebar:not(.settings-mode) #me-cards { display: none; }
+    body.has-dock #groups-section { display: none !important; }
     #me-cards { display: flex; flex-direction: column; gap: var(--s-2); padding: 0 var(--s-2) var(--s-3); }
     #me-cards:empty { display: none; }
     .me-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-lg); background: var(--surface-1); border: 1px solid var(--line); }
@@ -3494,6 +3495,7 @@
     switch (key) {
       case "chat": return cache.filter((i) => i.chat && !i.deletedAt && !i.archivedAt && !i.vaulted).length;
       case "docs": return allDocuments().length;
+      case "collections": return groupsApi ? groupsApi.groupList().length : 0;
       case "all": return cache.filter(live).length;
       case "timeline": return cache.filter(live).length + (groupsApi ? groupsApi.timelineRows().length : 0);
       case "reminders": return cache.filter((i) => i.remindAt && live(i)).length + (groupsApi ? groupsApi.dueRows().length : 0);
@@ -3515,9 +3517,12 @@
     try { renderMeCards(); } catch {}
     const tlOpen = !!(timelineApi && timelineApi.isOpen());
     const elsewhere = tlOpen || !!(groupsApi && groupsApi.isActive());
-    for (const item of NAV_ITEMS) {
+    // Phones: More shows Collections as one row (the Collections page does the rest), and no second "Notes" row next to All notes.
+    const onDock = document.body.classList.contains("has-dock");
+    const navItems = !onDock ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.key !== "notes").flatMap((i) => (i.key === "chat" && groupsApi && groupsApi.enabled() ? [i, { key: "collections", label: "Collections", icon: "layers" }] : [i]));
+    for (const item of navItems) {
       const chatOpen = !!(chatApi && chatApi.isOpen());
-    const isActive = item.key === "timeline" ? tlOpen : item.key === "chat" ? chatOpen : currentView === item.key && !elsewhere && !chatOpen;
+    const isActive = item.key === "timeline" ? tlOpen : item.key === "chat" ? chatOpen : item.key === "collections" ? !!(groupsApi && groupsApi.isActive()) && !chatOpen && !tlOpen : currentView === item.key && !elsewhere && !chatOpen;
       if (item.hideWhenEmpty && !isActive && countForNav(item.key) === 0 && !(item.key !== "commands" && window.matchMedia("(max-width: 720px)").matches)) continue;
       if (item.key === "commands" && !addonOn("commands") && !isActive && countForNav("commands") === 0) continue;
       if (item.addon && !addonOn(item.addon)) continue;
@@ -3531,6 +3536,7 @@
         if (item.key === "timeline") { openTimeline(); return; }
         if (item.key === "chat") { openChat(); return; }
         if (item.key === "docs") { openDocuments(); return; }
+        if (item.key === "collections") { closeSidebarOnMobile(); goLibraryPage("collections"); return; }
         switchView(item.key);
       });
       nav.appendChild(el);

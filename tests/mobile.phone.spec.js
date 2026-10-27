@@ -486,3 +486,13 @@ test("Every tab page's header lines up: same title line, same + spot, same searc
   await page.tap('.tab-btn[data-tab="search"]'); ys.push(await read());
   expect(new Set(ys).size).toBe(1);
 });
+
+test("More shows Collections as one row (no long list, no second Notes row), and it opens the Collections page", async ({ page }) => {
+  await menuBtn(page).click();
+  await expect(page.locator('#main-nav .nav-item[data-nav="collections"]')).toBeVisible();
+  await expect(page.locator('#main-nav .nav-item[data-nav="notes"]')).toHaveCount(0);
+  await expect(page.locator("#groups-section")).toBeHidden();
+  await page.locator('#main-nav .nav-item[data-nav="collections"]').click();
+  await expect(page.locator("#sidebar")).not.toHaveClass(/\bopen\b/);
+  await expect(page.locator(".gp-home-title")).toBeVisible();
+});
