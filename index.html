@@ -227,7 +227,6 @@
     #sidebar.settings-mode #me-rows { display: block; }
     #sidebar.settings-mode #me-demo { display: block; order: 5; margin: 0 var(--s-2) var(--s-3); }
     #me-demo .me-card { margin: 0; }
-    #me-build { margin: var(--s-2) 0 0 var(--s-2); font-size: var(--fs-xs); color: var(--text-3); }
     #me-demo .me-go.danger { background: var(--danger-soft, var(--surface-2)); color: var(--danger, #ff453a); }
     /* On a phone the demo data lives on the Settings page, not inside Your data. */
     .settings-section:has(#demo-load) { display: none; }
@@ -1661,7 +1660,7 @@
     <div id="me-head"><button id="me-back" type="button" aria-label="Back to More"></button><h1>More</h1><button id="me-gear" type="button" aria-label="Settings"></button></div>
     <div id="me-cards"></div>
     <div id="me-rows"></div>
-    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div><p id="me-build"></p></div>
+    <div id="me-demo"><div class="me-card"><span class="me-card-ic"></span><span class="me-card-text"><b>Demo data</b><small>Try Stash with made-up notes, Inbox messages and collections. Remove it in one tap; your own things stay.</small></span><button id="me-demo-load" class="me-go" type="button">Add</button><button id="me-demo-remove" class="me-go danger" type="button" hidden>Remove</button></div></div>
     <button id="profile-btn" type="button" title="Switch profile"><span class="profile-avatar" id="profile-avatar"></span><span id="profile-name"></span><span id="profile-caret"><svg class="icon icon-sm"><use href="#icon-chevron-down"></use></svg></span></button>
     <button id="sidebar-search" type="button" title="Search and commands (Ctrl+K)"><svg class="icon"><use href="#icon-search"></use></svg><span>Search</span><span class="kbd" id="palette-kbd">Ctrl K</span></button>
     <div id="sidebar-scroll">
@@ -2001,7 +2000,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "3.1";
+  const APP_VERSION = "1"; // shown as v1; the What's-new check compares with this and with what was seen before (older installs saw 3.1, so they are not re-shown it)
   window.CPIcon.upgrade(document); // the icons written straight into the page
 
   // ---------- Profiles ----------
@@ -9284,7 +9283,7 @@
       '<div class="ph-keys"><span>' + kbdHtml([MOD, "K"]) + ' Search</span><span>' + kbdHtml([MOD, "N"]) + ' New</span><span>' + kbdHtml(["/"]) + ' Filter</span></div>';
   }
   renderPlaceholder();
-  document.getElementById("app-version").textContent = "Version " + APP_VERSION;
+  document.getElementById("app-version").textContent = "v" + APP_VERSION;
   document.getElementById("settings-footer").textContent = "Stash v" + APP_VERSION + " \u00b7 local-first, no account";
 
   // ---------- What's new: shown once after an update ----------
@@ -9332,7 +9331,7 @@
     head.className = "wn-head";
     const h = document.createElement("h2");
     h.id = "wn-title";
-    h.textContent = "What's new in " + APP_VERSION;
+    h.textContent = "What's new";
     const p = document.createElement("p");
     p.textContent = "Stash was updated. Everything you saved is still here.";
     head.append(h, p);
@@ -11148,7 +11147,6 @@
   document.getElementById("me-demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   document.querySelector("#me-demo .me-card-ic").innerHTML = icon("sparkle");
   // Which build is running (so "is this the new version?" is easy to answer).
-  if (window.caches && caches.keys) caches.keys().then((ks) => { const k = ks.filter((x) => /^stash-v\d+$/.test(x)).sort((a, b) => parseInt(b.slice(7)) - parseInt(a.slice(7)))[0]; const el = document.getElementById("me-build"); if (el && k) el.textContent = "Stash build " + k.slice(7); }).catch(() => {});
   document.getElementById("demo-load").addEventListener("click", loadDemo);
   document.getElementById("demo-remove").addEventListener("click", () => { if (confirm("Remove all the demo data? Your own things stay.")) removeDemo(); });
   renderDemoLine();

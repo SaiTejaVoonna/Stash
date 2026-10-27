@@ -94,7 +94,7 @@ test("each profile has its own Vault", async ({ page }) => {
 test("Check for updates shows a loading line, then says you're up to date or offers Reload", async ({ page }) => {
   await page.click("#settings-btn");
   await page.click('.settings-nav-item[data-page="about"]');
-  await expect(page.locator("#app-version")).toHaveText(/^Version \d/);
+  await expect(page.locator("#app-version")).toHaveText(/^v\d/);
   await page.click("#check-updates-btn");
   await expect(page.locator("#update-status")).toHaveClass(/checking/);
   await expect(page.locator("#check-updates-btn")).toHaveText("Checking\u2026");

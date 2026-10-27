@@ -6,7 +6,7 @@ entries never show in the notes list. Search (Ctrl K) finds both.
 
 On by default since 2.5 (Groups is a tab in the phone dock). Settings → Groups →
 Show Groups turns them off; that only hides them. Group entries also show in
-the Timeline, and their tags are shared with notes (see `docs/history/CORE-2.5.md`).
+the Timeline, and their tags are shared with notes.
 
 ## Files
 

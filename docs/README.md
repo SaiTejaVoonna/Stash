@@ -13,16 +13,3 @@ Which document to read for what.
 | [VAULT.md](VAULT.md) | How the encrypted Vault works. |
 | [DESIGN.md](DESIGN.md) | The design system: tokens, themes, components, layout. |
 | [DESIGN_BRIEF.md](DESIGN_BRIEF.md) | A brief for an image-generating design AI. |
-
-## History (kept for reference, may be out of date)
-
-| Doc | What it was |
-|---|---|
-| [history/PLAN.md](history/PLAN.md) | An early working-draft plan. The roadmap replaced it. |
-| [history/CHECKPOINT-v1.5.md](history/CHECKPOINT-v1.5.md) | A review: stay with plain JavaScript or add a framework? |
-| [history/CORE-2.5.md](history/CORE-2.5.md) | Notes on version 2.5. |
-| [history/CORE-2.6.md](history/CORE-2.6.md) | Notes on version 2.6. |
-
-Words used in the app and in the docs: the app says **Inbox**, **Collections**,
-**Sections** and **Who / Where**; the code and older docs still say "group",
-"space" and "sub".
